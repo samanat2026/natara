@@ -670,7 +670,7 @@ function renderShell(nav,content){
    ${nav}
    <div class="side-foot">
     <div class="me"><div class="avatar">${initials(u.name)}</div><div><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin':u.role==='dueno'?'Dueño(a)':'Cajero(a)'}</span></div></div>
-    <button class="nav-btn" data-a="logout">${ic('logout')} Cerrar sesión</button>
+    <button class="nav-btn" data-a="logout-ask">${ic('logout')} Cerrar sesión</button>
    </div>
   </aside>
   <div class="scrim" data-a="nav-close"></div>
@@ -847,7 +847,7 @@ function viewLock(){
   <h1>El acceso a Natara está suspendido</h1>
   <p class="muted">La cuota de <b>${esc(t.name)}</b> venció el ${fdate(t.due)}. Tus datos están guardados. Comunícate con Samanat para reactivar el servicio.</p>
   <div class="hint" style="width:100%">${esc(S.config.contact)}</div>
-  <button class="btn" data-a="logout">${ic('logout')} Cerrar sesión</button>
+  <button class="btn" data-a="logout-ask">${ic('logout')} Cerrar sesión</button>
  </div></div>`;
 }
 
@@ -1463,7 +1463,8 @@ document.addEventListener('click',e=>{
   'lg-restart':()=>{lg.step=1;lg.err={};lg.banner=null;render()},
   'lg-fill':()=>{const f=$('#lg-email')||$('#lg-femail');if(f){f.value=v;lg.email=v;const pw=$('#lg-pass');if(pw){pw.focus()}else f.focus()}},
   'lg-eye':()=>{const i=el.parentElement.querySelector('input');const sh=i.type==='password';i.type=sh?'text':'password';el.setAttribute('aria-label',sh?'Ocultar contraseña':'Mostrar contraseña');el.innerHTML=ic(sh?'eyeoff':'eye',18)},
-  logout:()=>{if(REAL)return rLogout();const u0=me();if(u0){liveRefresh();delete L0.presence[u0.id];liveSave()}sess={uid:null,view:null};saveSess();cart=[];navOpen=false;render()},
+  'logout-ask':()=>{const u=me();openModal('Cerrar sesión',`<p style="margin:0">¿Seguro que quieres cerrar la sesión de <b>${esc(u?.name||'')}</b>?</p>${cart.length?`<div class="banner">${ic('alert')}<div class="grow">Tienes una venta sin cobrar con ${cart.length} producto${cart.length>1?'s':''}. Si cierras sesión, se pierde.</div></div>`:''}<p class="muted small" style="margin:0">Para volver a entrar necesitarás tu correo y tu contraseña.</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="logout">${ic('logout',16)} Cerrar sesión</button>`)},
+  logout:()=>{closeModal();if(REAL)return rLogout();const u0=me();if(u0){liveRefresh();delete L0.presence[u0.id];liveSave()}sess={uid:null,view:null};saveSess();cart=[];navOpen=false;render()},
   reset:()=>{S=seed();save();L0=seedLive();liveSave();toast('Demo restablecida');render()},
   'reset-ask':()=>openModal('Restablecer demo','<p>Se borran todos los cambios y vuelven los datos de ejemplo. Esto aplica en este navegador.</p>',`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="reset-do">Restablecer</button>`),
   'reset-do':()=>{S=seed();save();L0=seedLive();liveSave();closeModal();toast('Demo restablecida');render()},
@@ -1753,7 +1754,7 @@ function realGate(){
  const box=(t,extra='')=>`<div class="lock-screen"><div class="lock-card">${mark(64)}<h1>${t}</h1>${extra}</div></div>`;
  if(!window.FB||!RB.authReady)return box('Cargando Natara…','<p class="muted">Un momento, por favor.</p>');
  if(RB.needVerify)return box('Verifica tu correo',`<p class="muted">Te enviamos un enlace a <b>${esc(RB.user?.email)}</b>. Ábrelo para confirmar que el correo es tuyo y luego vuelve aquí. Revisa también la carpeta de spam.</p><div class="row" style="justify-content:center"><button class="btn primary" data-a="verify-done">Ya lo verifiqué</button><button class="btn" data-a="verify-resend">Enviar de nuevo</button><button class="btn ghost" data-a="logout">Salir</button></div>`);
- if(RB.noProfile)return box('Este correo no tiene acceso a Natara',`<p class="muted">La cuenta <b>${esc(RB.user?.email)}</b> no está asociada a ningún negocio. Si crees que es un error, escríbenos a ${esc(ADMIN_EMAIL)}.</p><button class="btn" data-a="logout">${ic('logout')} Cerrar sesión</button>`);
+ if(RB.noProfile)return box('Este correo no tiene acceso a Natara',`<p class="muted">La cuenta <b>${esc(RB.user?.email)}</b> no está asociada a ningún negocio. Si crees que es un error, escríbenos a ${esc(ADMIN_EMAIL)}.</p><button class="btn" data-a="logout-ask">${ic('logout')} Cerrar sesión</button>`);
  if(RB.user&&!RB.profileReady)return box('Cargando tu cuenta…','<p class="muted">Un momento, por favor.</p>');
  const u=me();
  if(RB.user&&!u){RB.noProfile=true;return realGate()}
