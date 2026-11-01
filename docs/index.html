@@ -825,7 +825,9 @@ const APP_URL=MODE==='real'?REAL_URL:DEMO_URL;
 function genTemp(){const U='ABCDEFGHJKLMNPQRSTUVWXYZ',L='abcdefghijkmnpqrstuvwxyz',D='23456789',X='!*#$';const pk=a=>a[Math.floor(Math.random()*a.length)];return pk(U)+pk(L)+pk(L)+pk(L)+'-'+pk(D)+pk(D)+pk(D)+pk(D)+pk(X)}
 function welcomeParams(t,u,pass){return {to_email:u.email,to_name:u.name.split(' ')[0],business:t.name,login_email:u.email,temp_password:pass,app_url:APP_URL,from_name:'Samanat'}}
 function welcomeText(p,emp){if(emp)return `Asunto: Tus datos para entrar a Natara\n\nHola ${p.to_name},\n\n${p.by} te dio acceso a Natara en ${p.business}, para registrar ventas y manejar la caja.\n\nEntra aquí: ${p.app_url}\nUsuario: ${p.login_email}\nContraseña temporal: ${p.temp_password}\n\nAl entrar te pediremos crear tu propia contraseña. Guárdala: nadie más la conocerá.`;return `Asunto: Bienvenido a Natara: tus datos de acceso\n\nHola ${p.to_name},\n\n${p.business} ya tiene Natara, el sistema para manejar tu inventario, tu caja y tus cuentas.\n\nEntra aquí: ${p.app_url}\nUsuario: ${p.login_email}\nContraseña temporal: ${p.temp_password}\n\nLa primera vez que entres te pediremos crear tu propia contraseña.\n\nCualquier duda, respóndenos este correo.\nEquipo Samanat`}
-const emailReady=()=>{const c=S.config.emailjs||{};return !!(c.service&&c.template&&c.key&&window.emailjs)};
+const DEFAULT_EMAILJS={service:'service_3bmy9mk',template:'template_vysb1ut',key:'JKLQXaLvFb22L5iDo'};
+const ejs=()=>{const c=S.config.emailjs||{};return c.service&&c.template&&c.key?c:(REAL||DEMO_ADMIN?DEFAULT_EMAILJS:{})};
+const emailReady=()=>{const c=ejs();return !!(c.service&&c.template&&c.key&&window.emailjs)};
 async function sendWelcome(t,u,pass,emp){
  const p=welcomeParams(t,u,pass);p.by=me()?.name||'El dueño';const txt=welcomeText(p,emp);
  const box=s=>{const el=$('#mail-status');if(el)el.innerHTML=s};
@@ -835,7 +837,7 @@ async function sendWelcome(t,u,pass,emp){
  window._welcome=txt;
  if(!emailReady()){const admin=me()?.role==='superadmin';box(`<div class="banner">${ic('mail')}<div class="grow">${admin?`<b>El envío automático de correos no está configurado.</b> Copia el mensaje y envíalo tú, o configúralo en <button class="linkish" data-a="go" data-v="planes">Planes y precios → Envío de correos</button>.`:`<b>Compártele estos datos a ${esc(u.name.split(' ')[0])}.</b> Copia el mensaje y envíaselo por WhatsApp o correo.${MODE==='demo'?' <span class="muted">(En la demo no se envían correos.)</span>':''}`}<div class="wa" style="margin-top:8px">${esc(txt)}</div></div></div>`);return}
  box(`<div class="banner info">${ic('send')}<div class="grow">Enviando el correo a <b>${esc(u.email)}</b>…</div></div>`);
- const c=S.config.emailjs;
+ const c=ejs();
  try{await window.emailjs.send(c.service,c.template,p,{publicKey:c.key});box(`<div class="banner info">${ic('check')}<div class="grow">Le enviamos un correo a <b>${esc(u.email)}</b> con su usuario y contraseña temporal.</div></div>`);toast('Correo de bienvenida enviado')}
  catch(e){box(`<div class="banner bad">${ic('alert')}<div class="grow"><b>No se pudo enviar el correo</b>${e&&e.text?': '+esc(e.text):''}. Revisa la configuración de EmailJS. Mientras tanto, copia el mensaje y envíalo tú.<div class="wa" style="margin-top:8px">${esc(txt)}</div></div></div>`)}
 }
@@ -1424,7 +1426,7 @@ function aPlanes(){
   ${pendingChanges().length?`<div class="card"><h2>Cambios programados</h2><div class="tbl-wrap"><table><thead><tr><th>Aplica desde</th><th>Qué</th><th class="r">Antes</th><th class="r">Nuevo</th><th></th></tr></thead><tbody>${pendingChanges().map(c=>`<tr><td>${fdate(c.from)}</td><td>${esc(itemName(c.kind,c.id))}</td><td class="r num">${money(c.old)}</td><td class="r num"><b>${money(c.price)}</b></td><td class="r"><button class="btn sm" data-a="price-cancel" data-id="${c.cid}">Cancelar</button></td></tr>`).join('')}</tbody></table></div></div>`:''}
   <div class="card" style="max-width:720px"><h2>Envío de correos <span class="pill ${emailReady()?'good':'warn'}">${emailReady()?'Configurado':'Sin configurar'}</span></h2>
    <p class="muted small" style="margin:0 0 10px">Para que el correo de bienvenida salga solo, usamos <b>EmailJS</b> (gratis hasta 200 correos al mes). Crea una cuenta en emailjs.com, conecta tu Gmail como servicio, crea una plantilla con el texto de abajo y pega aquí los tres datos.</p>
-   <form class="form-grid" data-f="emailjs">${field('Service ID',inp('service',S.config.emailjs?.service||'','text','placeholder="service_xxxxxxx"'))}${field('Template ID',inp('template',S.config.emailjs?.template||'','text','placeholder="template_xxxxxxx"'))}${field('Public Key',inp('key',S.config.emailjs?.key||'','text','placeholder="Tu public key"'))}<div class="field" style="justify-content:flex-end"><button class="btn primary" type="submit">Guardar</button></div></form>
+   <form class="form-grid" data-f="emailjs">${field('Service ID',inp('service',ejs().service||'','text','placeholder="service_xxxxxxx"'))}${field('Template ID',inp('template',ejs().template||'','text','placeholder="template_xxxxxxx"'))}${field('Public Key',inp('key',ejs().key||'','text','placeholder="Tu public key"'))}<div class="field" style="justify-content:flex-end"><button class="btn primary" type="submit">Guardar</button></div></form>
    <details style="margin-top:12px"><summary class="small"><b>Texto para la plantilla de EmailJS</b></summary><p class="muted small">En el campo “To Email” de la plantilla escribe <span class="mono">{{to_email}}</span>. Las palabras entre llaves se reemplazan solas.</p><div class="wa mono">Asunto: Bienvenido a Natara: tus datos de acceso
 
 Hola {{to_name}},
