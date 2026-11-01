@@ -283,6 +283,12 @@ tbody tr.click:hover{background:var(--surface-2)}
 .check small{display:block;color:var(--ink-3)}
 .drop{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center;color:var(--ink-2)}
 .money-in{position:relative}.money-in>span{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--ink-3);pointer-events:none}.money-in .input{padding-left:24px}
+.pur-res{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.pur-res{grid-template-columns:1fr}}
+.pur-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;text-align:left;width:100%}
+.pur-opt:hover{border-color:var(--accent)}
+.pur-opt.on{border-color:var(--accent);background:var(--accent-soft)}
+.pur-new{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--surface-2)}
 .hint{font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:10px;padding:12px 14px}
 .hint b{color:var(--ink)}
 .wa{white-space:pre-wrap;background:var(--surface-2);border-radius:10px;padding:12px;font-size:14px;max-height:200px;overflow:auto}
@@ -301,7 +307,7 @@ tbody tr.click:hover{background:var(--surface-2)}
    NATARA — demo multi-negocio · by Samanat
    Estado local (por navegador). Pestañas sincronizadas en vivo.
    ========================================================= */
-const KEY='natara-demo-v2';
+const KEY='natara-demo-v3';
 const SESS='natara-sess';
 const DAY=864e5;
 
@@ -310,7 +316,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const COP=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
 const money=n=>COP.format(Math.round(n||0));
-const num=n=>new Intl.NumberFormat('es-CO').format(Math.round(n||0));
+const num=n=>new Intl.NumberFormat('es-CO',{maximumFractionDigits:2}).format(n||0);
 const uid=()=>Math.random().toString(36).slice(2,10);
 const sod=t=>{const d=new Date(t);d.setHours(0,0,0,0);return d.getTime()};
 const dkey=t=>{const d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
@@ -391,7 +397,7 @@ const INC_CATS=['Pedido especial','Abono de fiado','Préstamo','Otros'];
 function seed(){
  const r=mulberry32(20261101), rnd=()=>r(), pick=a=>a[Math.floor(rnd()*a.length)], ri=(a,b)=>a+Math.floor(rnd()*(b-a+1));
  const now=Date.now(), today=sod(now);
- const S={v:1,config:{contact:'WhatsApp +57 300 000 0000',brand:'Samanat'},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[]};
+ const S={v:1,config:{contact:'WhatsApp +57 300 000 0000',brand:'Samanat'},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[]};
  S.tenants=[
   {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:PLANS[2].mods.slice(),status:'activo',due:today+18*DAY,since:today-140*DAY},
   {id:'t2',name:'Droguería Vida Sana',type:'Farmacia',city:'Envigado',phone:'311 208 9934',plan:'pro',mods:[...PLANS[1].mods,'lector'],status:'activo',due:today+3*DAY,since:today-75*DAY},
@@ -414,12 +420,13 @@ function seed(){
   t3:[['7703000000014','Arroz 1 kg','Granos',3600,4900,40,15],['7703000000021','Aceite 1 L','Abarrotes',8200,11500,18,8],['7703000000038','Azúcar 1 kg','Granos',3400,4600,30,12],['7703000000045','Panela x 2','Abarrotes',3000,4400,22,10]],
   t4:[['7704000000011','Cuaderno 100 hojas cuadriculado','Cuadernos',2800,5500,60,20],['7704000000028','Lapicero negro','Escritura',600,1500,120,40],['7704000000035','Resma carta 75 g','Papel',16000,23000,10,5],['7704000000042','Colores x 12','Arte',5200,9800,25,10],['7704000000059','Pegante en barra 21 g','Oficina',1700,3500,30,12]],
  };
- for(const tid in prods) prods[tid].forEach(([code,name,cat,cost,price,stock,min])=>S.products.push({id:uid(),tid,code,name,cat,cost,price,stock,min,supplier:''}));
+ for(const tid in prods) prods[tid].forEach(([code,name,cat,cost,price,stock,min])=>S.products.push({id:uid(),tid,code,name,cat,cost,price,stock,min,supplier:'',kind:'venta',unit:'und'}));
+ [['INS01','Harina de trigo','Harinas','kg',3200,75,25],['INS02','Azúcar','Endulzantes','kg',4200,30,10],['INS03','Levadura fresca','Panadería','kg',16000,2.5,1],['INS04','Mantequilla','Lácteos','kg',18500,8,3],['INS05','Queso costeño para pandebono','Lácteos','kg',17000,3,4],['INS06','Huevos','Huevos','cubeta',14500,5,3],['INS07','Leche para producción','Lácteos','L',3000,20,10],['INS08','Bolsas de papel','Empaques','paquete',6500,12,4]].forEach(([code,name,cat,unit,cost,stock,min])=>S.products.push({id:uid(),tid:'t1',code,name,cat,cost,price:0,stock,min,unit,kind:'insumo',supplier:''}));
  // ventas históricas
  const sellers={t1:['u1','u2','u3'],t2:['u4','u5'],t4:['u7'],t3:['u6']};
  const vol={t1:[9,16],t2:[5,10],t4:[2,6],t3:[3,6]};
  for(const tid of ['t1','t2','t4','t3']){
-  const P=S.products.filter(p=>p.tid===tid);
+  const P=S.products.filter(p=>p.tid===tid&&p.kind!=='insumo');
   const days=tid==='t4'?19:tid==='t3'?34:29;
   for(let d=days;d>=0;d--){
    if(tid==='t3'&&d<4) continue;
@@ -451,7 +458,7 @@ function seed(){
   if(nom) mv(tid,'egreso','Nómina','Quincena empleados',nom,today-16*DAY+17*3600e3);
   mv(tid,'egreso','Arriendo','Arriendo del local (mes anterior)',arr,monthStart-30*DAY+9*3600e3);
  });
- for(let w=0;w<5;w++){mv('t1','egreso','Compra de mercancía','Harina, azúcar y mantequilla',ri(380,520)*1000,today-w*7*DAY-DAY+8*3600e3,'efectivo');mv('t2','egreso','Compra de mercancía','Pedido a distribuidora',ri(600,900)*1000,today-w*7*DAY-2*DAY+11*3600e3)}
+ for(let w=0;w<5;w++){mv('t2','egreso','Compra de mercancía','Pedido a distribuidora',ri(600,900)*1000,today-w*7*DAY-2*DAY+11*3600e3)}
  mv('t1','egreso','Transporte','Domicilios de la semana',62000,today-2*DAY+18*3600e3,'efectivo');
  mv('t1','ingreso','Pedido especial','Torta de cumpleaños por encargo',145000,today-3*DAY+15*3600e3);
  mv('t1','ingreso','Pedido especial','Refrigerios para reunión de copropiedad',260000,today-9*DAY+11*3600e3);
@@ -462,6 +469,13 @@ function seed(){
  });
  // proveedores
  [['Molinos del Valle','Harina, azúcar, levadura','604 360 1100','Martes y viernes'],['Lácteos La Pradera','Leche, yogur, queso','310 778 4410','Todos los días'],['Distribuidora Bebidas Antioquia','Gaseosas y jugos','604 512 8890','Lunes']].forEach(([name,what,phone,days])=>S.suppliers.push({id:uid(),tid:'t1',name,what,phone,days}));
+ // vínculo proveedor ↔ productos e historial de compras
+ const supBy=n=>S.suppliers.find(x=>x.tid==='t1'&&x.name===n);
+ const link={'Molinos del Valle':['Harina de trigo','Azúcar','Levadura fresca','Bolsas de papel'],'Lácteos La Pradera':['Mantequilla','Queso costeño para pandebono','Leche para producción','Huevos','Leche entera 1 L','Yogur de fresa 200 g','Queso campesino 250 g'],'Distribuidora Bebidas Antioquia':['Gaseosa 400 ml','Jugo de naranja 300 ml']};
+ for(const n in link)link[n].forEach(pn=>{const pr=S.products.find(x=>x.tid==='t1'&&x.name===pn);if(pr)pr.supplier=supBy(n).id});
+ const byName=n=>S.products.find(x=>x.tid==='t1'&&x.name===n);
+ const buy=(supName,list,at,method)=>{const sp=supBy(supName);const items=list.map(([n,q])=>{const pr=byName(n);return{pid:pr.id,name:pr.name,qty:q,unit:pr.unit,cost:pr.cost}});const total=sum(items,i=>i.qty*i.cost);S.purchases.push({id:uid(),tid:'t1',sid:sp.id,at,items,total,method});mv('t1','egreso','Compra de mercancía',`Compra a ${sp.name}`,total,at,method)};
+ for(let w=0;w<5;w++){buy('Molinos del Valle',[['Harina de trigo',50],['Azúcar',ri(15,25)],['Levadura fresca',2]],today-w*7*DAY-DAY+8*3600e3,'efectivo');if(w<3)buy('Lácteos La Pradera',[['Mantequilla',4],['Leche para producción',20],['Queso costeño para pandebono',5]],today-w*7*DAY-3*DAY+9*3600e3,'transferencia')}
  // caja abierta hoy
  S.sessions.push({id:uid(),tid:'t1',openedAt:today+6*3600e3,openedBy:'u2',base:150000,closedAt:null});
  S.sessions.push({id:uid(),tid:'t2',openedAt:today+7*3600e3,openedBy:'u5',base:100000,closedAt:null});
@@ -504,7 +518,7 @@ const okSales=()=>T('sales').filter(s=>s.status!=='anulada');
 const openSession=()=>T('sessions').find(s=>!s.closedAt);
 const inboxFor=tid=>S.messages.filter(m=>m.to==='all'||m.to===tid).sort((a,b)=>b.at-a.at);
 const unreadFor=tid=>inboxFor(tid).filter(m=>!m.readBy.includes(tid)).length;
-function autoCode(used){const P=T('products');let n=P.length+1,c;do{c='P'+String(n++).padStart(4,'0')}while(P.some(p=>p.code===c)||(used&&used.has(c)));return c}
+function autoCode(used,pre='P'){const P=T('products');let n=P.length+1,c;do{c=pre+String(n++).padStart(pre==='P'?4:2,'0')}while(P.some(p=>p.code===c)||(used&&used.has(c)));return c}
 const balanceOf=cid=>sum(S.ledger.filter(l=>l.cid===cid),l=>l.type==='cargo'?l.amount:-l.amount);
 
 /* ---------- UI helpers ---------- */
@@ -665,7 +679,7 @@ function viewInicio(){
   </div>
   <div class="grid g-main">
    <div class="card"><h2>Últimas ventas <span class="sub">hoy</span></h2>${recent.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Hora</th><th>Vendedor</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${recent.map(s=>`<tr class="click" data-a="sale" data-id="${s.id}"><td class="mono">${s.num}</td><td>${ftime(s.at)}</td><td>${esc(userName(s.seller))}</td><td>${payPill(s)}</td><td class="r num"><b>${money(s.total)}</b></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">${ic('receipt',26)}Aún no hay ventas hoy.</div>`}</div>
-   <div class="card"><h2>Stock bajo <span class="sub">${low.length} productos</span></h2>${!has('inventario')?`<p class="muted small">Activa el módulo de inventario para ver alertas de stock.</p>`:low.length?`<div class="stack">${low.slice(0,7).map(p=>`<div class="spread"><div style="min-width:0"><b class="small">${esc(p.name)}</b><div class="muted small">Mínimo ${num(p.min)}</div></div><span class="pill ${p.stock<=0?'bad':'warn'}">${num(p.stock)} und</span></div>`).join('')}</div>`:`<div class="empty">${ic('check',26)}Todo el inventario está sobre el mínimo.</div>`}</div>
+   <div class="card"><h2>Stock bajo <span class="sub">${low.length} productos</span></h2>${!has('inventario')?`<p class="muted small">Activa el módulo de inventario para ver alertas de stock.</p>`:low.length?`<div class="stack">${low.slice(0,7).map(p=>`<div class="spread"><div style="min-width:0"><b class="small">${esc(p.name)}</b>${p.kind==='insumo'?' <span class="pill">Insumo</span>':''}<div class="muted small">Mínimo ${num(p.min)} ${esc(p.unit||'und')}</div></div><span class="pill ${p.stock<=0?'bad':'warn'}">${num(p.stock)} ${esc(p.unit||'und')}</span></div>`).join('')}</div>`:`<div class="empty">${ic('check',26)}Todo el inventario está sobre el mínimo.</div>`}</div>
   </div>`;
 }
 const payPill=s=>s.status==='anulada'?`<span class="pill bad">Anulada</span>`:s.method==='efectivo'?`<span class="pill">Efectivo</span>`:s.method==='fiado'?`<span class="pill ac">Fiado</span>`:s.confirmed?`<span class="pill good">${esc(s.bank||'Transf.')}</span>`:`<span class="pill warn">${esc(s.bank||'Transf.')} · por confirmar</span>`;
@@ -689,7 +703,7 @@ function viewCaja(){
   </div>`;
 }
 function posMatches(){
- const q=norm(pos.q);const P=T('products');
+ const q=norm(pos.q);const P=T('products').filter(p=>p.kind!=='insumo');
  if(!q)return P.slice().sort((a,b)=>salesCount(b.id)-salesCount(a.id)).slice(0,12);
  const L=has('lector');return P.filter(p=>norm(p.name).includes(q)||(L&&p.code.includes(q))||norm(p.cat).includes(q)).slice(0,24);
 }
@@ -828,50 +842,65 @@ function viewVentas(){
 /* =========================================================
    INVENTARIO
    ========================================================= */
-let inv={q:'',cat:'',low:false};
+let inv={q:'',cat:'',low:false,kind:'venta'};
+const UNITS=['und','kg','g','lb','L','ml','bulto','arroba','cubeta','paquete','caja'];
 function viewInventario(){
- const own=isOwner();let P=T('products');const cats=[...new Set(P.map(p=>p.cat))].sort();
- const value=sum(P,p=>Math.max(0,p.stock)*p.cost);const lowN=P.filter(p=>p.min>0&&p.stock<=p.min).length;
- const L=has('lector');if(inv.q){const q=norm(inv.q);P=P.filter(p=>norm(p.name).includes(q)||p.code.includes(q))}
- if(inv.cat)P=P.filter(p=>p.cat===inv.cat);if(inv.low)P=P.filter(p=>p.min>0&&p.stock<=p.min);
+ const own=isOwner();const L=has('lector');
+ const all=T('products');const ventas=all.filter(p=>p.kind!=='insumo'),insumos=all.filter(p=>p.kind==='insumo');
+ if(!own)inv.kind='venta';const isIns=inv.kind==='insumo';
+ let P=isIns?insumos:ventas;const cats=[...new Set(P.map(p=>p.cat))].sort();
+ const value=sum(all,p=>Math.max(0,p.stock)*p.cost);const lowN=all.filter(p=>p.min>0&&p.stock<=p.min).length;
+ if(inv.q){const q=norm(inv.q);P=P.filter(p=>norm(p.name).includes(q)||p.code.toLowerCase().includes(q))}
+ if(inv.cat&&cats.includes(inv.cat))P=P.filter(p=>p.cat===inv.cat);if(inv.low)P=P.filter(p=>p.min>0&&p.stock<=p.min);
  P=P.slice().sort((a,b)=>a.name.localeCompare(b.name));
- return `<div class="page-head"><div><h1>Inventario</h1><p>${T('products').length} productos · ${cats.length} categorías</p></div>
-  ${own?`<div class="actions"><button class="btn needs-dl" data-a="export-inv">${ic('download',16)} Exportar</button><button class="btn" data-a="import">${ic('upload',16)} Cargar desde Excel</button><button class="btn primary" data-a="prod-new">${ic('plus',16)} Nuevo producto</button></div>`:''}</div>
-  ${own?`<div class="grid g3"><div class="card kpi"><span class="lbl">Valor del inventario</span><span class="val">${money(value)}</span><span class="foot">a precio de costo</span></div><div class="card kpi"><span class="lbl">Stock bajo</span><span class="val" style="color:var(${lowN?'--warn':'--good'})">${lowN}</span><span class="foot">productos en el mínimo o debajo</span></div><div class="card kpi"><span class="lbl">Margen promedio</span><span class="val">${Math.round(sum(T('products'),p=>p.price?(p.price-p.cost)/p.price:0)/Math.max(1,T('products').length)*100)}%</span><span class="foot">sobre precio de venta</span></div></div>`:''}
+ const lowPill=p=>{const low=p.min>0&&p.stock<=p.min;return`<span class="pill ${p.stock<=0?'bad':low?'warn':''}">${num(p.stock)}${isIns?' '+esc(p.unit||'und'):''}</span>`};
+ const rowsVenta=P.map(p=>`<tr>${L?`<td class="mono">${esc(p.code)}</td>`:''}<td><b>${esc(p.name)}</b>${L?'':`<div class="muted small mono">${esc(p.code)}</div>`}</td><td class="muted">${esc(p.cat)}</td>${own?`<td class="r num">${money(p.cost)}</td>`:''}<td class="r num">${money(p.price)}</td>${own?`<td class="r num">${p.price?Math.round((p.price-p.cost)/p.price*100):0}%</td>`:''}<td class="r">${lowPill(p)}</td>${own?`<td class="r" style="white-space:nowrap"><button class="btn sm" data-a="stock-adj" data-id="${p.id}">Ajustar</button> <button class="icon-btn" data-a="prod-edit" data-id="${p.id}" aria-label="Editar">${ic('edit',16)}</button></td>`:''}</tr>`).join('');
+ const supName=id=>S.suppliers.find(x=>x.id===id)?.name||'—';
+ const rowsIns=P.map(p=>`<tr><td><b>${esc(p.name)}</b><div class="muted small">${esc(p.cat)}</div></td><td>${esc(supName(p.supplier))}</td><td class="r num">${money(p.cost)} <span class="muted small">/ ${esc(p.unit)}</span></td><td class="r">${lowPill(p)}</td><td class="r num">${money(Math.max(0,p.stock)*p.cost)}</td><td class="r" style="white-space:nowrap"><button class="btn sm" data-a="stock-adj" data-id="${p.id}">Registrar consumo</button> <button class="icon-btn" data-a="prod-edit" data-id="${p.id}" aria-label="Editar">${ic('edit',16)}</button></td></tr>`).join('');
+ return `<div class="page-head"><div><h1>Inventario</h1><p>${ventas.length} productos para vender${insumos.length?` · ${insumos.length} insumos`:''}</p></div>
+  ${own?`<div class="actions"><button class="btn needs-dl" data-a="export-inv">${ic('download',16)} Exportar</button><button class="btn" data-a="import">${ic('upload',16)} Cargar desde Excel</button><button class="btn primary" data-a="prod-new">${ic('plus',16)} ${isIns?'Nuevo insumo':'Nuevo producto'}</button></div>`:''}</div>
+  ${own?`<div class="grid g3"><div class="card kpi"><span class="lbl">Valor del inventario</span><span class="val">${money(value)}</span><span class="foot">productos e insumos a precio de costo</span></div><div class="card kpi"><span class="lbl">Stock bajo</span><span class="val" style="color:var(${lowN?'--warn':'--good'})">${lowN}</span><span class="foot">en el mínimo o debajo</span></div><div class="card kpi"><span class="lbl">Margen promedio</span><span class="val">${Math.round(sum(ventas,p=>p.price?(p.price-p.cost)/p.price:0)/Math.max(1,ventas.length)*100)}%</span><span class="foot">de los productos para vender</span></div></div>`:''}
+  ${own?`<div class="seg" style="max-width:520px"><button class="${!isIns?'on':''}" data-a="inv-kind" data-v="venta">Productos para vender (${ventas.length})</button><button class="${isIns?'on':''}" data-a="inv-kind" data-v="insumo">Insumos y materia prima (${insumos.length})</button></div>`:''}
+  ${isIns?`<div class="hint">${ic('info',15)} <b>Los insumos no salen en la caja.</b> Son lo que compras para producir: harina, azúcar, mantequilla. Suben cuando registras una compra en Proveedores y bajan cuando registras lo que se gastó en la producción.</div>`:''}
   <div class="card"><div class="toolbar" style="margin-bottom:12px">
-   <div class="search">${ic('search',16)}<input class="input" id="inv-q" placeholder="${L?'Buscar por nombre o escanear código':'Buscar por nombre o código'}" value="${esc(inv.q)}" data-i="inv-q"></div>
+   <div class="search">${ic('search',16)}<input class="input" id="inv-q" placeholder="${isIns?'Buscar insumo':L?'Buscar por nombre o escanear código':'Buscar por nombre o código'}" value="${esc(inv.q)}" data-i="inv-q"></div>
    ${sel('inv-cat',[['','Todas las categorías'],...cats],inv.cat,'data-c="inv-cat"')}
    <label class="row small" style="gap:6px"><input type="checkbox" id="inv-low" ${inv.low?'checked':''} data-c="inv-low" style="accent-color:var(--accent)"> Solo stock bajo</label>
   </div>
-  ${P.length?`<div class="tbl-wrap"><table><thead><tr>${L?'<th>Código</th>':''}<th>Producto</th><th>Categoría</th>${own?'<th class="r">Costo</th>':''}<th class="r">Precio</th>${own?'<th class="r">Margen</th>':''}<th class="r">Stock</th>${own?'<th></th>':''}</tr></thead><tbody>${P.map(p=>{const low=p.min>0&&p.stock<=p.min;return`<tr>${L?`<td class="mono">${esc(p.code)}</td>`:''}<td><b>${esc(p.name)}</b>${L?'':`<div class="muted small mono">${esc(p.code)}</div>`}</td><td class="muted">${esc(p.cat)}</td>${own?`<td class="r num">${money(p.cost)}</td>`:''}<td class="r num">${money(p.price)}</td>${own?`<td class="r num">${p.price?Math.round((p.price-p.cost)/p.price*100):0}%</td>`:''}<td class="r"><span class="pill ${p.stock<=0?'bad':low?'warn':''}">${num(p.stock)}</span></td>${own?`<td class="r" style="white-space:nowrap"><button class="btn sm" data-a="stock-adj" data-id="${p.id}">Ajustar</button> <button class="icon-btn" data-a="prod-edit" data-id="${p.id}" aria-label="Editar">${ic('edit',16)}</button></td>`:''}</tr>`}).join('')}</tbody></table></div>`:`<div class="empty">${ic('box',26)}${T('products').length?'No hay productos con estos filtros.':'Aún no tienes productos. Créalos uno a uno o cárgalos desde Excel.'}</div>`}
+  ${!P.length?`<div class="empty">${ic('box',26)}${(isIns?insumos:ventas).length?'No hay resultados con estos filtros.':isIns?'Aún no tienes insumos. Créalos aquí o directamente al registrar una compra a un proveedor.':'Aún no tienes productos. Créalos uno a uno o cárgalos desde Excel.'}</div>`
+  :isIns?`<div class="tbl-wrap"><table><thead><tr><th>Insumo</th><th>Proveedor</th><th class="r">Costo</th><th class="r">Hay</th><th class="r">Valor</th><th></th></tr></thead><tbody>${rowsIns}</tbody></table></div>`
+  :`<div class="tbl-wrap"><table><thead><tr>${L?'<th>Código</th>':''}<th>Producto</th><th>Categoría</th>${own?'<th class="r">Costo</th>':''}<th class="r">Precio</th>${own?'<th class="r">Margen</th>':''}<th class="r">Stock</th>${own?'<th></th>':''}</tr></thead><tbody>${rowsVenta}</tbody></table></div>`}
   </div>
-  ${own&&!L?`<div class="hint">${ic('barcode',15)} <b>¿Tienes lector de código de barras?</b> Con el complemento de lector vendes más rápido: escaneas el producto y entra solo a la venta. <button class="btn sm" data-a="go" data-v="plan" style="margin-left:6px">Ver en Mi plan</button></div>`:''}
-  ${own&&L?`<div class="hint">${ic('barcode',15)} <b>¿Cómo funciona el código de barras?</b> Casi todos los productos traen un código impreso (EAN-13). Un lector USB o Bluetooth funciona como un teclado: haz clic en el campo “Código”, dispara el lector y el número se escribe solo. Para productos que tú haces (pan, tortas) inventa un código corto como PAN01 o imprime etiquetas.</div>`:''}`;
+  ${own&&!isIns&&!L?`<div class="hint">${ic('barcode',15)} <b>¿Tienes lector de código de barras?</b> Con el complemento de lector vendes más rápido: escaneas el producto y entra solo a la venta. <button class="btn sm" data-a="go" data-v="plan" style="margin-left:6px">Ver en Mi plan</button></div>`:''}
+  ${own&&!isIns&&L?`<div class="hint">${ic('barcode',15)} <b>¿Cómo funciona el código de barras?</b> Casi todos los productos traen un código impreso (EAN-13). Un lector USB o Bluetooth funciona como un teclado: haz clic en el campo “Código”, dispara el lector y el número se escribe solo. Para productos que tú haces (pan, tortas) inventa un código corto como PAN01 o imprime etiquetas.</div>`:''}`;
 }
-function productForm(p){
- const sup=has('proveedores')?T('suppliers'):[];
- return `<form class="stack" data-f="prod-save" id="prod-form"><input type="hidden" name="id" value="${p?p.id:''}"><div class="form-grid">
-  ${has('lector')?field('Código de barras',inp('code',p?.code||'','text','required placeholder="Escanea o escribe" autocomplete="off"')):field('Código interno (opcional)',inp('code',p?.code||'','text','placeholder="Se crea solo si lo dejas vacío" autocomplete="off"'))}
+function productForm(p,kind){
+ kind=p?.kind||kind||'venta';const ins=kind==='insumo';const edit=!!p?.id;
+ const sup=has('proveedores')?T('suppliers'):[];const L=has('lector');
+ const codeField=L&&!ins?field('Código de barras',inp('code',p?.code||'','text','required placeholder="Escanea o escribe" autocomplete="off"')):field('Código interno (opcional)',inp('code',p?.code||'','text','placeholder="Se crea solo si lo dejas vacío" autocomplete="off"'));
+ return `<form class="stack" data-f="prod-save" id="prod-form"><input type="hidden" name="id" value="${edit?p.id:''}"><div class="form-grid">
+  ${field('Tipo',sel('kind',[['venta','Producto para vender (sale en la caja)'],['insumo','Insumo o materia prima (no sale en la caja)']],kind,'data-c="pf-kind"'+(edit?' disabled':'')),'full')}${edit?`<input type="hidden" name="kind" value="${kind}">`:''}
+  ${field(ins?'Nombre del insumo':'Nombre del producto',inp('name',p?.name||'','text','required placeholder="'+(ins?'Ej: Harina de trigo':'Ej: Pan francés')+'"'),'full')}
   ${field('Categoría',inp('cat',p?.cat||'','text','required list="cat-list"'))}
-  <datalist id="cat-list">${[...new Set(T('products').map(x=>x.cat))].map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
-  ${field('Nombre del producto',inp('name',p?.name||'','text','required'),'full')}
-  ${field('Costo',minp('cost',p?.cost??'','required'))}
-  ${field('Precio de venta',minp('price',p?.price??'','required'))}
-  ${field(p?'Stock actual':'Stock inicial',inp('stock',p?.stock??0,'number','step="1" required'+(p?' readonly':'')))}
-  ${field('Stock mínimo (alerta)',inp('min',p?.min??0,'number','min="0" step="1"'))}
-  ${sup.length?field('Proveedor',sel('supplier',[['','Sin proveedor'],...sup.map(s=>[s.id,s.name])],p?.supplier||''),'full'):''}
- </div>${p?`<p class="muted small">Para cambiar el stock usa “Ajustar”, así queda registrado en el kardex.</p>`:''}</form>`;
+  <datalist id="cat-list">${[...new Set(T('products').filter(x=>(x.kind||'venta')===kind).map(x=>x.cat))].map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
+  ${codeField}
+  ${ins?field('Unidad de medida',sel('unit',UNITS,p?.unit||'kg')):''}
+  ${field(ins?'Costo por unidad':'Costo',minp('cost',p?.cost??'','required'))}
+  ${ins?'':field('Precio de venta',minp('price',p?.price??'','required'))}
+  ${field(edit?'Stock actual':'Stock inicial',inp('stock',p?.stock??0,'number','step="any" required'+(edit?' readonly':'')))}
+  ${field('Stock mínimo (alerta)',inp('min',p?.min??0,'number','min="0" step="any"'))}
+  ${sup.length?field('Proveedor',sel('supplier',[['','Sin proveedor'],...sup.map(x=>[x.id,x.name])],p?.supplier||''),'full'):''}
+ </div>${edit?`<p class="muted small">Para cambiar el stock usa “${ins?'Registrar consumo':'Ajustar'}”, así queda registrado en el kardex.</p>`:''}</form>`;
 }
-
 /* ---------- importación Excel ---------- */
 let importRows=[];
-const COLS={code:['codigo','codigo de barras','code','barcode','ean','sku','referencia'],name:['nombre','producto','descripcion','name'],cat:['categoria','category','linea','grupo'],cost:['costo','precio costo','cost','costo unitario'],price:['precio','precio venta','precio de venta','price','pvp'],stock:['stock','cantidad','existencias','inventario','unidades'],min:['minimo','stock minimo','stock_minimo','min']};
+const COLS={kind:['tipo','clase'],unit:['unidad','medida','unidad de medida'],code:['codigo','codigo de barras','code','barcode','ean','sku','referencia'],name:['nombre','producto','descripcion','name'],cat:['categoria','category','linea','grupo'],cost:['costo','precio costo','cost','costo unitario'],price:['precio','precio venta','precio de venta','price','pvp'],stock:['stock','cantidad','existencias','inventario','unidades'],min:['minimo','stock minimo','stock_minimo','min']};
 function mapRow(r){const o={};const keys=Object.keys(r);for(const f in COLS){const k=keys.find(k=>COLS[f].includes(norm(k).replace(/_/g,' '))||COLS[f].includes(norm(k)));o[f]=k!==undefined?r[k]:''}
  const n=v=>Number(String(v).replace(/[^\d.-]/g,''))||0;
- return {code:String(o.code||'').trim(),name:String(o.name||'').trim(),cat:String(o.cat||'General').trim()||'General',cost:n(o.cost),price:n(o.price),stock:n(o.stock),min:n(o.min)}}
+ return {code:String(o.code||'').trim(),name:String(o.name||'').trim(),cat:String(o.cat||'General').trim()||'General',cost:n(o.cost),price:n(o.price),stock:n(o.stock),min:n(o.min),kind:/insumo|materia/.test(norm(o.kind))?'insumo':'venta',unit:String(o.unit||'').trim()||(/insumo|materia/.test(norm(o.kind))?'kg':'und')}}
 function importModal(){
  importRows=[];
- openModal('Cargar inventario desde Excel',`<div class="hint">El archivo debe tener una fila de títulos con estas columnas: <b>codigo, nombre, categoria, costo, precio, stock, minimo</b>. Si un código ya existe, se actualiza el producto y se suma el stock.</div>
+ openModal('Cargar inventario desde Excel',`<div class="hint">El archivo debe tener una fila de títulos con estas columnas: <b>codigo, nombre, categoria, costo, precio, stock, minimo</b>. Para insumos agrega las columnas <b>tipo</b> (escribe “insumo”) y <b>unidad</b> (kg, L, bulto…). Si un código ya existe, se actualiza el producto y se suma el stock.</div>
   <div class="row"><button class="btn sm needs-dl" data-a="template">${ic('download',15)} Descargar plantilla</button></div>
   <div class="drop">${ic('upload',26)}<span>Selecciona tu archivo .xlsx, .xls o .csv</span><input type="file" id="imp-file" accept=".xlsx,.xls,.csv" data-c="imp-file"></div>
   <div id="imp-preview"></div>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" id="imp-go" data-a="import-go" disabled>Importar</button>`,true);
@@ -879,7 +908,7 @@ function importModal(){
 async function readImport(file){
  if(!window.XLSX){toast('No se pudo cargar el lector de Excel. Revisa tu conexión.','bad');return}
  try{const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];
-  const raw=XLSX.utils.sheet_to_json(ws,{defval:''});const L=has('lector');importRows=raw.map(mapRow).filter(r=>r.name&&(r.code||!L));const used=new Set();importRows.forEach(r=>{if(!r.code){r.code=autoCode(used)}used.add(r.code)});
+  const raw=XLSX.utils.sheet_to_json(ws,{defval:''});const L=has('lector');importRows=raw.map(mapRow).filter(r=>r.name&&(r.code||!L||r.kind==='insumo'));const used=new Set();importRows.forEach(r=>{if(!r.code){r.code=autoCode(used,r.kind==='insumo'?'INS':'P')}if(r.kind==='insumo')r.price=0;used.add(r.code)});
   const P=T('products');const upd=importRows.filter(r=>P.some(p=>p.code===r.code)).length;
   $('#imp-preview').innerHTML=importRows.length?`<p><b>${importRows.length}</b> productos encontrados · ${importRows.length-upd} nuevos · ${upd} para actualizar${raw.length>importRows.length?` · <span style="color:var(--warn)">${raw.length-importRows.length} filas sin código o nombre se omiten</span>`:''}</p>
    <div class="tbl-wrap"><table><thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th class="r">Costo</th><th class="r">Precio</th><th class="r">Stock</th></tr></thead><tbody>${importRows.slice(0,8).map(r=>`<tr><td class="mono">${esc(r.code)}</td><td>${esc(r.name)}</td><td>${esc(r.cat)}</td><td class="r num">${money(r.cost)}</td><td class="r num">${money(r.price)}</td><td class="r num">${num(r.stock)}</td></tr>`).join('')}</tbody></table></div>${importRows.length>8?`<p class="muted small">…y ${importRows.length-8} más.</p>`:''}`
@@ -993,17 +1022,55 @@ function viewStats(){
    PROVEEDORES
    ========================================================= */
 function viewProveedores(){
- const Sp=T('suppliers');
- return `<div class="page-head"><div><h1>Proveedores</h1><p>${Sp.length} proveedores registrados</p></div><div class="actions"><button class="btn primary" data-a="sup-new">${ic('plus',16)} Nuevo proveedor</button></div></div>
-  <div class="grid g3">${Sp.map(s=>`<div class="card stack"><div><b>${esc(s.name)}</b><div class="muted small">${esc(s.what)}</div></div><div class="small"><span class="mono">${esc(s.phone)}</span> · Visita: ${esc(s.days||'—')}</div><button class="btn sm" data-a="purchase" data-id="${s.id}" style="align-self:flex-start">${ic('truck',15)} Registrar compra</button></div>`).join('')||`<div class="card empty">${ic('truck',26)}Agrega a quienes te surten la mercancía.</div>`}</div>`;
+ const Sp=T('suppliers');const Pu=T('purchases').slice().sort((a,b)=>b.at-a.at);
+ const linked=id=>T('products').filter(p=>p.supplier===id).length;
+ return `<div class="page-head"><div><h1>Proveedores</h1><p>${Sp.length} proveedores · lo que compras sube el inventario y queda como egreso</p></div><div class="actions"><button class="btn primary" data-a="sup-new">${ic('plus',16)} Nuevo proveedor</button></div></div>
+  <div class="grid g3">${Sp.map(s=>`<div class="card stack"><div><b>${esc(s.name)}</b><div class="muted small">${esc(s.what||'')}</div></div><div class="small"><span class="mono">${esc(s.phone)}</span> · Visita: ${esc(s.days||'—')}</div><div class="small muted">${linked(s.id)} productos e insumos asociados</div><button class="btn sm primary" data-a="purchase" data-id="${s.id}" style="align-self:flex-start">${ic('truck',15)} Registrar compra</button></div>`).join('')||`<div class="card empty">${ic('truck',26)}Agrega a quienes te surten la mercancía.</div>`}</div>
+  <div class="card"><h2>Últimas compras</h2>${Pu.length?`<div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Proveedor</th><th>Qué llegó</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${Pu.slice(0,15).map(x=>`<tr><td style="white-space:nowrap">${fdate(x.at)}</td><td><b>${esc(S.suppliers.find(s=>s.id===x.sid)?.name||'')}</b></td><td class="small">${esc(x.items.map(i=>`${num(i.qty)} ${i.unit||'und'} ${i.name}`).join(', '))}</td><td><span class="pill">${x.method==='efectivo'?'Efectivo':'Transferencia'}</span></td><td class="r num"><b>${money(x.total)}</b></td></tr>`).join('')}</tbody></table></div>`:`<p class="muted small">Aún no has registrado compras.</p>`}</div>`;
 }
+let pur=null;
 function purchaseModal(sp){
- const P=T('products');
- openModal(`Compra a ${sp.name}`,`<form class="stack" data-f="purchase" id="pur-form"><input type="hidden" name="sid" value="${sp.id}">
-  <p class="muted small">Elige los productos que llegaron. El stock sube y el valor total queda como egreso.</p>
-  <div class="tbl-wrap"><table><thead><tr><th>Producto</th><th class="r">Cantidad</th><th class="r">Costo unitario</th></tr></thead><tbody>${P.filter(p=>!p.supplier||p.supplier===sp.id).slice(0,30).map(p=>`<tr><td>${esc(p.name)}</td><td class="r"><input class="input num" style="width:80px" type="number" min="0" name="q_${p.id}" value="0"></td><td class="r"><div class="money-in" style="width:120px;margin-left:auto"><span>$</span><input class="input num" type="text" inputmode="numeric" autocomplete="off" data-money name="c_${p.id}" value="${grp(p.cost)}"></div></td></tr>`).join('')}</tbody></table></div>
-  <div class="form-grid">${field('Pagado con',sel('method',[['transferencia','Transferencia'],['efectivo','Efectivo de la caja']],'transferencia'))}</div></form>`,
- `<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="pur-form">Registrar compra</button>`,true);
+ pur={sid:sp.id,items:[],q:'',method:'transferencia'};
+ openModal(`Compra a ${sp.name}`,`<p class="muted small" style="margin:0">Busca lo que llegó, escribe la cantidad y el costo. El inventario sube solo y el total queda como egreso.</p>
+  <div class="search">${ic('search',16)}<input class="input" id="pur-q" placeholder="Buscar insumo o producto (ej: harina)" autocomplete="off" data-i="pur-q"></div>
+  <div id="pur-results">${purResults()}</div>
+  <div id="pur-items">${purItems()}</div>
+  <div class="form-grid">${field('Pagado con',sel('pur-method',[['transferencia','Transferencia'],['efectivo','Efectivo de la caja']],'transferencia','data-c="pur-method"'))}</div>`,
+ `<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="pur-save">Registrar compra</button>`,true);
+}
+function purMatches(){
+ const q=norm(pur.q);const P=T('products');
+ if(!q)return P.filter(p=>p.supplier===pur.sid).sort((a,b)=>(a.kind==='insumo'?0:1)-(b.kind==='insumo'?0:1)||a.name.localeCompare(b.name)).slice(0,8);
+ return P.filter(p=>norm(p.name).includes(q)||p.code.toLowerCase()===q||norm(p.cat).includes(q)).sort((a,b)=>(a.kind==='insumo'?0:1)-(b.kind==='insumo'?0:1)).slice(0,8);
+}
+function purResults(){
+ const M=purMatches();const inList=id=>pur.items.some(i=>i.pid===id);let h='';
+ if(M.length)h=`<div class="muted small" style="margin-bottom:6px">${pur.q?'Resultados':'Lo que le compras normalmente'}</div><div class="pur-res">${M.map(p=>`<button type="button" class="pur-opt ${inList(p.id)?'on':''}" data-a="pur-add" data-id="${p.id}"><span style="min-width:0"><b>${esc(p.name)}</b> ${p.kind==='insumo'?'<span class="pill">Insumo</span>':''}<span class="muted small" style="display:block">Hay ${num(p.stock)} ${esc(p.unit||'und')} · último costo ${money(p.cost)}</span></span>${ic(inList(p.id)?'check':'plus',16)}</button>`).join('')}</div>`;
+ else if(!pur.q)h=`<p class="muted small" style="margin:0">Busca el primer producto o insumo de la compra.</p>`;
+ if(pur.q.trim())h+=`<div class="pur-new"><span class="small">¿No está? Créalo como insumo:</span><b class="small">${esc(pur.q.trim())}</b>${sel('pur-new-unit',UNITS,'kg','style="width:auto" aria-label="Unidad"')}<button type="button" class="btn sm" data-a="pur-create">${ic('plus',14)} Crear y agregar</button></div>`;
+ return h;
+}
+const purTotal=()=>sum(pur.items,i=>(i.qty||0)*(i.cost||0));
+function purItems(){
+ if(!pur.items.length)return '';
+ return `<div class="tbl-wrap"><table><thead><tr><th>Llegó</th><th class="r">Cantidad</th><th class="r">Costo por unidad</th><th class="r">Subtotal</th><th></th></tr></thead><tbody>${pur.items.map((i,ix)=>{const p=S.products.find(x=>x.id===i.pid);return`<tr><td><b>${esc(p.name)}</b></td><td class="r"><div class="row" style="justify-content:flex-end;gap:6px;flex-wrap:nowrap"><input class="input num" style="width:84px" type="number" min="0" step="any" inputmode="decimal" value="${i.qty||''}" placeholder="0" data-i="pur-qty" data-ix="${ix}" aria-label="Cantidad de ${esc(p.name)}"><span class="muted small">${esc(p.unit||'und')}</span></div></td><td class="r"><div class="money-in" style="width:130px;margin-left:auto"><span>$</span><input class="input num" type="text" inputmode="numeric" autocomplete="off" data-money value="${i.cost?grp(i.cost):''}" data-i="pur-cost" data-ix="${ix}" aria-label="Costo de ${esc(p.name)}"></div></td><td class="r num" id="pur-sub-${ix}">${money((i.qty||0)*(i.cost||0))}</td><td class="r"><button type="button" class="icon-btn" data-a="pur-rm" data-ix="${ix}" aria-label="Quitar" style="color:var(--ink-3)">${ic('trash',15)}</button></td></tr>`}).join('')}</tbody></table></div>
+ <div class="total-row"><span class="muted">Total de la compra</span><span class="big" id="pur-total">${money(purTotal())}</span></div>`;
+}
+function purRefresh(which){if(which!=='items'){const r=$('#pur-results');if(r)r.innerHTML=purResults()}if(which!=='results'){const it=$('#pur-items');if(it)it.innerHTML=purItems()}}
+function purAdd(p){
+ let ix=pur.items.findIndex(i=>i.pid===p.id);if(ix<0){pur.items.push({pid:p.id,qty:0,cost:p.cost});ix=pur.items.length-1}
+ pur.q='';const q=$('#pur-q');if(q)q.value='';purRefresh();
+ setTimeout(()=>document.querySelector(`[data-i="pur-qty"][data-ix="${ix}"]`)?.focus(),20);
+}
+function purSave(){
+ const t=tenant();const sp=S.suppliers.find(x=>x.id===pur.sid);const items=pur.items.filter(i=>i.qty>0);
+ if(!items.length){toast('Escribe la cantidad de al menos un producto','bad');return}
+ const at=Date.now();const rec=[];
+ items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);p.stock=Math.round((p.stock+i.qty)*100)/100;if(i.cost)p.cost=i.cost;p.supplier=sp.id;S.kardex.push({id:uid(),tid:t.id,pid:p.id,type:'entrada',qty:i.qty,at,note:`Compra a ${sp.name}`});rec.push({pid:p.id,name:p.name,qty:i.qty,unit:p.unit||'und',cost:i.cost||0})});
+ const total=sum(rec,i=>i.qty*i.cost);
+ S.purchases.push({id:uid(),tid:t.id,sid:sp.id,at,items:rec,total,method:pur.method});
+ S.moves.push({id:uid(),tid:t.id,type:'egreso',cat:'Compra de mercancía',concept:`Compra a ${sp.name}`,amount:total,at,method:pur.method});
+ save();closeModal();render();toast(`Compra de ${money(total)} registrada · ${rec.length} producto${rec.length>1?'s':''}`);
 }
 
 /* =========================================================
@@ -1142,14 +1209,19 @@ document.addEventListener('click',e=>{
   'void-do':()=>{const s=S.sales.find(x=>x.id===id);s.status='anulada';s.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p){p.stock+=i.qty;S.kardex.push({id:uid(),tid:s.tid,pid:p.id,type:'entrada',qty:i.qty,at:Date.now(),note:`Anulación venta #${s.num}`})}});S.ledger=S.ledger.filter(l=>l.sid!==s.id);save();_sc=null;closeModal();render();toast('Venta anulada')},
   'export-sales':()=>saveFile(`ventas-${dkey(Date.now())}.xlsx`,T('sales').map(s=>({Numero:s.num,Fecha:new Date(s.at).toLocaleString('es-CO'),Productos:s.items.map(i=>i.qty+'x '+i.name).join(', '),Vendedor:userName(s.seller),Pago:s.method,Banco:s.bank,Referencia:s.ref,Confirmada:s.confirmed?'Sí':'No',Estado:s.status,Total:s.total})),'Ventas'),
   // inventario
-  'prod-new':()=>openModal('Nuevo producto',productForm(null),`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="prod-form">Guardar producto</button>`),
+  'inv-kind':()=>{inv.kind=v;inv.cat='';inv.q='';render()},
+  'pur-add':()=>purAdd(S.products.find(p=>p.id===id)),
+  'pur-rm':()=>{pur.items.splice(+el.dataset.ix,1);purRefresh()},
+  'pur-create':()=>{const name=pur.q.trim();if(!name)return;const t=tenant();const np={id:uid(),tid:t.id,code:autoCode(null,'INS'),name:name.charAt(0).toUpperCase()+name.slice(1),cat:'Insumos',cost:0,price:0,stock:0,min:0,unit:$('#f-pur-new-unit')?.value||'kg',kind:'insumo',supplier:pur.sid};S.products.push(np);save();purAdd(np);toast(`${np.name} creado como insumo`)},
+  'pur-save':purSave,
+  'prod-new':()=>openModal(inv.kind==='insumo'?'Nuevo insumo':'Nuevo producto',productForm(null,inv.kind),`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="prod-form">Guardar producto</button>`),
   'prod-edit':()=>{const p=S.products.find(x=>x.id===id);openModal('Editar producto',productForm(p),`<button class="btn danger" data-a="prod-del" data-id="${id}">Eliminar</button><button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="prod-form">Guardar</button>`)},
   'prod-del':()=>{S.products=S.products.filter(p=>p.id!==id);save();closeModal();render();toast('Producto eliminado')},
-  'stock-adj':()=>{const p=S.products.find(x=>x.id===id);const K=S.kardex.filter(k=>k.pid===id).sort((a,b)=>b.at-a.at).slice(0,6);openModal(`Ajustar stock · ${p.name}`,`<p>Stock actual: <b>${num(p.stock)}</b></p><form class="stack" data-f="stock-adj" id="adj-form"><input type="hidden" name="id" value="${id}"><div class="form-grid">${field('Movimiento',sel('type',[['entrada','Entrada (llegó mercancía)'],['salida','Salida (daño, vencido, consumo)'],['ajuste','Conteo físico (dejar en)']],'entrada'))}${field('Cantidad',inp('qty','','number','min="0" step="1" required'))}${field('Nota',inp('note','','text','placeholder="Ej: se vencieron 3"'),'full')}</div></form>${K.length?`<div><b class="small">Últimos movimientos (kardex)</b><div class="tbl-wrap"><table><tbody>${K.map(k=>`<tr><td class="small">${fdt(k.at)}</td><td class="small">${esc(k.note)}</td><td class="r num">${k.type==='salida'?'−':k.type==='ajuste'?'=':'+'}${num(k.qty)}</td></tr>`).join('')}</tbody></table></div></div>`:''}`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="adj-form">Guardar ajuste</button>`)},
+  'stock-adj':()=>{const p=S.products.find(x=>x.id===id);const K=S.kardex.filter(k=>k.pid===id).sort((a,b)=>b.at-a.at).slice(0,6);const ins=p.kind==='insumo';const OPTS=ins?[['salida','Consumo en producción'],['entrada','Entrada'],['ajuste','Conteo físico (dejar en)']]:[['entrada','Entrada (llegó mercancía)'],['salida','Salida (daño, vencido, consumo)'],['ajuste','Conteo físico (dejar en)']];openModal(`${ins?'Registrar consumo':'Ajustar stock'} · ${p.name}`,`<p>Hay: <b>${num(p.stock)} ${esc(p.unit||'und')}</b></p><form class="stack" data-f="stock-adj" id="adj-form"><input type="hidden" name="id" value="${id}"><div class="form-grid">${field('Movimiento',sel('type',OPTS,OPTS[0][0]))}${field(`Cantidad (${esc(p.unit||'und')})`,inp('qty','','number','min="0" step="any" required'))}${field('Nota',inp('note','','text',`placeholder="${ins?'Ej: producción de la mañana':'Ej: se vencieron 3'}"`),'full')}</div></form>${K.length?`<div><b class="small">Últimos movimientos (kardex)</b><div class="tbl-wrap"><table><tbody>${K.map(k=>`<tr><td class="small">${fdt(k.at)}</td><td class="small">${esc(k.note)}</td><td class="r num">${k.type==='salida'?'−':k.type==='ajuste'?'=':'+'}${num(k.qty)}</td></tr>`).join('')}</tbody></table></div></div>`:''}`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="adj-form">Guardar ajuste</button>`)},
   import:importModal,
   'import-go':doImport,
-  template:()=>saveFile('plantilla-inventario-natara.xlsx',[{codigo:'7701234567890',nombre:'Leche entera 1 L',categoria:'Lácteos',costo:3300,precio:4600,stock:24,minimo:10},{codigo:'PAN01',nombre:'Pan francés',categoria:'Panes',costo:350,precio:700,stock:100,minimo:30}],'Inventario'),
-  'export-inv':()=>saveFile(`inventario-${dkey(Date.now())}.xlsx`,T('products').map(p=>({codigo:p.code,nombre:p.name,categoria:p.cat,costo:p.cost,precio:p.price,stock:p.stock,minimo:p.min})),'Inventario'),
+  template:()=>saveFile('plantilla-inventario-natara.xlsx',[{codigo:'7701234567890',nombre:'Leche entera 1 L',categoria:'Lácteos',costo:3300,precio:4600,stock:24,minimo:10},{codigo:'PAN01',nombre:'Pan francés',categoria:'Panes',costo:350,precio:700,stock:100,minimo:30},{codigo:'',nombre:'Harina de trigo',categoria:'Harinas',costo:3200,precio:'',stock:50,minimo:20,tipo:'insumo',unidad:'kg'}],'Inventario'),
+  'export-inv':()=>saveFile(`inventario-${dkey(Date.now())}.xlsx`,T('products').map(p=>({codigo:p.code,nombre:p.name,categoria:p.cat,costo:p.cost,precio:p.price,stock:p.stock,minimo:p.min,tipo:p.kind==='insumo'?'insumo':'venta',unidad:p.unit||'und'})),'Inventario'),
   // fiados
   'cust-new':()=>openModal('Nuevo cliente',`<form class="stack" data-f="cust-new" id="cust-form"><div class="form-grid">${field('Nombre',inp('name','','text','required'),'full')}${field('Teléfono',inp('phone','','tel'))}${field('Cupo máximo (opcional)',minp('limit',''))}</div></form>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="cust-form">Crear cliente</button>`),
   cust:()=>{if(e.target.closest('[data-a="abono"]'))return;custModal(S.customers.find(c=>c.id===id))},
@@ -1193,6 +1265,8 @@ document.addEventListener('input',e=>{
  if(k==='pos-q'){pos.q=el.value;$('#pos-results').innerHTML=posResults()}
  else if(k==='pos-rec'){pos.received=el.value;const c=$('#pos-change');if(c)c.textContent=money(Math.max(0,parseMoney(el.value)-cartTotal()))}
  else if(k==='pos-ref')pos.ref=el.value;
+ else if(k==='pur-q'){pur.q=el.value;purRefresh('results')}
+ else if(k==='pur-qty'||k==='pur-cost'){const ix=+el.dataset.ix;const it=pur.items[ix];if(k==='pur-qty')it.qty=Number(el.value)||0;else it.cost=parseMoney(el.value);const sb=$('#pur-sub-'+ix);if(sb)sb.textContent=money(it.qty*it.cost);const tt=$('#pur-total');if(tt)tt.textContent=money(purTotal())}
  else if(k==='vf-q'){vf.q=el.value;render();const q=$('#vf-q');q.focus();q.setSelectionRange(q.value.length,q.value.length)}
  else if(k==='inv-q'){inv.q=el.value;render();const q=$('#inv-q');q.focus();q.setSelectionRange(q.value.length,q.value.length)}
  else if(k==='count-cash'){const s=openSession();const x=sessionTotals(s);const d=parseMoney(el.value)-x.expected;const o=$('#cash-diff');o.textContent=el.value===''?'—':(d>0?'+':'')+money(d);o.style.color=el.value===''?'':d===0?'var(--good)':d<0?'var(--bad)':'var(--warn)'}
@@ -1206,15 +1280,18 @@ document.addEventListener('change',e=>{
   'inv-cat':()=>{inv.cat=el.value;render()},'inv-low':()=>{inv.low=el.checked;render()},
   'fin-type':()=>{fin.type=el.value;render()},
   'imp-file':()=>{if(el.files[0])readImport(el.files[0])},
+  'pur-method':()=>pur.method=el.value,
+  'pf-kind':()=>{const f=$('#prod-form');const d=Object.fromEntries(new FormData(f).entries());const o={code:d.code,name:d.name,cat:d.cat,cost:parseMoney(d.cost),price:parseMoney(d.price),stock:Number(d.stock)||0,min:Number(d.min)||0,supplier:d.supplier||'',unit:d.unit};f.outerHTML=productForm(o,el.value);const h=document.querySelector('.modal-h h3');if(h)h.textContent=el.value==='insumo'?'Nuevo insumo':'Nuevo producto'},
   'tm-plan':()=>{const p=planById(el.value);document.querySelectorAll('#tm-mods input').forEach(c=>{if(p.mods.includes(c.value))c.checked=true})},
  };
  M[k]?.();
 });
 document.addEventListener('keydown',e=>{
  if(e.key==='Escape'&&$('#modal-root').innerHTML){closeModal();return}
+ if(e.target.id==='pur-q'&&e.key==='Enter'){e.preventDefault();const q=e.target.value.trim().toLowerCase();if(!q)return;const ex=T('products').find(p=>p.code.toLowerCase()===q);const m=ex?[ex]:purMatches();if(m.length)purAdd(m[0]);return}
  if(e.target.id==='pos-q'&&e.key==='Enter'){
   e.preventDefault();const q=e.target.value.trim();if(!q)return;
-  const P=T('products');const exact=has('lector')?P.find(p=>p.code===q):null;
+  const P=T('products').filter(p=>p.kind!=='insumo');const exact=has('lector')?P.find(p=>p.code===q):null;
   if(exact){addToCart(exact);pos.q='';e.target.value='';$('#pos-results').innerHTML=posResults();return}
   const m=posMatches();if(m.length===1){addToCart(m[0]);pos.q='';e.target.value='';$('#pos-results').innerHTML=posResults()}
   else if(!m.length)toast(has('lector')?`No encontramos el código ${q}`:`No encontramos “${q}”`,'bad');
@@ -1230,18 +1307,15 @@ document.addEventListener('submit',e=>{
  const F={
   'open-cash':()=>{S.sessions.push({id:uid(),tid:t.id,openedAt:Date.now(),openedBy:u.id,base:parseMoney(d.base),closedAt:null});save();render();toast('Caja abierta')},
   'close-cash':()=>{const s=openSession();const x=sessionTotals(s);const counted=parseMoney(d.counted);Object.assign(s,{closedAt:Date.now(),closedBy:u.id,counted,expected:x.expected,diff:counted-x.expected});save();render();toast(s.diff===0?'Caja cerrada. ¡Cuadró perfecto!':`Caja cerrada con diferencia de ${money(s.diff)}`)},
-  'prod-save':()=>{const code=d.code.trim()||autoCode();const dup=S.products.find(p=>p.tid===t.id&&p.code===code&&p.id!==d.id);if(dup){toast(`El código ${code} ya es de “${dup.name}”`,'bad');return}
-   const data={code,name:d.name.trim(),cat:d.cat.trim(),cost:parseMoney(d.cost),price:parseMoney(d.price),min:Number(d.min)||0,supplier:d.supplier||''};
+  'prod-save':()=>{const kind=d.kind||'venta';const code=d.code.trim()||autoCode(null,kind==='insumo'?'INS':'P');const dup=S.products.find(p=>p.tid===t.id&&p.code===code&&p.id!==d.id);if(dup){toast(`El código ${code} ya es de “${dup.name}”`,'bad');return}
+   const data={code,name:d.name.trim(),cat:d.cat.trim(),cost:parseMoney(d.cost),price:kind==='insumo'?0:parseMoney(d.price),kind,unit:kind==='insumo'?(d.unit||'kg'):'und',min:Number(d.min)||0,supplier:d.supplier||''};if(d.id)delete data.kind;
    if(d.id){Object.assign(S.products.find(p=>p.id===d.id),data)}else{const np={id:uid(),tid:t.id,...data,stock:Number(d.stock)||0};S.products.push(np);if(np.stock)S.kardex.push({id:uid(),tid:t.id,pid:np.id,type:'entrada',qty:np.stock,at:Date.now(),note:'Stock inicial'})}
-   save();closeModal();render();toast(d.id?'Producto actualizado':'Producto creado')},
-  'stock-adj':()=>{const p=S.products.find(x=>x.id===d.id);const q=Number(d.qty)||0;let delta=d.type==='entrada'?q:d.type==='salida'?-q:q-p.stock;p.stock+=delta;S.kardex.push({id:uid(),tid:t.id,pid:p.id,type:d.type,qty:d.type==='ajuste'?q:Math.abs(delta),at:Date.now(),note:d.note||(d.type==='entrada'?'Entrada manual':d.type==='salida'?'Salida manual':'Conteo físico')});save();closeModal();render();toast(`Stock de ${p.name}: ${num(p.stock)}`)},
+   save();closeModal();render();toast(d.id?'Guardado':kind==='insumo'?'Insumo creado':'Producto creado')},
+  'stock-adj':()=>{const p=S.products.find(x=>x.id===d.id);const q=Number(d.qty)||0;let delta=d.type==='entrada'?q:d.type==='salida'?-q:q-p.stock;p.stock=Math.round((p.stock+delta)*100)/100;S.kardex.push({id:uid(),tid:t.id,pid:p.id,type:d.type,qty:d.type==='ajuste'?q:Math.abs(delta),at:Date.now(),note:d.note||(d.type==='entrada'?'Entrada manual':d.type==='salida'?(p.kind==='insumo'?'Consumo en producción':'Salida manual'):'Conteo físico')});save();closeModal();render();toast(`${p.name}: quedan ${num(p.stock)} ${p.unit||'und'}`)},
   'cust-new':()=>{S.customers.push({id:uid(),tid:t.id,name:d.name,phone:d.phone,limit:parseMoney(d.limit)});save();closeModal();render();toast('Cliente creado')},
   abono:()=>{const amt=parseMoney(d.amount);if(!amt){toast('Escribe el valor del abono','bad');return}S.ledger.push({id:uid(),tid:t.id,cid:d.cid,type:'abono',amount:amt,at:Date.now(),note:`Abono (${d.method})`,cash:d.method==='efectivo'});save();closeModal();render();toast(`Abono de ${money(amt)} registrado`)},
   move:()=>{if(!parseMoney(d.amount)){toast('Escribe el valor','bad');return}const at=new Date(d.date+'T12:00:00').getTime();const isToday=dkey(at)===dkey(Date.now());S.moves.push({id:uid(),tid:t.id,type:d.type,cat:d.cat,concept:d.concept,amount:parseMoney(d.amount),at:isToday?Date.now():at,method:d.method});save();closeModal();render();toast(d.type==='egreso'?'Egreso registrado':'Ingreso registrado')},
   'sup-new':()=>{S.suppliers.push({id:uid(),tid:t.id,name:d.name,what:d.what,phone:d.phone,days:d.days});save();closeModal();render();toast('Proveedor guardado')},
-  purchase:()=>{const sp=S.suppliers.find(s=>s.id===d.sid);let total=0,n=0;for(const key in d){if(!key.startsWith('q_'))continue;const pid=key.slice(2),q=Number(d[key])||0;if(!q)continue;const c=parseMoney(d['c_'+pid]);const p=S.products.find(x=>x.id===pid);p.stock+=q;p.cost=c||p.cost;p.supplier=sp.id;total+=q*c;n++;S.kardex.push({id:uid(),tid:t.id,pid,type:'entrada',qty:q,at:Date.now(),note:`Compra a ${sp.name}`})}
-   if(!n){toast('Escribe la cantidad de al menos un producto','bad');return}
-   S.moves.push({id:uid(),tid:t.id,type:'egreso',cat:'Compra de mercancía',concept:`Compra a ${sp.name}`,amount:total,at:Date.now(),method:d.method});save();closeModal();render();toast(`Compra de ${money(total)} registrada · ${n} productos`)},
   'emp-new':()=>{S.users.push({id:uid(),tid:t.id,name:d.name,email:d.email,pin:d.pin,role:'cajero',active:true});save();closeModal();render();toast(`${d.name} ya puede entrar a la caja`)},
   'tenant-save':()=>{const tt=S.tenants.find(x=>x.id===d.id);tt.plan=d.plan;tt.mods=[...f.querySelectorAll('input[name=mod]:checked')].map(c=>c.value);tt.due=new Date(d.due+'T12:00:00').getTime();save();closeModal();render();toast('Cambios aplicados. El cliente los ve al instante')},
   'tenant-new':()=>{const id='t'+uid();const p=planById(d.plan);const due=new Date();due.setMonth(due.getMonth()+1);S.tenants.push({id,name:d.name,type:d.type,city:d.city,phone:d.phone,plan:p.id,mods:p.mods.slice(),status:'activo',due:sod(due),since:sod(Date.now())});S.users.push({id:uid(),tid:id,name:d.owner,role:'dueno',email:d.email,pin:'1234',active:true});S.payments.push({id:uid(),tid:id,amount:p.price,at:Date.now(),method:'Transferencia'});S.messages.push({id:uid(),to:id,kind:'aviso',title:`Bienvenido a Natara, ${d.owner.split(' ')[0]}`,body:'Tu cuenta está lista. Empieza cargando tu inventario desde Excel o creando tus productos.',at:Date.now(),readBy:[]});save();closeModal();render();toast(`${d.name} creado`)},
