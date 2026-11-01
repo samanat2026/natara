@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Natara by Samanat: inventario, caja, ingresos y egresos para pequeños negocios.">
+<meta name="description" content="Inventario, caja, ingresos y egresos para tu negocio.">
 <meta name="theme-color" content="#10201B">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="logo-192.png">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/natara/favicon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/natara/logo-192.png">
+<link rel="apple-touch-icon" href="/natara/apple-touch-icon.png">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Natara · by Samanat">
-<meta property="og:description" content="Inventario, caja, ingresos y egresos para tu negocio. Pruébalo gratis.">
+<meta property="og:description" content="Inventario, caja, ingresos y egresos para tu negocio.">
 <meta property="og:image" content="https://samanat2026.github.io/natara/logo-512.png">
 <meta property="og:url" content="https://samanat2026.github.io/natara/">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
@@ -328,13 +328,16 @@ details.hint summary{cursor:pointer}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js"></script>
+<script>window.NATARA_MODE="real";</script>
 <script>
 /* =========================================================
    NATARA — demo multi-negocio · by Samanat
    Estado local (por navegador). Pestañas sincronizadas en vivo.
    ========================================================= */
-const KEY='natara-demo-v4';
-const SESS='natara-sess';
+const MODE=window.NATARA_MODE==='real'?'real':'demo';
+const REAL_URL='https://samanat2026.github.io/natara/',DEMO_URL='https://samanat2026.github.io/natara/demo/';
+const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v4';
+const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 
 /* ---------- utilidades ---------- */
@@ -431,6 +434,7 @@ function seed(){
  const r=mulberry32(20261101), rnd=()=>r(), pick=a=>a[Math.floor(rnd()*a.length)], ri=(a,b)=>a+Math.floor(rnd()*(b-a+1));
  const now=Date.now(), today=sod(now);
  const S={v:1,config:{contact:'WhatsApp +57 300 000 0000',brand:'Samanat'},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[]};
+ if(MODE==='real'){S.config.contact='Escríbenos a samanat2026@gmail.com';S.users=[{id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'samanat2026@gmail.com',pass:'',mustChange:true,perms:[],active:true}];return S}
  S.tenants=[
   {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:PLANS[2].mods.slice(),status:'activo',due:today+18*DAY,since:today-140*DAY},
   {id:'t2',name:'Droguería Vida Sana',type:'Farmacia',city:'Envigado',phone:'311 208 9934',plan:'pro',mods:[...PLANS[1].mods,'lector'],status:'activo',due:today+3*DAY,since:today-75*DAY},
@@ -574,8 +578,9 @@ function autoCode(used,pre='P'){const P=T('products');let n=P.length+1,c;do{c=pr
 const balanceOf=cid=>sum(S.ledger.filter(l=>l.cid===cid),l=>l.type==='cargo'?l.amount:-l.amount);
 
 /* ---------- actividad en vivo (clave aparte para no re-renderizar a los negocios) ---------- */
-const LIVE='natara-live';const ONLINE_MS=45000;let L0;
+const LIVE=MODE==='real'?'natara-live-prod':'natara-live';const ONLINE_MS=45000;let L0;
 function seedLive(){
+ if(MODE==='real')return {presence:{},views:{},feed:[]};
  const r=mulberry32(77),ri=(a,b)=>a+Math.floor(r()*(b-a+1));const today=sod(Date.now()),now=Date.now();
  const L={presence:{},views:{t1:{caja:420,inventario:96,ventas:80,estadisticas:35,finanzas:28,fiados:22,proveedores:14,cierre:30},t2:{caja:260,inventario:70,ventas:45,estadisticas:10,cierre:24},t3:{caja:60,inventario:12},t4:{caja:24,inventario:9,ventas:4}},feed:[]};
  const plan={t1:['u1','u2','u3'],t2:['u4','u5'],t3:['u6'],t4:['u7']};const stop={t3:5,t4:9};
@@ -649,12 +654,12 @@ function renderShell(nav,content){
  const u=me(),t=tenant();
  $('#app').innerHTML=`<div class="shell ${navOpen?'open':''}">
   <aside class="side" aria-label="Menú">
-   <div class="brand">${mark(30)}<div><b>${t?'natara':'samanat'}</b><small>${t?'by Samanat':'Consola de administración'}</small></div></div>
+   <div class="brand">${mark(30)}<div><b>${t?'natara':'samanat'}</b><small>${t?'by Samanat':'Consola de administración'}${MODE==='demo'?' · Demo':''}</small></div></div>
    ${t?`<div class="tenant-chip"><strong>${esc(t.name)}</strong><span>${esc(t.type)} · Plan ${esc(planById(t.plan).name)}</span></div>`:''}
    ${nav}
    <div class="side-foot">
     <div class="me"><div class="avatar">${initials(u.name)}</div><div><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin':u.role==='dueno'?'Dueño(a)':'Cajero(a)'}</span></div></div>
-    <button class="nav-btn" data-a="logout">${ic('logout')} Cambiar de usuario</button>
+    <button class="nav-btn" data-a="logout">${ic('logout')} Cerrar sesión</button>
    </div>
   </aside>
   <div class="scrim" data-a="nav-close"></div>
@@ -709,7 +714,7 @@ function afterRender(){
 /* =========================================================
    LOGIN
    ========================================================= */
-let lg={mode:'pick',email:'',pass:'',err:{},fails:{},lockUntil:0,banner:null,step:1,code:'',resetEmail:''};
+let lg={mode:MODE==='real'?'form':'pick',email:'',pass:'',err:{},fails:{},lockUntil:0,banner:null,step:1,code:'',resetEmail:''};
 const DEMO_PASS='Natara2026*';
 function loginBrand(){return `<section class="login-brand">
    <div class="logo">${mark(44)}<b>natara</b></div>
@@ -718,13 +723,13 @@ function loginBrand(){return `<section class="login-brand">
    <span class="by">Un producto de Samanat</span>
   </section>`}
 function viewLogin(){
- if(lg.mode!=='pick')return viewLoginReal();
+ if(MODE==='real'||lg.mode!=='pick')return viewLoginReal();
  const acc=u=>{const t=S.tenants.find(x=>x.id===u.tid);return`<button class="acc" data-a="login" data-id="${u.id}"><div class="avatar">${initials(u.name)}</div><div class="who"><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin · Samanat':(u.role==='dueno'?'Dueño(a)':'Cajero(a)')+' · '+esc(t?.name)}</span></div>${t?pillDue(t):`<span class="pill ac">Admin</span>`}</button>`};
  const byT=S.tenants.map(t=>`<div class="acc-group"><span>${esc(t.name)} · ${esc(t.type)}</span>${S.users.filter(u=>u.tid===t.id&&u.active).map(acc).join('')}</div>`).join('');
  return `<div class="login">${loginBrand()}
   <section class="login-pick">
    <div><h2>Entra a la demo</h2><p class="muted" style="margin:6px 0 0">Elige una cuenta. Cada rol ve sus propios módulos.</p></div>
-   <button class="btn" data-a="lg-mode" data-v="form" style="align-self:flex-start">${ic('lock',16)} Ver el inicio de sesión real, con validaciones</button>
+   <div class="row"><button class="btn" data-a="lg-mode" data-v="form">${ic('lock',16)} Ver el inicio de sesión real, con validaciones</button><a class="linkish small" href="${REAL_URL}">Ir a la app real →</a></div>
    <div class="hint">${ic('info',15)} <b>Prueba el bloqueo en tiempo real:</b> abre esta página en dos pestañas. En una entra como Natalia y en otra como Panadería La Espiga. Suspende el acceso desde la consola y la otra pestaña se bloquea al instante.</div>
    <div class="acc-group"><span>Samanat</span>${acc(S.users.find(u=>u.role==='superadmin'))}</div>
    ${byT}
@@ -787,7 +792,7 @@ function viewLoginReal(){
    <button type="button" class="linkish small" data-a="lg-restart" style="align-self:center">Usar otro correo</button>
   </form>`;
  }
- return `<div class="login">${loginBrand()}<section class="login-pick"><button class="linkish small" data-a="lg-mode" data-v="pick" style="align-self:flex-start">← Volver a la demo rápida</button>${body}${testCases()}</section></div>`;
+ return `<div class="login">${loginBrand()}<section class="login-pick">${MODE==='real'?'':`<button class="linkish small" data-a="lg-mode" data-v="pick" style="align-self:flex-start">← Volver a la demo rápida</button>`}${body}${MODE==='real'?`<p class="small muted" style="margin:0">¿Aún no tienes Natara? <a class="linkish" href="${DEMO_URL}">Prueba la demo</a> y escríbenos a samanat2026@gmail.com.</p>`:testCases()}</section></div>`;
 }
 function doLogin(id){lg.banner=null;lg.err={};sess={uid:id,view:null};saveSess();cart=[];pos.seller=null;liveEvent('login','Inició sesión');render()}
 setInterval(()=>{if(me()||lg.mode!=='form'||!lg.lockUntil)return;const b=$('#lg-submit');if(!b)return;const s=Math.ceil((lg.lockUntil-Date.now())/1000);if(s>0){b.disabled=true;b.textContent=`Espera ${s} s`}else{lg.lockUntil=0;lg.banner=['info','Ya puedes intentar de nuevo.'];render()}},1000);
@@ -805,7 +810,7 @@ function viewForceChange(){
   </form></section></div>`;
 }
 /* ---------- correo de bienvenida ---------- */
-const APP_URL='https://samanat2026.github.io/natara/';
+const APP_URL=MODE==='real'?REAL_URL:DEMO_URL;
 function genTemp(){const U='ABCDEFGHJKLMNPQRSTUVWXYZ',L='abcdefghijkmnpqrstuvwxyz',D='23456789',X='!*#$';const pk=a=>a[Math.floor(Math.random()*a.length)];return pk(U)+pk(L)+pk(L)+pk(L)+'-'+pk(D)+pk(D)+pk(D)+pk(D)+pk(X)}
 function welcomeParams(t,u,pass){return {to_email:u.email,to_name:u.name.split(' ')[0],business:t.name,login_email:u.email,temp_password:pass,app_url:APP_URL,from_name:'Samanat'}}
 function welcomeText(p){return `Asunto: Bienvenido a Natara: tus datos de acceso\n\nHola ${p.to_name},\n\n${p.business} ya tiene Natara, el sistema para manejar tu inventario, tu caja y tus cuentas.\n\nEntra aquí: ${p.app_url}\nUsuario: ${p.login_email}\nContraseña temporal: ${p.temp_password}\n\nLa primera vez que entres te pediremos crear tu propia contraseña.\n\nCualquier duda, respóndenos este correo.\nEquipo Samanat`}
@@ -830,7 +835,7 @@ function viewLock(){
   <h1>El acceso a Natara está suspendido</h1>
   <p class="muted">La cuota de <b>${esc(t.name)}</b> venció el ${fdate(t.due)}. Tus datos están guardados. Comunícate con Samanat para reactivar el servicio.</p>
   <div class="hint" style="width:100%">${esc(S.config.contact)}</div>
-  <button class="btn" data-a="logout">${ic('logout')} Cambiar de usuario</button>
+  <button class="btn" data-a="logout">${ic('logout')} Cerrar sesión</button>
  </div></div>`;
 }
 
@@ -1347,7 +1352,7 @@ function aActividad(){
  const feedIcon={login:'logout',venta:'cart',compra:'truck',caja:'register',inventario:'box'};
  const feed=L0.feed.slice(-25).reverse();
  return `<div class="page-head"><div><h1>Actividad en vivo</h1><p>Quién está usando Natara ahora y qué módulos usa cada negocio. Se actualiza solo.</p></div></div>
-  <div class="banner info">${ic('info')}<div class="grow">En esta demo, “en vivo” funciona entre pestañas de este navegador: abre otra pestaña, entra como un negocio y míralo aparecer aquí. En la versión con Firebase verás a todos tus clientes desde cualquier dispositivo.</div></div>
+  ${MODE==='real'?'':`<div class="banner info">${ic('info')}<div class="grow">En esta demo, “en vivo” funciona entre pestañas de este navegador: abre otra pestaña, entra como un negocio y míralo aparecer aquí. En la versión con Firebase verás a todos tus clientes desde cualquier dispositivo.</div></div>`}
   <div class="grid g4">
    <div class="card kpi"><span class="lbl">En línea ahora</span><span class="val" style="color:var(${onT.length?'--good':'--ink'})">${onT.length}</span><span class="foot">${onU} usuario${onU===1?'':'s'} conectado${onU===1?'':'s'}</span></div>
    <div class="card kpi"><span class="lbl">Ingresos de hoy</span><span class="val">${loginsToday}</span><span class="foot">inicios de sesión</span></div>
@@ -1416,7 +1421,7 @@ La primera vez que entres te pediremos crear tu propia contraseña.
 
 Equipo Samanat</div></details></div>
   <div class="card" style="max-width:560px"><h2>Contacto que ven los clientes suspendidos</h2><form class="row" data-f="contact"><input class="input" id="f-contact" name="contact" value="${esc(S.config.contact)}" style="flex:1;min-width:200px"><button class="btn primary" type="submit">Guardar</button></form></div>
-  <div class="card" style="max-width:560px"><h2>Datos de la demo</h2><p class="muted small" style="margin:0 0 10px">Vuelve a los datos de ejemplo. Borra las ventas, productos y clientes que hayas creado.</p><button class="btn danger" data-a="reset-ask">${ic('refresh',16)} Restablecer demo</button></div>`;
+  ${MODE==='real'?'':`<div class="card" style="max-width:560px"><h2>Datos de la demo</h2><p class="muted small" style="margin:0 0 10px">Vuelve a los datos de ejemplo. Borra las ventas, productos y clientes que hayas creado.</p><button class="btn danger" data-a="reset-ask">${ic('refresh',16)} Restablecer demo</button></div>`}`;
 }
 
 /* =========================================================
@@ -1606,12 +1611,14 @@ document.addEventListener('submit',e=>{
    if(!pass)lg.err.pass='Escribe tu contraseña.';
    if(Object.keys(lg.err).length){render();$(lg.err.email?'#lg-email':'#lg-pass')?.focus();return}
    const u=S.users.find(x=>x.email.toLowerCase()===email);
+   if(u&&!u.pass&&u.role==='superadmin'){u.mustChange=true;lg.pass='';doLogin(u.id);return}
    if(!u||u.pass!==pass){lg.fails[email]=(lg.fails[email]||0)+1;const left=5-lg.fails[email];lg.pass='';if(left<=0){lg.lockUntil=Date.now()+60000;lg.fails[email]=0;lg.banner=['bad','Demasiados intentos fallidos. Por seguridad, espera 1 minuto antes de intentar de nuevo.']}else lg.banner=['bad',`Correo o contraseña incorrectos. Te quedan ${left} intento${left>1?'s':''}.`];render();$('#lg-pass')?.focus();return}
    if(!u.active){lg.banner=['bad','Tu usuario está desactivado. Habla con el dueño del negocio para que lo active.'];lg.pass='';render();return}
    lg.fails[email]=0;lg.pass='';lg.mode='pick';doLogin(u.id)},
   'lg-forgot1':()=>{const email=(d.email||'').trim().toLowerCase();lg.err={};lg.resetEmail=email;
    if(!email)lg.err.femail='Escribe tu correo.';else if(!EMAIL_RE.test(email))lg.err.femail='Revisa el correo: debe tener la forma nombre@dominio.com.';
    if(lg.err.femail){render();$('#lg-femail')?.focus();return}
+   if(MODE==='real'){lg.banner=['info',`Te ayudamos a recuperarla. ${esc(S.config.contact)} desde el correo <b>${esc(email)}</b> y te enviamos una contraseña temporal nueva.`];render();return}
    const u=S.users.find(x=>x.email.toLowerCase()===email);lg.code=u?String(Math.floor(100000+Math.random()*900000)):'';lg.step=2;
    lg.banner=['info',`Si el correo está registrado, te enviamos un código de 6 dígitos. Vence en 10 minutos.<br><span class="small"><b>Demo:</b> ${u?`tu código es <b class="mono">${lg.code}</b>`:'ese correo no existe, así que ningún código funcionará. Por seguridad no se le dice eso a quien lo escribe.'}</span>`];render();setTimeout(()=>$('#lg-code')?.focus(),20)},
   'lg-forgot2':()=>{lg.err={};const code=(d.code||'').trim();
