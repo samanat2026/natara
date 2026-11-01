@@ -22,8 +22,8 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 | laura@laespiga.co | Cajera · Panadería La Espiga | Solo vende y ve sus propias ventas |
 | pedro@laespiga.co | Cajero desactivado | Prueba el mensaje de usuario desactivado |
 | carlos@vidasana.co | Dueño · Droguería Vida Sana | Plan Pro + lector de código de barras |
-| pacho@minimercado.co | Dueño · Minimercado Don Pacho | Cuenta suspendida (pantalla de bloqueo) |
-| andrea@arcoiris.co | Dueña · Papelería Arcoíris | Plan Pro |
+| pacho@minimercado.co | Dueño · Minimercado Don Pacho | Plan Básico |
+| andrea@arcoiris.co | Dueña · Papelería Arcoíris | Cuenta suspendida (pantalla de bloqueo) |
 
 ## Planes (COP, IVA no incluido)
 
