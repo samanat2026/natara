@@ -23,7 +23,8 @@ service cloud.firestore {
     function hasPerm(p) { return p in profile().get('perms', []); }
     function canWrite(tid, coll) {
       return isOwnerOf(tid)
-        || coll in ['sales', 'sessions', 'kardex', 'customers', 'ledger']
+        || coll in ['sales', 'sessions', 'kardex']
+        || (coll in ['customers', 'ledger'] && (hasPerm('fiados') || hasPerm('anular')))
         || (coll == 'products' && hasPerm('inv_edit'))
         || (coll in ['suppliers', 'purchases'] && hasPerm('proveedores'))
         || (coll == 'moves' && (hasPerm('finanzas') || hasPerm('proveedores')));

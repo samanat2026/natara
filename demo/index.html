@@ -467,7 +467,7 @@ function seed(){
   {id:'u7',tid:'t4',name:'Andrea Vélez',role:'dueno',email:'andrea@arcoiris.co',pin:'7777',active:true},
   {id:'u8',tid:'t1',name:'Pedro Gil',role:'cajero',email:'pedro@laespiga.co',pin:'8888',active:false},
  ];
- S.users.forEach(u=>{u.pass='Natara2026*';u.perms=[]});S.users.find(u=>u.id==='u2').perms=['inv_edit','proveedores','ver_costos'];
+ S.users.forEach(u=>{u.pass='Natara2026*';u.perms=[]});S.users.find(u=>u.id==='u2').perms=['ver_inventario','inv_edit','ver_costos','proveedores','fiados'];S.users.find(u=>u.id==='u5').perms=['ver_inventario'];
  const prods={
   t1:[['7709990000011','Pan francés','Panes',350,700,180,40],['7709990000028','Pan de bono','Panes',700,1500,95,30],['7709990000035','Almojábana','Panes',650,1500,70,25],['7709990000042','Buñuelo','Panes',500,1200,60,25],['7709990000059','Croissant de mantequilla','Hojaldres',1400,3500,28,12],['7709990000066','Pastel de pollo','Hojaldres',1600,4000,22,10],['7709990000073','Torta de chocolate (porción)','Repostería',2200,6000,16,8],['7709990000080','Torta tres leches (porción)','Repostería',2500,6500,6,8],['7709990000097','Pan tajado integral 600 g','Empacados',4200,7500,14,6],['7709990000103','Leche entera 1 L','Lácteos',3300,4600,24,12],['7709990000110','Yogur de fresa 200 g','Lácteos',1700,2800,4,10],['7709990000127','Queso campesino 250 g','Lácteos',5200,8500,11,5],['7709990000134','Gaseosa 400 ml','Bebidas',1900,3200,40,15],['7709990000141','Jugo de naranja 300 ml','Bebidas',2100,4000,18,8],['7709990000158','Café tinto','Bebidas',400,1500,500,0],['7709990000165','Chocolate caliente','Bebidas',900,3000,300,0],['7709990000172','Huevos AA x 30','Abarrotes',13500,17900,9,4]],
   t2:[['7702001000017','Acetaminofén 500 mg x 10 tab','Analgésicos',1200,2800,85,30],['7702001000024','Ibuprofeno 400 mg x 10 tab','Analgésicos',1800,4200,60,25],['7702001000031','Loratadina 10 mg x 10 tab','Antialérgicos',1500,3900,40,15],['7702001000048','Suero oral sabor fresa 500 ml','Hidratación',2600,5200,30,12],['7702001000055','Alcohol antiséptico 350 ml','Primeros auxilios',3800,7200,18,10],['7702001000062','Curitas x 20','Primeros auxilios',2500,5500,25,10],['7702001000079','Vitamina C 500 mg x 30','Vitaminas',8500,16900,12,6],['7702001000086','Tapabocas x 10','Cuidado personal',3000,6500,7,10],['7702001000093','Crema dental 100 ml','Cuidado personal',3900,7400,22,10],['7702001000109','Pañitos húmedos x 50','Bebé',4500,8900,15,6],['7702001000116','Gel antibacterial 250 ml','Cuidado personal',4200,8500,3,8],['7702001000123','Termómetro digital','Equipos',9800,22000,5,3]],
@@ -569,16 +569,18 @@ const isLocked=()=>{const t=tenant();return !!(t&&t.status!=='activo')};
 const has=m=>{const t=tenant();return !!(t&&t.mods.includes(m))};
 const isOwner=()=>me()?.role==='dueno';
 const PERMS=[
- {id:'ver_todas',label:'Ver las ventas de todos',desc:'Si está apagado, solo ve sus propias ventas.',mod:'caja'},
- {id:'anular',label:'Anular ventas',desc:'Devuelve el stock y saca la venta de los reportes.',mod:'caja'},
- {id:'inv_edit',label:'Agregar y editar inventario',desc:'Crear productos e insumos, ajustar stock y cargar desde Excel.',mod:'inventario'},
- {id:'ver_costos',label:'Ver costos y márgenes',desc:'Muestra cuánto cuesta cada producto.',mod:'inventario'},
- {id:'proveedores',label:'Proveedores y compras',desc:'Crear proveedores y registrar compras.',mod:'proveedores'},
- {id:'finanzas',label:'Ingresos y egresos',desc:'Ver el balance y registrar gastos.',mod:'finanzas'},
- {id:'estadisticas',label:'Estadísticas',desc:'Ver el rendimiento del negocio.',mod:'estadisticas'},
+ {id:'ver_inventario',label:'Consultar el inventario',short:'consultar inventario',desc:'Ver los productos y cuánto hay, sin costos.',mod:'inventario'},
+ {id:'inv_edit',label:'Agregar y editar inventario',short:'editar inventario',desc:'Crear productos e insumos, ajustar stock y cargar desde Excel.',mod:'inventario'},
+ {id:'ver_costos',label:'Ver costos y márgenes',short:'costos',desc:'Muestra cuánto cuesta cada producto.',mod:'inventario'},
+ {id:'fiados',label:'Vender fiado y registrar abonos',short:'fiados',desc:'Crear clientes de fiado, venderles a crédito en la caja y recibir abonos.',mod:'fiados'},
+ {id:'ver_todas',label:'Ver las ventas de todos',short:'ventas de todos',desc:'Si está apagado, solo ve sus propias ventas.',mod:'caja'},
+ {id:'anular',label:'Anular ventas',short:'anular ventas',desc:'Devuelve el stock y saca la venta de los reportes.',mod:'caja'},
+ {id:'proveedores',label:'Proveedores y compras',short:'proveedores',desc:'Crear proveedores y registrar compras.',mod:'proveedores'},
+ {id:'finanzas',label:'Ingresos y egresos',short:'ingresos y egresos',desc:'Ver el balance y registrar gastos.',mod:'finanzas'},
+ {id:'estadisticas',label:'Estadísticas',short:'estadísticas',desc:'Ver el rendimiento del negocio.',mod:'estadisticas'},
 ];
 function canDo(p){const u=me();if(!u)return false;if(u.role==='dueno')return true;return (u.perms||[]).includes(p)}
-const navAllowed=(n,u)=>n.roles.includes(u.role)||(!!n.perm&&canDo(n.perm));
+const navAllowed=(n,u)=>n.roles.includes(u.role)||(!!n.perm&&[].concat(n.perm).some(canDo));
 const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PASS_RULES=[['al menos 8 caracteres',p=>p.length>=8],['una mayúscula',p=>/[A-ZÁÉÍÓÚÑ]/.test(p)],['una minúscula',p=>/[a-záéíóúñ]/.test(p)],['un número',p=>/\d/.test(p)],['un símbolo (! @ # * …)',p=>/[^A-Za-z0-9ÁÉÍÓÚÑáéíóúñ]/.test(p)]];
 const phoneDigits=v=>String(v||'').replace(/\D/g,'').replace(/^57(?=\d{10}$)/,'');
@@ -698,8 +700,8 @@ const NAV=[
  {v:'caja',label:'Caja',icon:'cart',mod:'caja',roles:['dueno','cajero']},
  {v:'cierre',label:'Apertura y cierre',icon:'register',mod:'caja',roles:['dueno','cajero']},
  {v:'ventas',label:'Ventas',icon:'receipt',mod:'caja',roles:['dueno','cajero']},
- {v:'inventario',label:'Inventario',icon:'box',mod:'inventario',roles:['dueno','cajero']},
- {v:'fiados',label:'Fiados',icon:'heart',mod:'fiados',roles:['dueno','cajero']},
+ {v:'inventario',label:'Inventario',icon:'box',mod:'inventario',roles:['dueno'],perm:['ver_inventario','inv_edit']},
+ {v:'fiados',label:'Fiados',icon:'heart',mod:'fiados',roles:['dueno'],perm:'fiados'},
  {v:'finanzas',label:'Ingresos y egresos',icon:'wallet',mod:'finanzas',roles:['dueno'],perm:'finanzas',sec:'Gestión'},
  {v:'estadisticas',label:'Estadísticas',icon:'chart',mod:'estadisticas',roles:['dueno'],perm:'estadisticas'},
  {v:'proveedores',label:'Proveedores',icon:'truck',mod:'proveedores',roles:['dueno'],perm:'proveedores'},
@@ -744,7 +746,7 @@ function loginBrand(){return `<section class="login-brand">
   </section>`}
 function viewLogin(){
  if(MODE==='real'||lg.mode!=='pick')return viewLoginReal();
- const acc=u=>{const t=S.tenants.find(x=>x.id===u.tid);return`<button class="acc" data-a="login" data-id="${u.id}"><div class="avatar">${initials(u.name)}</div><div class="who"><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin · Samanat':(u.role==='dueno'?'Dueño(a)':'Cajero(a)')+' · '+esc(t?.name)}</span></div>${t?pillDue(t):`<span class="pill ac">Admin</span>`}</button>`};
+ const acc=u=>{const t=S.tenants.find(x=>x.id===u.tid);return`<button class="acc" data-a="login" data-id="${u.id}"><div class="avatar">${initials(u.name)}</div><div class="who"><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin · Samanat':u.role==='dueno'?'Dueño(a) · ve todo el negocio':(()=>{const ps=(u.perms||[]).map(id=>PERMS.find(p=>p.id===id)).filter(p=>p&&t&&t.mods.includes(p.mod));return ps.length?'Cajero(a) · vende y además puede: '+ps.map(p=>p.short).join(', '):'Cajero(a) sin permisos extra · solo vende y ve sus ventas'})()}</span></div>${t?pillDue(t):`<span class="pill ac">Admin</span>`}</button>`};
  const rank={basico:0,pro:1,total:2};
  const ideal={basico:'Para empezar: controla tu inventario y tu caja.',pro:'Para el negocio con empleados que quiere ver sus números.',total:'Todo incluido: también fiados y proveedores.'};
  const byT=S.tenants.slice().sort((a,b)=>(a.status!=='activo')-(b.status!=='activo')||rank[a.plan]-rank[b.plan]).map(t=>{const p=planById(t.plan);const extras=t.mods.filter(m=>!p.mods.includes(m));const susp=t.status!=='activo';
@@ -770,7 +772,7 @@ function testCases(){
   <p style="margin:8px 0 4px">Contraseña de todas las cuentas: <b class="mono">${DEMO_PASS}</b>. Toca un correo para llenarlo.</p>
   <ul class="cases">
    <li>${em('marta@laespiga.co')} dueña de la panadería</li>
-   <li>${em('juan@laespiga.co')} cajero con permisos de inventario y proveedores</li>
+   <li>${em('juan@laespiga.co')} cajero con permisos: inventario, costos, proveedores y fiados</li>
    <li>${em('laura@laespiga.co')} cajera sin permisos: solo vende y ve sus ventas</li>
   </ul>
   <b>Validaciones</b>
@@ -873,7 +875,7 @@ function viewInicio(){
  const allV=canDo('ver_todas');const sales=okSales().filter(s=>allV||s.seller===u.id);const tdy=sales.filter(s=>s.at>=today);const yst=sales.filter(s=>s.at>=today-DAY&&s.at<today);
  const tot=sum(tdy,s=>s.total),ytot=sum(yst,s=>s.total);
  const cash=sum(tdy.filter(s=>s.method==='efectivo'),s=>s.total),tr=sum(tdy.filter(s=>s.method==='transferencia'),s=>s.total);
- const low=has('inventario')?T('products').filter(p=>p.min>0&&p.stock<=p.min):[];
+ const low=has('inventario')&&(canDo('ver_inventario')||canDo('inv_edit'))?T('products').filter(p=>p.min>0&&p.stock<=p.min):[];
  const pend=T('sales').filter(s=>s.method==='transferencia'&&!s.confirmed&&s.status!=='anulada');
  const dd=daysUntil(t.due);const unread=unreadFor(t.id);
  const delta=ytot?Math.round((tot-ytot)/ytot*100):0;
@@ -894,7 +896,7 @@ function viewInicio(){
   </div>
   <div class="grid g-main">
    <div class="card"><h2>Últimas ventas <span class="sub">hoy</span></h2>${recent.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Hora</th><th>Vendedor</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${recent.map(s=>`<tr class="click" data-a="sale" data-id="${s.id}"><td class="mono">${s.num}</td><td>${ftime(s.at)}</td><td>${esc(userName(s.seller))}</td><td>${payPill(s)}</td><td class="r num"><b>${money(s.total)}</b></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">${ic('receipt',26)}Aún no hay ventas hoy.</div>`}</div>
-   <div class="card"><h2>Stock bajo <span class="sub">${low.length} productos</span></h2>${!has('inventario')?`<p class="muted small">Activa el módulo de inventario para ver alertas de stock.</p>`:low.length?`<div class="stack">${low.slice(0,7).map(p=>`<div class="spread"><div style="min-width:0"><b class="small">${esc(p.name)}</b>${p.kind==='insumo'?' <span class="pill">Insumo</span>':''}<div class="muted small">Mínimo ${num(p.min)} ${esc(p.unit||'und')}</div></div><span class="pill ${p.stock<=0?'bad':'warn'}">${num(p.stock)} ${esc(p.unit||'und')}</span></div>`).join('')}</div>`:`<div class="empty">${ic('check',26)}Todo el inventario está sobre el mínimo.</div>`}</div>
+   <div class="card"><h2>Stock bajo <span class="sub">${low.length} productos</span></h2>${!has('inventario')?`<p class="muted small">Activa el módulo de inventario para ver alertas de stock.</p>`:!(canDo('ver_inventario')||canDo('inv_edit'))?`<p class="muted small">Tu usuario no tiene acceso al inventario. Si lo necesitas, pídeselo al dueño.</p>`:low.length?`<div class="stack">${low.slice(0,7).map(p=>`<div class="spread"><div style="min-width:0"><b class="small">${esc(p.name)}</b>${p.kind==='insumo'?' <span class="pill">Insumo</span>':''}<div class="muted small">Mínimo ${num(p.min)} ${esc(p.unit||'und')}</div></div><span class="pill ${p.stock<=0?'bad':'warn'}">${num(p.stock)} ${esc(p.unit||'und')}</span></div>`).join('')}</div>`:`<div class="empty">${ic('check',26)}Todo el inventario está sobre el mínimo.</div>`}</div>
   </div>`;
 }
 const payPill=s=>s.status==='anulada'?`<span class="pill bad">Anulada</span>`:s.method==='efectivo'?`<span class="pill">Efectivo</span>`:s.method==='fiado'?`<span class="pill ac">Fiado</span>`:s.confirmed?`<span class="pill good">${esc(s.bank||'Transf.')}</span>`:`<span class="pill warn">${esc(s.bank||'Transf.')} · por confirmar</span>`;
@@ -933,7 +935,7 @@ function cartTotal(){return sum(cart,i=>i.price*i.qty)}
 function cartPanel(){
  const u=me(),total=cartTotal();
  const emps=S.users.filter(x=>x.tid===u.tid&&x.active);
- const methods=[['efectivo','Efectivo'],['transferencia','Transferencia']];if(has('fiados'))methods.push(['fiado','Fiado']);
+ const methods=[['efectivo','Efectivo'],['transferencia','Transferencia']];if(has('fiados')&&canDo('fiados'))methods.push(['fiado','Fiado']);
  const rec=parseMoney(pos.received);
  let payBox='';
  if(pos.method==='efectivo')payBox=`${field('Recibido',`<div class="money-in"><span>$</span><input class="input num" id="pos-rec" type="text" inputmode="numeric" autocomplete="off" data-money placeholder="${grp(total)}" value="${pos.received===''?'':grp(parseMoney(pos.received))}" data-i="pos-rec"></div>`)}
@@ -1297,7 +1299,7 @@ function viewEmpleados(){
  return `<div class="page-head"><div><h1>Empleados</h1><p>Cada persona entra con su correo y contraseña. Tú decides qué puede hacer además de vender.</p></div><div class="actions"><button class="btn primary" data-a="emp-new">${ic('plus',16)} Nuevo empleado</button></div></div>
   <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Puede además</th><th class="r">Ventas hoy</th><th>Activo</th><th></th></tr></thead><tbody>${E.map(u=>{const s=okSales().filter(x=>x.seller===u.id&&x.at>=today);const own=u.role==='dueno';const ps=(u.perms||[]).filter(p=>avail.some(a=>a.id===p));return`<tr><td><div class="row" style="flex-wrap:nowrap"><div class="avatar">${initials(u.name)}</div><div style="min-width:0"><b>${esc(u.name)}</b><div class="muted small">${esc(u.email)}</div></div></div></td><td>${own?'<span class="pill ac">Dueño(a)</span>':'<span class="pill">Cajero(a)</span>'}</td><td>${own?'<span class="muted small">Todo</span>':ps.length?`<div class="chips">${ps.map(p=>`<span class="pill">${PERMS.find(x=>x.id===p).label}</span>`).join('')}</div>`:'<span class="muted small">Solo vender y ver sus ventas</span>'}</td><td class="r num">${money(sum(s,x=>x.total))} <span class="muted small">(${s.length})</span></td><td>${own?'':`<button class="switch ${u.active?'on':''}" data-a="emp-toggle" data-id="${u.id}" aria-label="Activar o desactivar ${esc(u.name)}"></button>`}</td><td class="r" style="white-space:nowrap">${own?'':`<button class="btn sm" data-a="emp-perms" data-id="${u.id}">Permisos</button> <button class="btn sm" data-a="emp-reset" data-id="${u.id}">Contraseña</button> <button class="icon-btn" data-a="emp-del-ask" data-id="${u.id}" aria-label="Eliminar a ${esc(u.name)}" title="Eliminar" style="color:var(--bad)">${ic('trash',17)}</button>`}</td></tr>`}).join('')}</tbody></table></div></div>
   <div class="hint">${ic('info',15)} <b>Cómo entra un empleado:</b> lo creas con su correo y una contraseña inicial; le llegan sus datos por correo (o se los compartes tú). Entra en ${esc(APP_URL)} y la primera vez crea su propia contraseña. Si se le olvida, toca <b>Contraseña</b>. Si deja de trabajar contigo, <b>apágalo</b> (vuelve a entrar cuando lo prendas) o <b>elimínalo</b>.</div>
-  <div class="hint">${ic('info',15)} <b>Lo que siempre puede hacer un cajero:</b> vender en la caja, abrir y cerrar caja, consultar el inventario sin costos y ver solo sus propias ventas. Lo demás lo activas con el botón <b>Permisos</b>.</div>`;
+  <div class="hint">${ic('info',15)} <b>Lo que siempre puede hacer un cajero:</b> vender en la caja (efectivo o transferencia), abrir y cerrar caja y ver solo sus propias ventas. Inventario, fiados y lo demás solo los ve si se lo activas. Lo demás lo activas con el botón <b>Permisos</b>.</div>`;
 }
 function permsModal(u){
  const t=tenant();const avail=PERMS.filter(p=>t.mods.includes(p.mod));
