@@ -4,7 +4,9 @@ Software de gestión para pequeños negocios (panaderías, farmacias, minimercad
 
 ## Demo
 
-`demo/index.html` es una demo completa en un solo archivo. Se abre directamente en el navegador y no necesita servidor.
+Demo en línea: https://samanat2026.github.io/natara/
+
+`index.html` es la demo completa en un solo archivo. También se abre con doble clic en el navegador, sin servidor.
 
 Los datos de la demo se guardan en el navegador (`localStorage`) y se sincronizan entre pestañas del mismo navegador.
 

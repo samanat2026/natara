@@ -1,3 +1,10 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Natara by Samanat: inventario, caja, ingresos y egresos para pequeños negocios.">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Natara</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -272,6 +279,9 @@ tbody tr.click:hover{background:var(--surface-2)}
 .hint b{color:var(--ink)}
 .wa{white-space:pre-wrap;background:var(--surface-2);border-radius:10px;padding:12px;font-size:14px;max-height:200px;overflow:auto}
 </style>
+</head>
+<body>
+
 
 <div id="app"></div>
 <div id="modal-root"></div>
@@ -504,7 +514,9 @@ const pillDue=t=>{const d=daysUntil(t.due);if(t.status!=='activo')return`<span c
 
 /* ---------- descargas (capacidad del visor) ---------- */
 let DL=null;
-(async()=>{for(let i=0;i<40&&!window.claude?.use;i++)await new Promise(r=>setTimeout(r,250));try{if(window.claude?.use)DL=await window.claude.use('downloads')}catch(e){}if(DL)document.body.classList.add('can-dl')})();
+const STANDALONE=window.self===window.top;
+if(STANDALONE){DL={save:async({filename,data})=>{const url=URL.createObjectURL(data instanceof Blob?data:new Blob([data]));const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);return{status:'saved'}}};document.body.classList.add('can-dl')}
+else (async()=>{for(let i=0;i<40&&!window.claude?.use;i++)await new Promise(r=>setTimeout(r,250));try{if(window.claude?.use)DL=await window.claude.use('downloads')}catch(e){}if(DL)document.body.classList.add('can-dl')})();
 async function saveFile(filename,rows,sheet='Datos'){
  if(!DL||!window.XLSX){toast('La descarga no está disponible en esta vista','bad');return}
  const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,sheet);
@@ -1233,3 +1245,6 @@ document.addEventListener('submit',e=>{
 
 render();
 </script>
+
+</body>
+</html>
