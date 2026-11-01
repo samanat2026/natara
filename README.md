@@ -12,31 +12,49 @@ Los datos de la demo se guardan en el navegador (`localStorage`) y se sincroniza
 
 ### Cuentas de ejemplo
 
-| Cuenta | Rol | Qué ve |
+Contraseña de todas las cuentas: `Natara2026*`
+
+| Correo | Rol | Qué ve |
 |---|---|---|
-| Natalia Orozco | Superadmin (Samanat) | Clientes, planes, solicitudes, mensajes, bloqueo de acceso |
-| Marta Gómez | Dueña · Panadería La Espiga | Todos los módulos del plan Total, sin lector |
-| Juan Pérez / Laura Ríos | Cajeros · Panadería La Espiga | Caja, ventas, inventario (sin costos), fiados |
-| Carlos Mejía | Dueño · Droguería Vida Sana | Plan Pro + lector de código de barras |
-| Francisco Úsuga | Dueño · Minimercado Don Pacho | Cuenta suspendida (pantalla de bloqueo) |
-| Andrea Vélez | Dueña · Papelería Arcoíris | Plan Pro |
+| natalia@samanat.co | Superadmin (Samanat) | Clientes, actividad en vivo, planes, solicitudes, mensajes, bloqueo de acceso |
+| marta@laespiga.co | Dueña · Panadería La Espiga | Todos los módulos del plan Total, sin lector |
+| juan@laespiga.co | Cajero · Panadería La Espiga | Caja + permisos de inventario, costos y proveedores |
+| laura@laespiga.co | Cajera · Panadería La Espiga | Solo vende y ve sus propias ventas |
+| pedro@laespiga.co | Cajero desactivado | Prueba el mensaje de usuario desactivado |
+| carlos@vidasana.co | Dueño · Droguería Vida Sana | Plan Pro + lector de código de barras |
+| pacho@minimercado.co | Dueño · Minimercado Don Pacho | Cuenta suspendida (pantalla de bloqueo) |
+| andrea@arcoiris.co | Dueña · Papelería Arcoíris | Plan Pro |
 
-## Módulos
+## Planes (COP, IVA no incluido)
 
-| Módulo | Precio suelto (COP/mes) | Básico | Pro | Total |
-|---|---|:-:|:-:|:-:|
-| Inventario | 25.000 | ✓ | ✓ | ✓ |
-| Caja y ventas (incluye apertura y cierre) | 25.000 | ✓ | ✓ | ✓ |
-| Ingresos y egresos | 20.000 | | ✓ | ✓ |
-| Estadísticas | 20.000 | | ✓ | ✓ |
-| Empleados | 15.000 | | ✓ | ✓ |
-| Fiados y clientes | 18.000 | | | ✓ |
-| Proveedores | 15.000 | | | ✓ |
-| Lector de código de barras (complemento) | 12.000 | | | |
+| Plan | Mensual | Anual (12 meses por 10) | Módulos |
+|---|---|---|---|
+| Básico | $59.900 | $599.000 | Inventario, Caja y ventas |
+| Pro | $109.900 | $1.099.000 | + Ingresos y egresos, Estadísticas, Empleados |
+| Total | $159.900 | $1.599.000 | + Fiados y clientes, Proveedores |
 
-Planes: Básico $49.900 · Pro $89.900 · Total $129.900 al mes.
+### Módulos sueltos y complementos
+
+| Módulo | Precio mensual |
+|---|---|
+| Inventario | $29.900 |
+| Caja y ventas | $29.900 |
+| Ingresos y egresos | $24.900 |
+| Estadísticas | $24.900 |
+| Empleados (con permisos) | $19.900 |
+| Fiados y clientes | $22.900 |
+| Proveedores | $19.900 |
+| Lector de código de barras (complemento) | $14.900 |
+
+Implementación opcional: $180.000 una sola vez (carga de inventario, configuración y capacitación).
+
+## Correo de bienvenida
+
+Al crear un cliente se genera una contraseña temporal y se envía por correo con [EmailJS](https://www.emailjs.com/) (configurable en Planes y precios → Envío de correos). En el primer ingreso el cliente debe crear su propia contraseña.
 
 ## Próximos pasos
 
-- Versión de producción en Angular + Firebase (Auth, Firestore, Hosting) con datos reales por negocio y bloqueo en tiempo real entre dispositivos.
+- Versión de producción en Angular + Firebase (Auth, Firestore, Hosting): cuentas reales entre dispositivos y actividad en vivo de todos los clientes.
+- Facturación electrónica DIAN.
+- Módulo de producción y recetas para panaderías.
 - Producto 2: agendamiento de citas para salones de uñas por WhatsApp.
