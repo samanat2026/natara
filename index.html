@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Natara by Samanat: inventario, caja, ingresos y egresos para pequeños negocios.">
-<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Natara</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,6 +42,9 @@
   --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark;
 }
 html,body{height:100%}
+body{overflow:hidden}
+#app{height:100%;overflow-y:auto}
+#app:has(.shell){overflow:hidden}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
 *{box-sizing:border-box}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -52,7 +55,9 @@ h1,h2,h3{margin:0;text-wrap:balance}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 /* ---------- shell ---------- */
-.shell{display:grid;grid-template-columns:248px minmax(0,1fr);height:100%}
+.shell{display:grid;grid-template-columns:248px minmax(0,1fr);grid-template-rows:100%;height:100%;overflow:hidden}
+.side{height:100%}
+.main{height:100%}
 .side{background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;padding:20px 12px;gap:4px;overflow-y:auto;padding-left:max(12px,env(safe-area-inset-left,0px))}
 .brand{display:flex;align-items:center;gap:10px;padding:4px 10px 18px;color:var(--side-ink-strong)}
 .brand b{font-family:var(--f-display);font-weight:700;font-size:21px;letter-spacing:-.02em}
