@@ -335,7 +335,7 @@ details.hint summary{cursor:pointer}
    ========================================================= */
 const MODE=window.NATARA_MODE==='real'?'real':'demo';
 const REAL_URL='https://samanat2026.github.io/natara/',DEMO_URL='https://samanat2026.github.io/natara/demo/';
-const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v4';
+const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v5';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 
@@ -531,6 +531,7 @@ function seed(){
  S.requests.push({id:uid(),tid:'t2',mod:'fiados',at:today-1*DAY+15*3600e3,status:'pendiente'});
  // pagos a Samanat
  S.tenants.forEach(t=>{for(let m=0;m<5;m++){const at=t.due-(m+1)*30*DAY;if(at>t.since&&at<now)S.payments.push({id:uid(),tid:t.id,amount:fee(t),at,method:pick(['Nequi','Bancolombia','Efectivo'])})}});
+ if(MODE==='demo')S.users=S.users.filter(u=>u.role!=='superadmin');
  return S;
 }
 
@@ -737,8 +738,7 @@ function viewLogin(){
   <section class="login-pick">
    <div><h2>Entra a la demo</h2><p class="muted" style="margin:6px 0 0">Elige una cuenta. Cada rol ve sus propios módulos.</p></div>
    <div class="row"><button class="btn" data-a="lg-mode" data-v="form">${ic('lock',16)} Ver el inicio de sesión real, con validaciones</button><a class="linkish small" href="${REAL_URL}">Ir a la app real →</a></div>
-   <div class="hint">${ic('info',15)} <b>Prueba el bloqueo en tiempo real:</b> abre esta página en dos pestañas. En una entra como Natalia y en otra como Panadería La Espiga. Suspende el acceso desde la consola y la otra pestaña se bloquea al instante.</div>
-   <div class="acc-group"><span>Samanat</span>${acc(S.users.find(u=>u.role==='superadmin'))}</div>
+   <div class="hint">${ic('info',15)} <b>Así se ve Natara por dentro.</b> Entra como la dueña para ver todo el negocio, o como cajero para ver solo lo que la dueña le permite. Los datos son de ejemplo: puedes vender, cargar inventario y probar sin miedo.</div>
    ${byT}
    <button class="btn ghost sm" data-a="reset" style="align-self:flex-start">${ic('refresh',15)} Restablecer datos de la demo</button>
   </section></div>`;
@@ -751,7 +751,6 @@ function testCases(){
  return `<details class="hint" open><summary><b>Cuentas y casos para probar</b></summary>
   <p style="margin:8px 0 4px">Contraseña de todas las cuentas: <b class="mono">${DEMO_PASS}</b>. Toca un correo para llenarlo.</p>
   <ul class="cases">
-   <li>${em('natalia@samanat.co')} superadmin de Samanat</li>
    <li>${em('marta@laespiga.co')} dueña de la panadería</li>
    <li>${em('juan@laespiga.co')} cajero con permisos de inventario y proveedores</li>
    <li>${em('laura@laespiga.co')} cajera sin permisos: solo vende y ve sus ventas</li>

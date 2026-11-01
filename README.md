@@ -13,11 +13,10 @@ Los datos de la demo se guardan en el navegador (`localStorage`) y se sincroniza
 
 ### Cuentas de ejemplo
 
-Contraseña de todas las cuentas: `Natara2026*`
+Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadmin) no existe en la demo; solo en la app real.
 
 | Correo | Rol | Qué ve |
 |---|---|---|
-| natalia@samanat.co | Superadmin (Samanat) | Clientes, actividad en vivo, planes, solicitudes, mensajes, bloqueo de acceso |
 | marta@laespiga.co | Dueña · Panadería La Espiga | Todos los módulos del plan Total, sin lector |
 | juan@laespiga.co | Cajero · Panadería La Espiga | Caja + permisos de inventario, costos y proveedores |
 | laura@laespiga.co | Cajera · Panadería La Espiga | Solo vende y ve sus propias ventas |
