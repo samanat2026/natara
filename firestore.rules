@@ -1,0 +1,112 @@
+rules_version = '2';
+
+// Reglas de seguridad de Natara (Firestore)
+// - La superadmin es samanat2026@gmail.com con el correo verificado.
+// - Cada usuario solo ve los datos de su negocio.
+// - Un negocio suspendido puede ver sus datos, pero no puede modificarlos.
+// - Los cajeros solo escriben lo que sus permisos permiten.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email == 'samanat2026@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+    function profile() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function hasProfile() { return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)); }
+    function active() { return hasProfile() && profile().active == true && profile().get('archived', false) != true; }
+    function inTenant(tid) { return active() && profile().tid == tid; }
+    function isOwnerOf(tid) { return inTenant(tid) && profile().role == 'dueno'; }
+    function tenantActive(tid) { return get(/databases/$(database)/documents/tenants/$(tid)).data.status == 'activo'; }
+    function hasPerm(p) { return p in profile().get('perms', []); }
+    function canWrite(tid, coll) {
+      return isOwnerOf(tid)
+        || coll in ['sales', 'sessions', 'kardex', 'customers', 'ledger']
+        || (coll == 'products' && hasPerm('inv_edit'))
+        || (coll in ['suppliers', 'purchases'] && hasPerm('proveedores'))
+        || (coll == 'moves' && (hasPerm('finanzas') || hasPerm('proveedores')));
+    }
+
+    // Configuración general: precios, contacto, EmailJS
+    match /config/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Usuarios (el id del documento es el uid de Firebase Auth)
+    match /users/{uid} {
+      allow read: if isAdmin()
+        || (signedIn() && request.auth.uid == uid)
+        || (active() && resource.data.tid == profile().tid);
+      allow create: if isAdmin()
+        || (isOwnerOf(request.resource.data.tid) && request.resource.data.role == 'cajero');
+      allow update: if isAdmin()
+        || (signedIn() && request.auth.uid == uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['mustChange']))
+        || (isOwnerOf(resource.data.tid) && resource.data.role == 'cajero'
+            && request.resource.data.role == 'cajero'
+            && request.resource.data.tid == resource.data.tid);
+      allow delete: if isAdmin();
+    }
+
+    // Negocios y sus datos
+    match /tenants/{tid} {
+      allow read: if isAdmin() || inTenant(tid);
+      allow write: if isAdmin();
+
+      match /{coll}/{id} {
+        allow read: if isAdmin() || inTenant(tid);
+        allow create: if isAdmin()
+          || (inTenant(tid) && tenantActive(tid) && request.resource.data.tid == tid && canWrite(tid, coll));
+        allow update: if isAdmin()
+          || (inTenant(tid) && tenantActive(tid) && request.resource.data.tid == tid
+              && (canWrite(tid, coll)
+                  || (coll == 'products' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']))));
+        allow delete: if isAdmin() || (inTenant(tid) && tenantActive(tid) && canWrite(tid, coll));
+      }
+    }
+
+    // Pagos a Samanat
+    match /payments/{id} {
+      allow read: if isAdmin() || isOwnerOf(resource.data.tid);
+      allow write: if isAdmin();
+    }
+
+    // Solicitudes de módulos e implementación
+    match /requests/{id} {
+      allow read: if isAdmin() || isOwnerOf(resource.data.tid);
+      allow create: if isAdmin()
+        || (isOwnerOf(request.resource.data.tid) && request.resource.data.status == 'pendiente');
+      allow update, delete: if isAdmin();
+    }
+
+    // Mensajes de Samanat a los clientes
+    match /messages/{id} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.to == 'all')
+        || (active() && resource.data.to == profile().tid);
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (active() && (resource.data.to == 'all' || resource.data.to == profile().tid)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']));
+    }
+
+    // Actividad en vivo
+    match /presence/{uid} {
+      allow read: if isAdmin();
+      allow write: if signedIn() && request.auth.uid == uid;
+    }
+    match /activity/{id} {
+      allow read, delete: if isAdmin();
+      allow create: if active()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.tid == profile().tid;
+    }
+    match /stats/{tid} {
+      allow read, delete: if isAdmin();
+      allow write: if inTenant(tid);
+    }
+  }
+}

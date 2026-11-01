@@ -334,7 +334,7 @@ details.hint summary{cursor:pointer}
    NATARA — demo multi-negocio · by Samanat
    Estado local (por navegador). Pestañas sincronizadas en vivo.
    ========================================================= */
-const MODE=window.NATARA_MODE==='real'?'real':'demo';
+const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';const ADMIN_EMAIL='samanat2026@gmail.com';
 const REAL_URL='https://samanat2026.github.io/natara/',DEMO_URL='https://samanat2026.github.io/natara/demo/';
 const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v5';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
@@ -538,14 +538,14 @@ function seed(){
 
 /* ---------- estado ---------- */
 let S;
-function load(){try{const r=localStorage.getItem(KEY);if(r){S=JSON.parse(r);return}}catch(e){}S=seed();save()}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function load(){if(REAL){S=emptyState();return}try{const r=localStorage.getItem(KEY);if(r){S=JSON.parse(r);return}}catch(e){}S=seed();save()}
+function save(){if(REAL)return syncDiff();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 let sess={uid:null,view:null};
 try{const r=sessionStorage.getItem(SESS);if(r)sess=JSON.parse(r)}catch(e){}
 function saveSess(){try{sessionStorage.setItem(SESS,JSON.stringify(sess))}catch(e){}}
 load();
 window.addEventListener('storage',e=>{
- if(e.key!==KEY)return;
+ if(REAL||e.key!==KEY)return;
  const prevLocked=isLocked();
  try{S=e.newValue?JSON.parse(e.newValue):seed()}catch(_){return}
  if(!S.users.find(u=>u.id===sess.uid)){sess.uid=null}
@@ -586,21 +586,21 @@ function autoCode(used,pre='P'){const P=T('products');let n=P.length+1,c;do{c=pr
 const balanceOf=cid=>sum(S.ledger.filter(l=>l.cid===cid),l=>l.type==='cargo'?l.amount:-l.amount);
 
 /* ---------- actividad en vivo (clave aparte para no re-renderizar a los negocios) ---------- */
-const LIVE=MODE==='real'?'natara-live-prod':'natara-live';const ONLINE_MS=45000;let L0;
+const LIVE=MODE==='real'?'natara-live-prod':'natara-live';const ONLINE_MS=MODE==='real'?360000:45000;let L0;
 function seedLive(){
  if(MODE==='real')return {presence:{},views:{},feed:[]};
  const r=mulberry32(77),ri=(a,b)=>a+Math.floor(r()*(b-a+1));const today=sod(Date.now()),now=Date.now();
  const L={presence:{},views:{t1:{caja:420,inventario:96,ventas:80,estadisticas:35,finanzas:28,fiados:22,proveedores:14,cierre:30},t2:{caja:260,inventario:70,ventas:45,estadisticas:10,cierre:24},t3:{caja:60,inventario:12},t4:{caja:24,inventario:9,ventas:4}},feed:[]};
  const plan={t1:['u1','u2','u3'],t2:['u4','u5'],t3:['u6'],t4:['u7']};const stop={t3:5,t4:9};
  for(const tid in plan)for(let d=13;d>=0;d--){if(stop[tid]&&d<stop[tid])continue;plan[tid].forEach(u=>{if(r()<.15)return;const at=today-d*DAY+ri(6,9)*3600e3+ri(0,59)*6e4;if(at<now)L.feed.push({tid,uid:u,type:'login',text:'Inició sesión',at})})}
- S.sales.filter(s=>s.at>=today&&s.status!=='anulada').slice(-12).forEach(s=>L.feed.push({tid:s.tid,uid:s.seller,type:'venta',text:`Venta #${s.num} por ${money(s.total)}`,at:s.at}));
+ S.sales.filter(s=>s.at>=today&&s.status!=='anulada').forEach(s=>L.feed.push({tid:s.tid,uid:s.seller,type:'venta',text:`Venta #${s.num} por ${money(s.total)}`,amount:s.total,at:s.at}));
  S.purchases.filter(x=>x.at>now-3*DAY).forEach(x=>L.feed.push({tid:x.tid,uid:'u1',type:'compra',text:`Compra a ${S.suppliers.find(s=>s.id===x.sid)?.name} por ${money(x.total)}`,at:x.at}));
  L.feed.sort((a,b)=>a.at-b.at);return L;
 }
-function liveRefresh(){try{const r=localStorage.getItem(LIVE);if(r){L0=JSON.parse(r);return}}catch(e){}if(!L0){L0=seedLive();liveSave()}}
-function liveSave(){try{localStorage.setItem(LIVE,JSON.stringify(L0))}catch(e){}}
-function liveEvent(type,text,v){const u=me();if(!u||!u.tid)return;liveRefresh();if(type!=='view'){L0.feed.push({tid:u.tid,uid:u.id,type,text:text||'',at:Date.now()});if(L0.feed.length>400)L0.feed=L0.feed.slice(-400)}if(v){L0.views[u.tid]=L0.views[u.tid]||{};L0.views[u.tid][v]=(L0.views[u.tid][v]||0)+1}L0.presence[u.id]=Date.now();liveSave()}
-function beat(){const u=me();if(!u||!u.tid||isLocked())return;liveRefresh();L0.presence[u.id]=Date.now();liveSave()}
+function liveRefresh(){if(REAL){L0=L0||{presence:{},views:{},feed:[]};return}try{const r=localStorage.getItem(LIVE);if(r){L0=JSON.parse(r);return}}catch(e){}if(!L0){L0=seedLive();liveSave()}}
+function liveSave(){if(REAL)return;try{localStorage.setItem(LIVE,JSON.stringify(L0))}catch(e){}}
+function liveEvent(type,text,v,amount){const u=me();if(!u||!u.tid)return;if(REAL)return rLive(u,type,text,v,amount);liveRefresh();if(type!=='view'){L0.feed.push({tid:u.tid,uid:u.id,type,text:text||'',amount:amount||0,at:Date.now()});if(L0.feed.length>400)L0.feed=L0.feed.slice(-400)}if(v){L0.views[u.tid]=L0.views[u.tid]||{};L0.views[u.tid][v]=(L0.views[u.tid][v]||0)+1}L0.presence[u.id]=Date.now();liveSave()}
+function beat(){const u=me();if(!u||!u.tid||isLocked())return;if(REAL)return rBeat(u);liveRefresh();L0.presence[u.id]=Date.now();liveSave()}
 const ago=t=>{const s=Math.round((Date.now()-t)/1000);if(s<60)return'hace '+Math.max(s,1)+' s';const m=Math.round(s/60);if(m<60)return`hace ${m} min`;const h=Math.round(m/60);if(h<24)return`hace ${h} h`;const d=Math.round(h/24);return`hace ${d} día${d>1?'s':''}`};
 function tenantLive(t){
  const users=S.users.filter(u=>u.tid===t.id);const now=Date.now();
@@ -609,7 +609,7 @@ function tenantLive(t){
  const pres=Math.max(0,...users.map(u=>L0.presence[u.id]||0));
  const lastAt=Math.max(last?.at||0,pres);const lastWho=pres>(last?.at||0)?users.find(u=>L0.presence[u.id]===pres):S.users.find(u=>u.id===last?.uid);
  const logins7=ev.filter(e=>e.type==='login'&&e.at>now-7*DAY).length;
- const salesToday=S.sales.filter(s=>s.tid===t.id&&s.at>=sod(now)&&s.status!=='anulada');
+ const salesToday=L0.feed.filter(e=>e.tid===t.id&&e.type==='venta'&&e.at>=sod(now)).map(e=>({total:e.amount||0}));
  const views=Object.entries(L0.views[t.id]||{}).sort((a,b)=>b[1]-a[1]);
  const idle=lastAt?Math.floor((now-lastAt)/DAY):999;
  return {online,lastAt,lastWho,logins7,salesToday,views,idle};
@@ -651,6 +651,7 @@ async function saveFile(filename,rows,sheet='Datos'){
 let navOpen=false;
 function render(){
  applyPrices();
+ if(REAL){const g=realGate();if(g!==null){$('#app').innerHTML=g;return}}
  const u=me();
  if(!u||!u.active){$('#app').innerHTML=viewLogin();return}
  if(u.mustChange){$('#app').innerHTML=viewForceChange();return}
@@ -952,7 +953,7 @@ function checkout(){
  if(pos.method==='fiado'&&!pos.customer){toast('Selecciona el cliente que se lleva fiado','bad');return}
  const t=tenant();const last=Math.max(1000,...T('sales').map(s=>s.num));
  const sale={id:uid(),tid:t.id,at:Date.now(),items:cart.map(i=>({...i})),total,method:pos.method,bank:pos.method==='transferencia'?pos.bank:'',ref:pos.method==='transferencia'?pos.ref:'',confirmed:pos.method!=='transferencia'||pos.verified,received:pos.method==='efectivo'?(parseMoney(pos.received)||total):0,seller:pos.seller,customer:pos.method==='fiado'?pos.customer:'',status:'ok',num:last+1};
- S.sales.push(sale);liveEvent('venta',`Venta #${sale.num} por ${money(total)}`);
+ S.sales.push(sale);liveEvent('venta',`Venta #${sale.num} por ${money(total)}`,null,total);
  sale.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p){p.stock-=i.qty;S.kardex.push({id:uid(),tid:t.id,pid:p.id,type:'salida',qty:i.qty,at:sale.at,note:`Venta #${sale.num}`})}});
  if(sale.method==='fiado')S.ledger.push({id:uid(),tid:t.id,cid:sale.customer,type:'cargo',amount:total,at:sale.at,note:`Venta fiada #${sale.num}`,sid:sale.id});
  save();_sc=null;
@@ -1273,7 +1274,7 @@ function purSave(){
    EMPLEADOS
    ========================================================= */
 function viewEmpleados(){
- const t=tenant();const E=S.users.filter(u=>u.tid===t.id);const today=sod(Date.now());
+ const t=tenant();const E=S.users.filter(u=>u.tid===t.id&&!u.archived);const today=sod(Date.now());
  const avail=PERMS.filter(p=>t.mods.includes(p.mod));
  return `<div class="page-head"><div><h1>Empleados</h1><p>Cada persona entra con su correo y contraseña. Tú decides qué puede hacer además de vender.</p></div><div class="actions"><button class="btn primary" data-a="emp-new">${ic('plus',16)} Nuevo empleado</button></div></div>
   <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Puede además</th><th class="r">Ventas hoy</th><th>Activo</th><th></th></tr></thead><tbody>${E.map(u=>{const s=okSales().filter(x=>x.seller===u.id&&x.at>=today);const own=u.role==='dueno';const ps=(u.perms||[]).filter(p=>avail.some(a=>a.id===p));return`<tr><td><div class="row" style="flex-wrap:nowrap"><div class="avatar">${initials(u.name)}</div><div style="min-width:0"><b>${esc(u.name)}</b><div class="muted small">${esc(u.email)}</div></div></div></td><td>${own?'<span class="pill ac">Dueño(a)</span>':'<span class="pill">Cajero(a)</span>'}</td><td>${own?'<span class="muted small">Todo</span>':ps.length?`<div class="chips">${ps.map(p=>`<span class="pill">${PERMS.find(x=>x.id===p).label}</span>`).join('')}</div>`:'<span class="muted small">Solo vender y ver sus ventas</span>'}</td><td class="r num">${money(sum(s,x=>x.total))} <span class="muted small">(${s.length})</span></td><td>${own?'':`<button class="switch ${u.active?'on':''}" data-a="emp-toggle" data-id="${u.id}" aria-label="Activar o desactivar ${esc(u.name)}"></button>`}</td><td class="r">${own?'':`<button class="btn sm" data-a="emp-perms" data-id="${u.id}">Permisos</button>`}</td></tr>`}).join('')}</tbody></table></div></div>
@@ -1351,7 +1352,7 @@ function aActividad(){
  const now=Date.now(),today=sod(now);const rows=S.tenants.map(t=>({t,x:tenantLive(t)}));
  const onT=rows.filter(r=>r.x.online.length),onU=sum(rows,r=>r.x.online.length);
  const loginsToday=L0.feed.filter(e=>e.type==='login'&&e.at>=today).length;
- const salesToday=S.sales.filter(s=>s.at>=today&&s.status!=='anulada');
+ const salesToday=L0.feed.filter(e=>e.type==='venta'&&e.at>=today).map(e=>({total:e.amount||0}));
  const risk=rows.filter(r=>r.x.idle>=7&&r.t.status==='activo');
  const viewName=v=>NAV.find(n=>n.v===v)?.label||v;
  const agg={};rows.forEach(r=>r.x.views.forEach(([v,n])=>agg[v]=(agg[v]||0)+n));const aggL=Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,8);const maxA=Math.max(1,...aggL.map(a=>a[1]));
@@ -1450,11 +1451,14 @@ document.addEventListener('click',e=>{
   'nav-close':()=>{navOpen=false;document.querySelector('.shell')?.classList.remove('open')},
   go:()=>{sess.view=v;saveSess();if(me()?.tid)liveEvent('view',null,v);navOpen=false;closeModal();render();$('#main')?.scrollTo(0,0)},
   login:()=>{lg.mode='pick';doLogin(id)},
+  'admin-create':()=>rAdminCreate(),
+  'verify-resend':async()=>{try{await FB.sendEmailVerification(FB.auth.currentUser,{url:REAL_URL});toast('Te enviamos el correo de nuevo')}catch(e){toast(authErr(e),'bad')}},
+  'verify-done':async()=>{const u=FB.auth.currentUser;if(!u)return;await u.reload();if(!u.emailVerified)return toast('Todavía no aparece verificado. Abre el enlace del correo y vuelve a intentarlo.','bad');await u.getIdToken(true);RB.needVerify=false;RB.authReady=false;render();fbAfterAuth(u)},
   'lg-mode':()=>{lg.mode=v;lg.err={};lg.banner=null;if(v==='forgot')lg.step=1;render();setTimeout(()=>$('#lg-email,#lg-femail')?.focus(),20)},
   'lg-restart':()=>{lg.step=1;lg.err={};lg.banner=null;render()},
   'lg-fill':()=>{const f=$('#lg-email')||$('#lg-femail');if(f){f.value=v;lg.email=v;const pw=$('#lg-pass');if(pw){pw.focus()}else f.focus()}},
   'lg-eye':()=>{const i=el.parentElement.querySelector('input');const sh=i.type==='password';i.type=sh?'text':'password';el.setAttribute('aria-label',sh?'Ocultar contraseña':'Mostrar contraseña');el.innerHTML=ic(sh?'eyeoff':'eye',18)},
-  logout:()=>{const u0=me();if(u0){liveRefresh();delete L0.presence[u0.id];liveSave()}sess={uid:null,view:null};saveSess();cart=[];navOpen=false;render()},
+  logout:()=>{if(REAL)return rLogout();const u0=me();if(u0){liveRefresh();delete L0.presence[u0.id];liveSave()}sess={uid:null,view:null};saveSess();cart=[];navOpen=false;render()},
   reset:()=>{S=seed();save();L0=seedLive();liveSave();toast('Demo restablecida');render()},
   'reset-ask':()=>openModal('Restablecer demo','<p>Se borran todos los cambios y vuelven los datos de ejemplo. Esto aplica en este navegador.</p>',`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="reset-do">Restablecer</button>`),
   'reset-do':()=>{S=seed();save();L0=seedLive();liveSave();closeModal();toast('Demo restablecida');render()},
@@ -1511,7 +1515,7 @@ document.addEventListener('click',e=>{
   'lector-toggle':()=>{const t=S.tenants.find(x=>x.id===id);const on=t.mods.includes('lector');t.mods=on?t.mods.filter(m=>m!=='lector'):[...t.mods,'lector'];if(!on)S.messages.push({id:uid(),to:t.id,kind:'promo',title:'Activamos el lector de código de barras',body:`Ya puedes escanear productos en la caja y el inventario. Tu cuota mensual queda en ${money(fee(t))}.`,at:Date.now(),readBy:[]});save();render();toast(on?`Lector desactivado para ${t.name}`:`Lector activado para ${t.name} (+${money(modById('lector').price)}/mes)`)},
   tenant:()=>tenantModal(S.tenants.find(t=>t.id===id)),
   'tenant-new':()=>openModal('Nuevo cliente',`<form class="stack" data-f="tenant-new" id="tn-form" novalidate><div class="form-grid">${field('Nombre del negocio',inp('name','','text','required'),'full')}${field('Tipo de negocio',inp('type','','text','required list="types" placeholder="Panadería, farmacia…"'))}<datalist id="types">${['Panadería','Farmacia','Minimercado','Papelería','Ferretería','Tienda de ropa','Licorera','Salón de uñas'].map(x=>`<option value="${x}">`).join('')}</datalist>${field('Ciudad',inp('city','','text','required'))}${field('Celular',inp('phone','','tel','required inputmode="tel" placeholder="300 123 4567"'))}${field('Plan',sel('plan',PLANS.map(p=>[p.id,`${p.name} · ${money(p.price)}`]),'basico'))}<label class="check full" style="grid-column:1/-1"><input type="checkbox" name="setup" value="1"><span>Cobrar implementación asistida (${money(SETUP.price)}, pago único)<small>Carga del inventario, configuración de empleados y 1 hora de capacitación.</small></span></label>${field('Nombre del dueño(a)',inp('owner','','text','required'))}${field('Correo del dueño(a)',inp('email','','email','required'))}</div><p class="muted small">El primer mes queda pagado desde hoy. Al crearlo, le enviamos un correo al dueño con su usuario y una contraseña temporal.</p><div id="tn-err"></div></form>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="tn-form">Crear cliente</button>`),
-  'resend':()=>{const t=S.tenants.find(x=>x.id===id);const u=S.users.find(x=>x.tid===id&&x.role==='dueno');const pass=genTemp();u.pass=pass;u.mustChange=true;save();sendWelcome(t,u,pass)},
+  'resend':()=>{if(REAL)return rResend(id);const t=S.tenants.find(x=>x.id===id);const u=S.users.find(x=>x.tid===id&&x.role==='dueno');const pass=genTemp();u.pass=pass;u.mustChange=true;save();sendWelcome(t,u,pass)},
   'copy-welcome':()=>{navigator.clipboard?.writeText(window._welcome||'').then(()=>toast('Mensaje copiado')).catch(()=>toast('Selecciona el texto y cópialo','bad'))},
   'price-cancel':()=>{const c=S.config.priceChanges.find(x=>x.cid===id);S.config.priceChanges=S.config.priceChanges.filter(x=>x.cid!==id);const ts=affected(c.kind,c.id);ts.forEach(t=>S.messages.push({id:uid(),to:t.id,kind:'aviso',title:'Se canceló el cambio de precio',body:`El cambio de precio del ${itemName(c.kind,c.id)} que te anunciamos para el ${fdate(c.from)} no se aplicará. Tu cuota sigue igual.`,at:Date.now(),readBy:[]}));save();render();toast(`Cambio cancelado${ts.length?` y avisado a ${ts.length} cliente${ts.length>1?'s':''}`:''}`)},
   'price-confirm':()=>{const pc=window._pc;if(!pc)return;S.config.priceChanges=S.config.priceChanges||[];const notify=$('#pc-notify')?.checked;
@@ -1519,7 +1523,7 @@ document.addEventListener('click',e=>{
    if(notify)pc.tenants.forEach(x=>{const lines=x.items.map(c=>`• ${itemName(c.kind,c.id)}: de ${money(c.old)} a ${money(c.price)} al mes`).join('\n');S.messages.push({id:uid(),to:x.t.id,kind:'vencimiento',title:`Cambio de precio desde el ${fdate(pc.from)}`,body:`Hola, te contamos que a partir del ${fdate(pc.from)} cambian estos precios:\n${lines}\n\nTu cuota mensual pasa de ${money(x.before)} a ${money(x.after)}. Si tienes preguntas, escríbenos.`,at:Date.now(),readBy:[]})});
    save();closeModal();render();toast(`Precios programados${notify&&pc.tenants.length?` · ${pc.tenants.length} cliente${pc.tenants.length>1?'s':''} avisado${pc.tenants.length>1?'s':''}`:''}`)},
   'tenant-del-ask':()=>{const t=S.tenants.find(x=>x.id===id);const n={users:S.users.filter(x=>x.tid===id).length,products:S.products.filter(x=>x.tid===id).length,sales:S.sales.filter(x=>x.tid===id).length};
-   openModal('Eliminar cliente',`<div class="banner bad">${ic('alert')}<div class="grow"><b>Esto no se puede deshacer.</b> Se borran ${n.users} usuarios, ${n.products} productos, ${num(n.sales)} ventas y todo lo demás de <b>${esc(t.name)}</b>: inventario, caja, fiados, proveedores, mensajes y actividad.</div></div>
+   openModal('Eliminar cliente',`<div class="banner bad">${ic('alert')}<div class="grow"><b>Esto no se puede deshacer.</b> ${REAL?'Se borran todos sus usuarios, productos, ventas':`Se borran ${n.users} usuarios, ${n.products} productos, ${num(n.sales)} ventas`} y todo lo demás de <b>${esc(t.name)}</b>: inventario, caja, fiados, proveedores, mensajes y actividad.</div></div>
     <p class="small" style="margin:0">Tu historial de pagos recibidos se conserva para tus cuentas. Si el cliente solo dejó de pagar, mejor apaga su <b>Acceso</b>: así puede volver con sus datos.</p>
     <form class="stack" data-f="tenant-del" id="del-form" novalidate><input type="hidden" name="id" value="${id}">${field(`Para confirmar, escribe el nombre del negocio: <b>${esc(t.name)}</b>`,inp('confirm','','text','autocomplete="off"'))}<div id="del-err"></div></form>`,
     `<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="submit" data-form="del-form">${ic('trash',16)} Eliminar para siempre</button>`)},
@@ -1596,7 +1600,7 @@ document.addEventListener('submit',e=>{
   abono:()=>{const amt=parseMoney(d.amount);if(!amt){toast('Escribe el valor del abono','bad');return}S.ledger.push({id:uid(),tid:t.id,cid:d.cid,type:'abono',amount:amt,at:Date.now(),note:`Abono (${d.method})`,cash:d.method==='efectivo'});save();closeModal();render();toast(`Abono de ${money(amt)} registrado`)},
   move:()=>{if(!parseMoney(d.amount)){toast('Escribe el valor','bad');return}const at=new Date(d.date+'T12:00:00').getTime();const isToday=dkey(at)===dkey(Date.now());S.moves.push({id:uid(),tid:t.id,type:d.type,cat:d.cat,concept:d.concept,amount:parseMoney(d.amount),at:isToday?Date.now():at,method:d.method});save();closeModal();render();toast(d.type==='egreso'?'Egreso registrado':'Ingreso registrado')},
   'sup-new':()=>{S.suppliers.push({id:uid(),tid:t.id,name:d.name,what:d.what,phone:d.phone,days:d.days});save();closeModal();render();toast('Proveedor guardado')},
-  'emp-new':()=>{const err=m=>{$('#emp-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};const email=(d.email||'').trim().toLowerCase();if(!(d.name||'').trim())return err('Escribe el nombre del empleado.');if(!EMAIL_RE.test(email))return err('Revisa el correo: debe tener la forma nombre@dominio.com.');if(S.users.some(x=>x.email.toLowerCase()===email))return err('Ya existe un usuario con ese correo.');const pe=passErrors(d.pass);if(pe.length)return err('A la contraseña le falta: '+pe.join(', ')+'.');S.users.push({id:uid(),tid:t.id,name:d.name.trim(),email,pass:d.pass,role:'cajero',active:true,perms:[]});save();closeModal();render();toast(`${d.name.trim()} ya puede entrar con su correo`)},
+  'emp-new':()=>{const err=m=>{$('#emp-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};const email=(d.email||'').trim().toLowerCase();if(!(d.name||'').trim())return err('Escribe el nombre del empleado.');if(!EMAIL_RE.test(email))return err('Revisa el correo: debe tener la forma nombre@dominio.com.');if(S.users.some(x=>x.email.toLowerCase()===email))return err('Ya existe un usuario con ese correo.');const pe=passErrors(d.pass);if(pe.length)return err('A la contraseña le falta: '+pe.join(', ')+'.');if(REAL)return rEmpNew(d,t,email,err);S.users.push({id:uid(),tid:t.id,name:d.name.trim(),email,pass:d.pass,role:'cajero',active:true,perms:[]});save();closeModal();render();toast(`${d.name.trim()} ya puede entrar con su correo`)},
   'emp-perms':()=>{const u2=S.users.find(x=>x.id===d.id);u2.perms=[...f.querySelectorAll('input[name=perm]:checked')].map(c=>c.value);save();closeModal();render();toast(`Permisos de ${u2.name} actualizados`)},
   'tenant-save':()=>{const tt=S.tenants.find(x=>x.id===d.id);const o=S.users.find(x=>x.id===d.oid);const er=m=>{$('#tm-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`;$('#tm-err').scrollIntoView?.({block:'nearest'})};
    const email=(d.oemail||'').trim().toLowerCase();
@@ -1605,16 +1609,18 @@ document.addEventListener('submit',e=>{
    if(!EMAIL_RE.test(email))return er('Revisa el correo: debe tener la forma nombre@dominio.com.');
    if(S.users.some(x=>x.id!==o?.id&&x.email.toLowerCase()===email))return er('Ese correo ya lo usa otro usuario.');
    const changed=o&&o.email.toLowerCase()!==email;
+   if(REAL&&changed)return rTenantSave(d,f,tt,o,email,er);
    tt.name=d.tname.trim();tt.type=d.ttype.trim();tt.city=d.tcity.trim();tt.phone=fmtPhone(d.tphone);
    if(o){o.name=d.oname.trim();o.email=email}
    tt.plan=d.plan;tt.mods=[...f.querySelectorAll('input[name=mod]:checked')].map(c=>c.value);tt.due=new Date(d.due+'T12:00:00').getTime();save();render();
    if(changed&&d.resend){const pass=genTemp();o.pass=pass;o.mustChange=true;save();sendWelcome(tt,o,pass)}else{closeModal();toast(changed?`Datos guardados. ${o.name.split(' ')[0]} ahora entra con ${email}`:'Cambios aplicados. El cliente los ve al instante')}},
   'tenant-new':()=>{const email=(d.email||'').trim().toLowerCase();const er=m=>{$('#tn-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};if(!phoneOk(d.phone))return er('Revisa el celular: debe tener 10 dígitos, por ejemplo 300 123 4567.');if(!EMAIL_RE.test(email))return er('Revisa el correo del dueño: debe tener la forma nombre@dominio.com.');if(S.users.some(x=>x.email.toLowerCase()===email))return er('Ya existe un usuario con ese correo.');
+   if(REAL)return rTenantNew(d,email,er);
    const id='t'+uid();const p=planById(d.plan);const due=new Date();due.setMonth(due.getMonth()+1);const t={id,name:d.name.trim(),type:d.type,city:d.city,phone:fmtPhone(d.phone),plan:p.id,mods:p.mods.slice(),status:'activo',due:sod(due),since:sod(Date.now())};S.tenants.push(t);
    const pass=genTemp();const u={id:uid(),tid:id,name:d.owner.trim(),role:'dueno',email,pass,mustChange:true,perms:[],active:true};S.users.push(u);
    S.payments.push({id:uid(),tid:id,amount:p.price,at:Date.now(),method:'Transferencia',concept:'Mensualidad'});if(d.setup){t.setupPaid=true;S.payments.push({id:uid(),tid:id,amount:SETUP.price,at:Date.now(),method:'Transferencia',concept:'Implementación asistida'})}S.messages.push({id:uid(),to:id,kind:'aviso',title:`Bienvenido a Natara, ${u.name.split(' ')[0]}`,body:'Tu cuenta está lista. Empieza cargando tu inventario desde Excel o creando tus productos.',at:Date.now(),readBy:[]});save();render();sendWelcome(t,u,pass)},
   'tenant-del':()=>{const t=S.tenants.find(x=>x.id===d.id);if(norm(d.confirm)!==norm(t.name)){$('#del-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">El nombre no coincide. Escríbelo tal como aparece arriba.</div></div>`;return}
-   const ids=new Set(S.users.filter(x=>x.tid===t.id).map(x=>x.id));
+   const ids=new Set(S.users.filter(x=>x.tid===t.id).map(x=>x.id));if(REAL)rPurge(t.id,[...ids]);
    ['products','sales','moves','customers','ledger','suppliers','sessions','kardex','requests','purchases'].forEach(k=>S[k]=(S[k]||[]).filter(x=>x.tid!==t.id));
    S.users=S.users.filter(x=>x.tid!==t.id);S.messages=S.messages.filter(m=>m.to!==t.id).map(m=>({...m,readBy:m.readBy.filter(r=>r!==t.id)}));
    S.payments.forEach(x=>{if(x.tid===t.id){x.formerName=t.name}});S.tenants=S.tenants.filter(x=>x.id!==t.id);
@@ -1631,7 +1637,7 @@ document.addEventListener('submit',e=>{
     ${tenants.length?`<div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th class="r">Cuota actual</th><th class="r">Cuota nueva</th></tr></thead><tbody>${tenants.map(x=>`<tr><td>${esc(x.t.name)}</td><td class="r num">${money(x.before)}</td><td class="r num"><b>${money(x.after)}</b></td></tr>`).join('')}</tbody></table></div>
     <label class="check"><input type="checkbox" id="pc-notify" checked><span>Avisar a estos clientes en Natara<small>Les llega un mensaje con lo que cambia y su nueva cuota. Lo ven en Mensajes y en Mi plan.</small></span></label>`:''}`,
     `<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="price-confirm">Confirmar cambio</button>`,true)},
-  'force-change':()=>{lg.err={};const pe=passErrors(d.np);if(!d.np)lg.err.np='Escribe la contraseña nueva.';else if(pe.length)lg.err.np='Le falta: '+pe.join(', ')+'.';const u=me();if(!lg.err.np&&d.np===u.pass)lg.err.np='Debe ser distinta a la temporal.';if(!lg.err.np&&d.np!==d.np2)lg.err.np2='Las contraseñas no coinciden.';if(Object.keys(lg.err).length)return render();u.pass=d.np;delete u.mustChange;save();lg.err={};liveEvent('login','Creó su contraseña');render();toast('Contraseña creada. ¡Bienvenido a Natara!')},
+  'force-change':()=>{lg.err={};const pe=passErrors(d.np);if(!d.np)lg.err.np='Escribe la contraseña nueva.';else if(pe.length)lg.err.np='Le falta: '+pe.join(', ')+'.';const u=me();if(!lg.err.np&&d.np===u.pass)lg.err.np='Debe ser distinta a la temporal.';if(!lg.err.np&&d.np!==d.np2)lg.err.np2='Las contraseñas no coinciden.';if(Object.keys(lg.err).length)return render();if(REAL)return rForceChange(d.np);u.pass=d.np;delete u.mustChange;save();lg.err={};liveEvent('login','Creó su contraseña');render();toast('Contraseña creada. ¡Bienvenido a Natara!')},
   'emailjs':()=>{S.config.emailjs={service:d.service.trim(),template:d.template.trim(),key:d.key.trim()};save();toast(emailReady()?'Envío de correos configurado':'Guardado. Faltan datos para enviar correos')},
   'msg-send':()=>{S.messages.push({id:uid(),to:d.to,kind:d.kind,title:d.title,body:d.body,at:Date.now(),readBy:[]});msgDraft={to:'all',kind:'aviso',title:'',body:''};save();render();toast('Mensaje enviado')},
   'lg-login':()=>{const email=(d.email||'').trim().toLowerCase(),pass=d.pass||'';lg.email=email;lg.pass=pass;lg.err={};lg.banner=null;
@@ -1639,6 +1645,7 @@ document.addEventListener('submit',e=>{
    if(!email)lg.err.email='Escribe tu correo.';else if(!EMAIL_RE.test(email))lg.err.email='Revisa el correo: debe tener la forma nombre@dominio.com.';
    if(!pass)lg.err.pass='Escribe tu contraseña.';
    if(Object.keys(lg.err).length){render();$(lg.err.email?'#lg-email':'#lg-pass')?.focus();return}
+   if(REAL)return rLogin(email,pass);
    const u=S.users.find(x=>x.email.toLowerCase()===email);
    if(u&&!u.pass&&u.role==='superadmin'){u.mustChange=true;lg.pass='';doLogin(u.id);return}
    if(!u||u.pass!==pass){lg.fails[email]=(lg.fails[email]||0)+1;const left=5-lg.fails[email];lg.pass='';if(left<=0){lg.lockUntil=Date.now()+60000;lg.fails[email]=0;lg.banner=['bad','Demasiados intentos fallidos. Por seguridad, espera 1 minuto antes de intentar de nuevo.']}else lg.banner=['bad',`Correo o contraseña incorrectos. Te quedan ${left} intento${left>1?'s':''}.`];render();$('#lg-pass')?.focus();return}
@@ -1647,7 +1654,7 @@ document.addEventListener('submit',e=>{
   'lg-forgot1':()=>{const email=(d.email||'').trim().toLowerCase();lg.err={};lg.resetEmail=email;
    if(!email)lg.err.femail='Escribe tu correo.';else if(!EMAIL_RE.test(email))lg.err.femail='Revisa el correo: debe tener la forma nombre@dominio.com.';
    if(lg.err.femail){render();$('#lg-femail')?.focus();return}
-   if(MODE==='real'){lg.banner=['info',`Te ayudamos a recuperarla. ${esc(S.config.contact)} desde el correo <b>${esc(email)}</b> y te enviamos una contraseña temporal nueva.`];render();return}
+   if(REAL)return rForgot(email);
    const u=S.users.find(x=>x.email.toLowerCase()===email);lg.code=u?String(Math.floor(100000+Math.random()*900000)):'';lg.step=2;
    lg.banner=['info',`Si el correo está registrado, te enviamos un código de 6 dígitos. Vence en 10 minutos.<br><span class="small"><b>Demo:</b> ${u?`tu código es <b class="mono">${lg.code}</b>`:'ese correo no existe, así que ningún código funcionará. Por seguridad no se le dice eso a quien lo escribe.'}</span>`];render();setTimeout(()=>$('#lg-code')?.focus(),20)},
   'lg-forgot2':()=>{lg.err={};const code=(d.code||'').trim();
@@ -1661,7 +1668,170 @@ document.addEventListener('submit',e=>{
  F[k]?.();
 });
 
+/* =========================================================
+   APP REAL · Firebase (Auth + Firestore)
+   ========================================================= */
+const TCOLLS=['products','sales','moves','customers','ledger','suppliers','sessions','kardex','purchases'];
+const SYNC_COLLS=[...TCOLLS,'tenants','users','payments','requests','messages'];
+const RB={authReady:false,profileReady:false,user:null,unsubs:[],synced:{},needVerify:false,noProfile:false,pendingRender:false,lastBeat:0,renderT:null};
+function emptyState(){return {v:1,config:{contact:'Escríbenos a samanat2026@gmail.com',brand:'Samanat',priceChanges:[]},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[]}}
+const stable=o=>JSON.stringify(o,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((a,x)=>(a[x]=v[x],a),{}):v);
+const pathOf=(c,r)=>TCOLLS.includes(c)?`tenants/${r.tid}/${c}/${r.id}`:c==='tenants'?`tenants/${r.id}`:`${c}/${r.id}`;
+function authErr(e){const c=e&&e.code||'';return({'auth/email-already-in-use':'Ese correo ya tiene una cuenta en Natara.','auth/invalid-email':'Revisa el correo: debe tener la forma nombre@dominio.com.','auth/weak-password':'La contraseña es muy débil.','auth/network-request-failed':'No hay conexión a internet. Revisa tu conexión e intenta de nuevo.','auth/too-many-requests':'Demasiados intentos. Espera un momento e intenta de nuevo.','auth/operation-not-allowed':'El inicio con correo no está activado en Firebase (Authentication → Método de acceso).'})[c]||`Ocurrió un error (${c||'desconocido'}). Intenta de nuevo.`}
+function syncDiff(){
+ if(!window.FB||!RB.user||!RB.profileReady)return;const {db,doc,writeBatch,increment}=FB;const ops=[];const seen=new Set();
+ for(const c of SYNC_COLLS)for(const r of S[c]||[]){
+  if(TCOLLS.includes(c)&&!r.tid)continue;const k=pathOf(c,r);seen.add(k);
+  const rec=JSON.parse(JSON.stringify(r));delete rec.pass;const j=stable(rec);if(RB.synced[k]===j)continue;
+  const prev=RB.synced[k]?JSON.parse(RB.synced[k]):null;
+  if(c==='products'&&prev&&prev.stock!==rec.stock){const delta=Math.round((rec.stock-prev.stock)*100)/100;const rest={...rec};delete rest.stock;ops.push(b=>{b.set(doc(db,k),rest,{merge:true});b.update(doc(db,k),{stock:increment(delta)})})}
+  else ops.push(b=>b.set(doc(db,k),rec));
+  RB.synced[k]=j;
+ }
+ if(me()?.role==='superadmin'){const cf=JSON.parse(JSON.stringify(S.config));const j=stable(cf);if(RB.synced['config/global']!==j){ops.push(b=>b.set(doc(db,'config/global'),cf));RB.synced['config/global']=j}}
+ for(const k of Object.keys(RB.synced)){if(k==='config/global'||seen.has(k))continue;ops.push(b=>b.delete(doc(db,k)));delete RB.synced[k]}
+ for(let i=0;i<ops.length;i+=400){const b=writeBatch(db);ops.slice(i,i+400).forEach(f=>f(b));b.commit().catch(e=>{console.error('sync',e);toast(e.code==='permission-denied'?'No tienes permiso para hacer ese cambio.':'No se pudo guardar en la nube. Revisa tu conexión.','bad')})}
+}
+function scheduleRender(adminOnly){
+ if(adminOnly&&me()?.role!=='superadmin')return;
+ clearTimeout(RB.renderT);RB.renderT=setTimeout(()=>{const a=document.activeElement;if(a&&a.closest&&a.closest('#app')&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){RB.pendingRender=true;return}const m=$('#main');const y=m?m.scrollTop:0;render();const m2=$('#main');if(m2)m2.scrollTop=y},60);
+}
+document.addEventListener('focusout',()=>{if(RB.pendingRender){RB.pendingRender=false;setTimeout(()=>scheduleRender(),150)}});
+function upsert(coll,id,data,k){const rec={...data,id};const j=stable(rec);const arr=S[coll];const i=arr.findIndex(x=>x.id===id);if(RB.synced[k]===j&&i>=0)return false;RB.synced[k]=j;if(i>=0)arr[i]=rec;else arr.push(rec);return true}
+function applySnap(coll,snap){let ch=false;snap.docChanges().forEach(c=>{const k=c.doc.ref.path;if(c.type==='removed'){const arr=S[coll];const i=arr.findIndex(x=>x.id===c.doc.id);if(i>=0){arr.splice(i,1);ch=true}delete RB.synced[k];return}if(upsert(coll,c.doc.id,c.doc.data(),k))ch=true});if(ch)scheduleRender()}
+function applyDoc(coll,d){const k=d.ref.path;if(!d.exists()){const arr=S[coll];const i=arr.findIndex(x=>x.id===d.id);if(i>=0){arr.splice(i,1);delete RB.synced[k];scheduleRender()}return}if(upsert(coll,d.id,d.data(),k))scheduleRender()}
+function subscribe(p){
+ const {db,collection,doc,query,where,orderBy,limit,onSnapshot}=FB;const warn=c=>e=>console.warn('listener',c,e.code);
+ const on=(q,c)=>RB.unsubs.push(onSnapshot(q,s=>applySnap(c,s),warn(c)));
+ RB.unsubs.push(onSnapshot(doc(db,'config/global'),d=>{if(d.exists()){const v=d.data();RB.synced['config/global']=stable(v);S.config={...emptyState().config,...v};scheduleRender()}},warn('config')));
+ if(p.role==='superadmin'){
+  ['tenants','users','payments','requests','messages'].forEach(c=>on(collection(db,c),c));
+  RB.unsubs.push(onSnapshot(collection(db,'presence'),s=>{L0.presence={};s.forEach(d=>L0.presence[d.id]=d.data().at||0);scheduleRender(true)},warn('presence')));
+  RB.unsubs.push(onSnapshot(collection(db,'stats'),s=>{L0.views={};s.forEach(d=>L0.views[d.id]=d.data().views||{});scheduleRender(true)},warn('stats')));
+  RB.unsubs.push(onSnapshot(query(collection(db,'activity'),orderBy('at','desc'),limit(120)),s=>{L0.feed=s.docs.map(d=>d.data()).reverse();scheduleRender(true)},warn('activity')));
+  return;
+ }
+ const tid=p.tid;
+ RB.unsubs.push(onSnapshot(doc(db,'tenants',tid),d=>{const was=isLocked();applyDoc('tenants',d);if(!was&&isLocked())toast('Samanat suspendió el acceso de este negocio','bad')},warn('tenant')));
+ on(query(collection(db,'users'),where('tid','==',tid)),'users');
+ TCOLLS.forEach(c=>{const col=collection(db,'tenants',tid,c);on(c==='sales'?query(col,where('at','>=',Date.now()-120*DAY)):c==='kardex'?query(col,where('at','>=',Date.now()-60*DAY)):col,c)});
+ on(query(collection(db,'messages'),where('to','==',tid)),'messages');on(query(collection(db,'messages'),where('to','==','all')),'messages');
+ if(p.role==='dueno'){on(query(collection(db,'payments'),where('tid','==',tid)),'payments');on(query(collection(db,'requests'),where('tid','==',tid)),'requests')}
+}
+async function fbAfterAuth(u){
+ try{
+  let snap=await FB.getDoc(FB.doc(FB.db,'users',u.uid));
+  if(!snap.exists()){
+   if(u.email===ADMIN_EMAIL){if(!u.emailVerified){RB.needVerify=true;RB.authReady=true;render();return}
+    await FB.setDoc(FB.doc(FB.db,'users',u.uid),{id:u.uid,tid:null,name:'Natalia Orozco',role:'superadmin',email:u.email,perms:[],active:true});snap=await FB.getDoc(FB.doc(FB.db,'users',u.uid))}
+   else{RB.noProfile=true;RB.authReady=true;render();return}
+  }
+  const prof={...snap.data(),id:u.uid};
+  if(prof.active===false||prof.archived){lg.banner=['bad','Tu usuario está desactivado. Habla con el dueño del negocio para que lo active.'];await FB.signOut(FB.auth);return}
+  S.users=[prof];RB.synced['users/'+u.uid]=stable(prof);sess={uid:u.uid,view:sess.uid===u.uid?sess.view:null};saveSess();
+  subscribe(prof);RB.authReady=true;RB.profileReady=true;lg.banner=null;lg.err={};
+  if(prof.tid)liveEvent('login','Entró a Natara');render();
+ }catch(e){console.error(e);RB.authReady=true;lg.banner=['bad',e.code==='permission-denied'?'Tu cuenta no tiene permisos. Habla con Samanat.':'No pudimos cargar tu cuenta. Revisa tu conexión e intenta de nuevo.'];try{await FB.signOut(FB.auth)}catch(_){}render()}
+}
+function fbBoot(){
+ FB.onAuthStateChanged(FB.auth,u=>{
+  RB.unsubs.forEach(f=>{try{f()}catch(_){}});RB.unsubs=[];RB.synced={};S=emptyState();L0={presence:{},views:{},feed:[]};
+  RB.user=u;RB.profileReady=false;RB.noProfile=false;RB.needVerify=false;
+  if(!u){sess={uid:null,view:null};saveSess();RB.authReady=true;cart=[];render();return}
+  RB.authReady=false;render();fbAfterAuth(u);
+ });
+}
+function realGate(){
+ const box=(t,extra='')=>`<div class="lock-screen"><div class="lock-card">${mark(64)}<h1>${t}</h1>${extra}</div></div>`;
+ if(!window.FB||!RB.authReady)return box('Cargando Natara…','<p class="muted">Un momento, por favor.</p>');
+ if(RB.needVerify)return box('Verifica tu correo',`<p class="muted">Te enviamos un enlace a <b>${esc(RB.user?.email)}</b>. Ábrelo para confirmar que el correo es tuyo y luego vuelve aquí. Revisa también la carpeta de spam.</p><div class="row" style="justify-content:center"><button class="btn primary" data-a="verify-done">Ya lo verifiqué</button><button class="btn" data-a="verify-resend">Enviar de nuevo</button><button class="btn ghost" data-a="logout">Salir</button></div>`);
+ if(RB.noProfile)return box('Este correo no tiene acceso a Natara',`<p class="muted">La cuenta <b>${esc(RB.user?.email)}</b> no está asociada a ningún negocio. Si crees que es un error, escríbenos a ${esc(ADMIN_EMAIL)}.</p><button class="btn" data-a="logout">${ic('logout')} Cerrar sesión</button>`);
+ if(RB.user&&!RB.profileReady)return box('Cargando tu cuenta…','<p class="muted">Un momento, por favor.</p>');
+ const u=me();
+ if(RB.user&&!u){RB.noProfile=true;return realGate()}
+ if(RB.user&&u&&(u.active===false||u.archived)){lg.banner=['bad','Tu usuario fue desactivado. Habla con el dueño del negocio.'];rLogout();return box('Cerrando sesión…','')}
+ return null;
+}
+async function rLogin(email,pass){
+ const btn=$('#lg-submit');if(btn){btn.disabled=true;btn.textContent='Entrando…'}
+ try{await FB.setPersistence(FB.auth,$('#lg-remember')?.checked?FB.browserLocalPersistence:FB.browserSessionPersistence);await FB.signInWithEmailAndPassword(FB.auth,email,pass);lg.fails[email]=0;lg.pass=''}
+ catch(e){const c=e.code||'';
+  if(c==='auth/too-many-requests'){lg.lockUntil=Date.now()+60000;lg.banner=['bad','Demasiados intentos fallidos. Por seguridad, espera 1 minuto antes de intentar de nuevo.']}
+  else if(['auth/invalid-credential','auth/wrong-password','auth/user-not-found','auth/invalid-login-credentials'].includes(c)){lg.fails[email]=(lg.fails[email]||0)+1;const left=5-lg.fails[email];
+   if(left<=0){lg.lockUntil=Date.now()+60000;lg.fails[email]=0;lg.banner=['bad','Demasiados intentos fallidos. Por seguridad, espera 1 minuto antes de intentar de nuevo.']}
+   else lg.banner=['bad',`Correo o contraseña incorrectos. Te quedan ${left} intento${left>1?'s':''}.${email===ADMIN_EMAIL?' <br><button type="button" class="linkish" data-a="admin-create">¿Es tu primera vez? Crear la cuenta de administradora con esta contraseña</button>':''}`]}
+  else if(c==='auth/user-disabled')lg.banner=['bad','Tu usuario está desactivado. Habla con Samanat.'];
+  else lg.banner=['bad',authErr(e)];
+  if(email!==ADMIN_EMAIL)lg.pass='';render();$('#lg-pass')?.focus()}
+}
+async function rAdminCreate(){
+ const pass=$('#lg-pass')?.value||lg.pass||'';const pe=passErrors(pass);
+ if(pe.length){lg.email=ADMIN_EMAIL;lg.banner=['bad','Para crear tu cuenta, la contraseña necesita: '+pe.join(', ')+'.'];render();return}
+ try{const c=await FB.createUserWithEmailAndPassword(FB.auth,ADMIN_EMAIL,pass);await FB.sendEmailVerification(c.user,{url:REAL_URL});lg.pass=''}
+ catch(e){lg.banner=['bad',e.code==='auth/email-already-in-use'?'Esa cuenta ya existe. Si no recuerdas la contraseña, usa “¿Olvidaste tu contraseña?”.':authErr(e)];render()}
+}
+async function rForgot(email){
+ try{await FB.sendPasswordResetEmail(FB.auth,email,{url:REAL_URL})}catch(e){if(e.code==='auth/network-request-failed'){lg.banner=['bad',authErr(e)];render();return}}
+ lg.mode='form';lg.step=1;lg.email=email;lg.banner=['info',`Si <b>${esc(email)}</b> tiene una cuenta, te enviamos un enlace para crear una contraseña nueva. Revisa también la carpeta de spam.`];render();
+}
+async function rLogout(){const u=me();try{if(u?.tid)await FB.deleteDoc(FB.doc(FB.db,'presence',u.id))}catch(_){}navOpen=false;try{await FB.signOut(FB.auth)}catch(_){}}
+async function rForceChange(np){
+ try{await FB.updatePassword(FB.auth.currentUser,np);const u=me();delete u.mustChange;save();lg.err={};render();toast('Contraseña creada. ¡Bienvenido a Natara!')}
+ catch(e){if(e.code==='auth/requires-recent-login'){lg.banner=['bad','Por seguridad, vuelve a iniciar sesión con la contraseña temporal y crea la nueva.'];rLogout()}else{lg.err={np:authErr(e)};render()}}
+}
+async function createAuthUser(email,pass){
+ const sec=FB.initializeApp(window.NATARA_FB_CONFIG,'sec-'+Date.now());
+ try{const a=FB.getAuth(sec);const c=await FB.createUserWithEmailAndPassword(a,email,pass);const id=c.user.uid;await FB.signOut(a);return id}finally{FB.deleteApp(sec).catch(()=>{})}
+}
+const busy=(form,txt)=>{const b=document.querySelector(`[data-form="${form}"]`);if(b){b.disabled=!!txt;if(txt){b.dataset.t=b.textContent;b.textContent=txt}else if(b.dataset.t)b.textContent=b.dataset.t}};
+async function rEmpNew(d,t,email,err){
+ busy('emp-form','Creando…');let id;try{id=await createAuthUser(email,d.pass)}catch(e){busy('emp-form');return err(authErr(e))}
+ S.users.push({id,tid:t.id,name:d.name.trim(),email,role:'cajero',active:true,perms:[],mustChange:true});save();closeModal();render();toast(`${d.name.trim()} ya puede entrar. Al entrar le pediremos cambiar la contraseña.`);
+}
+async function rTenantNew(d,email,er){
+ busy('tn-form','Creando…');const pass=genTemp();let uidA;try{uidA=await createAuthUser(email,pass)}catch(e){busy('tn-form');return er(authErr(e))}
+ const id='t'+uid();const p=planById(d.plan);const due=new Date();due.setMonth(due.getMonth()+1);
+ const t={id,name:d.name.trim(),type:d.type,city:d.city,phone:fmtPhone(d.phone),plan:p.id,mods:p.mods.slice(),status:'activo',due:sod(due),since:sod(Date.now())};S.tenants.push(t);
+ const u={id:uidA,tid:id,name:d.owner.trim(),role:'dueno',email,mustChange:true,perms:[],active:true};S.users.push(u);
+ S.payments.push({id:uid(),tid:id,amount:p.price,at:Date.now(),method:'Transferencia',concept:'Mensualidad'});if(d.setup){t.setupPaid=true;S.payments.push({id:uid(),tid:id,amount:SETUP.price,at:Date.now(),method:'Transferencia',concept:'Implementación asistida'})}
+ S.messages.push({id:uid(),to:id,kind:'aviso',title:`Bienvenido a Natara, ${u.name.split(' ')[0]}`,body:'Tu cuenta está lista. Empieza cargando tu inventario desde Excel o creando tus productos.',at:Date.now(),readBy:[]});
+ save();render();sendWelcome(t,u,pass);
+}
+async function rTenantSave(d,f,tt,o,email,er){
+ busy('tenant-form','Guardando…');const pass=genTemp();let nid;try{nid=await createAuthUser(email,pass)}catch(e){busy('tenant-form');return er(authErr(e))}
+ tt.name=d.tname.trim();tt.type=d.ttype.trim();tt.city=d.tcity.trim();tt.phone=fmtPhone(d.tphone);tt.plan=d.plan;tt.mods=[...f.querySelectorAll('input[name=mod]:checked')].map(c=>c.value);tt.due=new Date(d.due+'T12:00:00').getTime();
+ const nu={...JSON.parse(JSON.stringify(o)),id:nid,name:d.oname.trim(),email,mustChange:true,active:true};delete nu.pass;delete nu.archived;
+ o.archived=true;o.active=false;S.users.push(nu);save();render();sendWelcome(tt,nu,pass);
+}
+async function rResend(tid){const u=S.users.find(x=>x.tid===tid&&x.role==='dueno'&&!x.archived);if(!u)return;try{await FB.sendPasswordResetEmail(FB.auth,u.email,{url:REAL_URL});closeModal();toast(`Le enviamos a ${u.email} un enlace para crear una contraseña nueva`)}catch(e){toast(authErr(e),'bad')}}
+async function rPurge(tid,uids){
+ const {db,collection,getDocs,writeBatch,doc,query,where}=FB;
+ try{for(const c of TCOLLS){const sn=await getDocs(collection(db,'tenants',tid,c));for(let i=0;i<sn.docs.length;i+=400){const b=writeBatch(db);sn.docs.slice(i,i+400).forEach(x=>b.delete(x.ref));await b.commit()}}
+  const ac=await getDocs(query(collection(db,'activity'),where('tid','==',tid)));for(let i=0;i<ac.docs.length;i+=400){const b=writeBatch(db);ac.docs.slice(i,i+400).forEach(x=>b.delete(x.ref));await b.commit()}
+  const b=writeBatch(db);b.delete(doc(db,'stats',tid));uids.forEach(u=>b.delete(doc(db,'presence',u)));await b.commit();
+ }catch(e){console.error('purge',e);toast('No se pudieron borrar todos los datos del cliente. Intenta de nuevo.','bad')}
+}
+function rLive(u,type,text,v,amount){
+ const {db,doc,setDoc,addDoc,collection,increment}=FB;if(!RB.profileReady)return;
+ if(type!=='view')addDoc(collection(db,'activity'),{tid:u.tid,uid:u.id,type,text:text||'',amount:amount||0,at:Date.now()}).catch(e=>console.warn('activity',e.code));
+ if(v)setDoc(doc(db,'stats',u.tid),{views:{[v]:increment(1)}},{merge:true}).catch(e=>console.warn('stats',e.code));
+ rBeat(u,true);
+}
+function rBeat(u,force){if(!RB.profileReady)return;if(!force&&Date.now()-RB.lastBeat<150000)return;RB.lastBeat=Date.now();FB.setDoc(FB.doc(FB.db,'presence',u.id),{tid:u.tid,at:Date.now()}).catch(e=>console.warn('presence',e.code))}
+if(REAL){const go=()=>fbBoot();if(window.FB)go();else window.addEventListener('fb-ready',go,{once:true})}
+
 render();
+</script>
+
+<script>window.NATARA_FB_CONFIG={apiKey:"AIzaSyDKv_qgOpQXSRElNl41tbGctHzf1_Qq9Hk",authDomain:"natara-96555.firebaseapp.com",projectId:"natara-96555",storageBucket:"natara-96555.firebasestorage.app",messagingSenderId:"673119474930",appId:"1:673119474930:web:22a50b2948b06f5c8b6c6b"};</script>
+<script type="module">
+import {initializeApp,deleteApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut,sendPasswordResetEmail,updatePassword,createUserWithEmailAndPassword,sendEmailVerification,setPersistence,browserLocalPersistence,browserSessionPersistence} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {initializeFirestore,persistentLocalCache,persistentMultipleTabManager,doc,getDoc,setDoc,deleteDoc,addDoc,collection,query,where,orderBy,limit,onSnapshot,writeBatch,increment,getDocs} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const app=initializeApp(window.NATARA_FB_CONFIG);const auth=getAuth(app);auth.languageCode='es';
+let db;try{db=initializeFirestore(app,{ignoreUndefinedProperties:true,localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})})}catch(e){db=initializeFirestore(app,{ignoreUndefinedProperties:true})}
+window.FB={app,auth,db,initializeApp,deleteApp,getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut,sendPasswordResetEmail,updatePassword,createUserWithEmailAndPassword,sendEmailVerification,setPersistence,browserLocalPersistence,browserSessionPersistence,doc,getDoc,setDoc,deleteDoc,addDoc,collection,query,where,orderBy,limit,onSnapshot,writeBatch,increment,getDocs};
+window.dispatchEvent(new Event('fb-ready'));
 </script>
 
 </body>

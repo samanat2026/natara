@@ -9,7 +9,7 @@ Software de gestión para pequeños negocios (panaderías, farmacias, minimercad
 
 `index.html` es la app real y `demo/index.html` la demo, generadas desde el mismo código (`window.NATARA_MODE`). La demo trae datos de ejemplo y cuentas de prueba; la app real arranca vacía, solo con la cuenta de Samanat.
 
-Los datos de la demo se guardan en el navegador (`localStorage`) y se sincronizan entre pestañas del mismo navegador.
+Los datos de la demo se guardan en el navegador (`localStorage`). La app real usa **Firebase** (proyecto `natara-96555`): Authentication con correo y contraseña, y Firestore en `southamerica-east1`. Las reglas de seguridad están en [`firestore.rules`](firestore.rules) y se pegan en Firebase → Firestore → Reglas.
 
 ### Cuentas de ejemplo
 
