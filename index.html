@@ -334,7 +334,7 @@ details.hint summary{cursor:pointer}
    NATARA — demo multi-negocio · by Samanat
    Estado local (por navegador). Pestañas sincronizadas en vivo.
    ========================================================= */
-const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';const ADMIN_EMAIL='samanat2026@gmail.com';
+const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';const DEMO_ADMIN=MODE==='demo'&&window.NATARA_DEMO_ADMIN===true;const ADMIN_EMAIL='samanat2026@gmail.com';
 const REAL_URL='https://samanat2026.github.io/natara/',DEMO_URL='https://samanat2026.github.io/natara/demo/';
 const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v5';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
@@ -532,7 +532,7 @@ function seed(){
  S.requests.push({id:uid(),tid:'t2',mod:'fiados',at:today-1*DAY+15*3600e3,status:'pendiente'});
  // pagos a Samanat
  S.tenants.forEach(t=>{for(let m=0;m<5;m++){const at=t.due-(m+1)*30*DAY;if(at>t.since&&at<now)S.payments.push({id:uid(),tid:t.id,amount:fee(t),at,method:pick(['Nequi','Bancolombia','Efectivo'])})}});
- if(MODE==='demo')S.users=S.users.filter(u=>u.role!=='superadmin');
+ if(MODE==='demo')S.users=S.users.filter(u=>u.role!=='superadmin');// la consola de demo la agrega al cargar
  return S;
 }
 
@@ -544,6 +544,7 @@ let sess={uid:null,view:null};
 try{const r=sessionStorage.getItem(SESS);if(r)sess=JSON.parse(r)}catch(e){}
 function saveSess(){try{sessionStorage.setItem(SESS,JSON.stringify(sess))}catch(e){}}
 load();
+if(DEMO_ADMIN&&!S.users.some(u=>u.role==='superadmin')){S.users.unshift({id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'natalia@samanat.co',pin:'0000',active:true,pass:'Natara2026*',perms:[]});save()}
 window.addEventListener('storage',e=>{
  if(REAL||e.key!==KEY)return;
  const prevLocked=isLocked();
@@ -653,6 +654,7 @@ function render(){
  applyPrices();
  if(REAL){const g=realGate();if(g!==null){$('#app').innerHTML=g;return}}
  const u=me();
+ if(u&&u.role==='superadmin'&&MODE==='demo'&&!DEMO_ADMIN){sess={uid:null,view:null};saveSess();$('#app').innerHTML=viewLogin();return}
  if(!u||!u.active){$('#app').innerHTML=viewLogin();return}
  if(u.mustChange){$('#app').innerHTML=viewForceChange();return}
  if(u.role==='superadmin'){renderShell(adminNav(),adminView());return}
@@ -738,7 +740,8 @@ function viewLogin(){
  const byT=S.tenants.map(t=>`<div class="acc-group"><span>${esc(t.name)} · ${esc(t.type)}</span>${S.users.filter(u=>u.tid===t.id&&u.active).map(acc).join('')}</div>`).join('');
  return `<div class="login">${loginBrand()}
   <section class="login-pick">
-   <div><h2>Entra a la demo</h2><p class="muted" style="margin:6px 0 0">Elige una cuenta. Cada rol ve sus propios módulos.</p></div>
+   <div><h2>${DEMO_ADMIN?'Demo · Consola de Samanat':'Entra a la demo'}</h2><p class="muted" style="margin:6px 0 0">${DEMO_ADMIN?'Esta página es solo para ti. Usa los mismos datos de la demo de clientes, más tu consola de superusuario.':'Elige una cuenta. Cada rol ve sus propios módulos.'}</p></div>
+   ${DEMO_ADMIN?`<div class="hint">${ic('info',15)} <b>Pruébalo en vivo:</b> abre la <a class="linkish" href="${DEMO_URL}" target="_blank" rel="noopener">demo de clientes</a> en otra pestaña y entra como un negocio. Lo que hagas aquí como superusuario (suspender, activar módulos, mandar mensajes, cambiar precios) se ve allá al instante.</div><div class="acc-group"><span>Samanat</span>${acc(S.users.find(u=>u.role==='superadmin'))}</div>`:''}
    <div class="row"><button class="btn" data-a="lg-mode" data-v="form">${ic('lock',16)} Ver el inicio de sesión real, con validaciones</button><a class="linkish small" href="${REAL_URL}">Ir a la app real →</a></div>
    <div class="hint">${ic('info',15)} <b>Así se ve Natara por dentro.</b> Entra como la dueña para ver todo el negocio, o como cajero para ver solo lo que la dueña le permite. Los datos son de ejemplo: puedes vender, cargar inventario y probar sin miedo.</div>
    ${byT}
@@ -1650,7 +1653,7 @@ document.addEventListener('submit',e=>{
    if(!pass)lg.err.pass='Escribe tu contraseña.';
    if(Object.keys(lg.err).length){render();$(lg.err.email?'#lg-email':'#lg-pass')?.focus();return}
    if(REAL)return rLogin(email,pass);
-   const u=S.users.find(x=>x.email.toLowerCase()===email);
+   let u=S.users.find(x=>x.email.toLowerCase()===email);if(u&&u.role==='superadmin'&&!DEMO_ADMIN)u=null;
    if(u&&!u.pass&&u.role==='superadmin'){u.mustChange=true;lg.pass='';doLogin(u.id);return}
    if(!u||u.pass!==pass){lg.fails[email]=(lg.fails[email]||0)+1;const left=5-lg.fails[email];lg.pass='';if(left<=0){lg.lockUntil=Date.now()+60000;lg.fails[email]=0;lg.banner=['bad','Demasiados intentos fallidos. Por seguridad, espera 1 minuto antes de intentar de nuevo.']}else lg.banner=['bad',`Correo o contraseña incorrectos. Te quedan ${left} intento${left>1?'s':''}.`];render();$('#lg-pass')?.focus();return}
    if(!u.active){lg.banner=['bad','Tu usuario está desactivado. Habla con el dueño del negocio para que lo active.'];lg.pass='';render();return}
