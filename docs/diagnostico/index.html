@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Natara · Diagnóstico</title>
+<link rel="icon" type="image/png" href="/natara/favicon.png">
+<style>
+:root{--bg:#F2F5F4;--card:#fff;--ink:#13201C;--muted:#4A5C56;--line:#D5DFDB;--ok:#1D8549;--okbg:#DCF1E3;--bad:#BF3A2F;--badbg:#FADFDB;--wait:#A86400;--waitbg:#FCEED3}
+@media (prefers-color-scheme:dark){:root{--bg:#0C1311;--card:#141E1B;--ink:#E3EDE9;--muted:#A4B5AF;--line:#283833;--ok:#4CC782;--okbg:#163323;--bad:#F07B6F;--badbg:#3B1C19;--wait:#F0AE48;--waitbg:#382A0F;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:32px max(16px,env(safe-area-inset-left))}
+h1{font-size:24px;margin:0 0 6px}p{color:var(--muted);margin:0 0 20px}
+.item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;gap:12px}
+.st{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:700}
+.ok .st{background:var(--okbg);color:var(--ok)}.bad .st{background:var(--badbg);color:var(--bad)}.wait .st{background:var(--waitbg);color:var(--wait)}
+.item b{display:block}.item small{color:var(--muted);display:block;margin-top:2px;white-space:pre-wrap}
+code{background:var(--bg);padding:1px 5px;border-radius:5px;font-size:13px}
+a{color:#0E7C66;font-weight:600}
+</style>
+</head>
+<body>
+<main>
+<h1>Diagnóstico de Natara</h1>
+<p>Revisa si Firebase quedó bien configurado. Mándale un pantallazo de esta página a quien te ayuda.</p>
+<div id="list"></div>
+<p style="margin-top:20px">Cuando todo esté en verde, entra a la app: <a href="/natara/">samanat2026.github.io/natara</a></p>
+</main>
+<script type="module">
+const list=document.getElementById('list');
+function row(title){const el=document.createElement('div');el.className='item wait';el.innerHTML=`<div class="st">…</div><div><b>${title}</b><small>Revisando…</small></div>`;list.appendChild(el);return(state,msg)=>{el.className='item '+state;el.querySelector('.st').textContent=state==='ok'?'✓':state==='bad'?'✕':'!';el.querySelector('small').innerHTML=msg}}
+const cfg={apiKey:"AIzaSyDKv_qgOpQXSRElNl41tbGctHzf1_Qq9Hk",authDomain:"natara-96555.firebaseapp.com",projectId:"natara-96555",storageBucket:"natara-96555.firebasestorage.app",messagingSenderId:"673119474930",appId:"1:673119474930:web:22a50b2948b06f5c8b6c6b"};
+const r1=row('1. Conexión con Firebase');
+let A,AU,FS;
+try{
+ A=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+ AU=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");
+ FS=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+ r1('ok','Se cargó Firebase y el proyecto <code>natara-96555</code>.');
+}catch(e){r1('bad','No se pudo cargar Firebase. Revisa tu conexión a internet. ('+e.message+')');throw e}
+const app=A.initializeApp(cfg);const auth=AU.getAuth(app);const db=FS.getFirestore(app);
+
+const r2=row('2. Inicio de sesión con correo y contraseña (Authentication)');
+const r3=row('3. Dominio autorizado: samanat2026.github.io');
+try{
+ await AU.signInWithEmailAndPassword(auth,'diagnostico-no-existe@natara.co','Prueba-No-Existe-123!');
+ r2('ok','Activado.');
+}catch(e){
+ const c=e.code||'';
+ if(c==='auth/operation-not-allowed')r2('bad','<b>Falta activarlo.</b> En Firebase → Authentication → Método de acceso → Correo electrónico/contraseña → Habilitar → Guardar.');
+ else if(c==='auth/configuration-not-found')r2('bad','<b>Authentication no está iniciado.</b> En Firebase → Authentication → botón “Comenzar”, y luego activa Correo electrónico/contraseña.');
+ else if(['auth/invalid-credential','auth/user-not-found','auth/wrong-password','auth/invalid-login-credentials'].includes(c))r2('ok','Activado y respondiendo.');
+ else if(c==='auth/unauthorized-domain')r2('bad','Este dominio no está autorizado.');
+ else r2('wait','Respuesta inesperada: <code>'+c+'</code>');
+}
+try{
+ await AU.sendPasswordResetEmail(auth,'diagnostico-no-existe@natara.co',{url:'https://samanat2026.github.io/natara/'});
+ r3('ok','Autorizado.');
+}catch(e){
+ const c=e.code||'';
+ if(c==='auth/unauthorized-continue-uri'||c==='auth/unauthorized-domain')r3('bad','<b>Falta agregarlo.</b> En Firebase → Authentication → Configuración → Dominios autorizados → Agregar dominio → <code>samanat2026.github.io</code>.');
+ else if(c==='auth/user-not-found')r3('ok','Autorizado.');
+ else if(c==='auth/operation-not-allowed'||c==='auth/configuration-not-found')r3('wait','Primero activa el inicio de sesión con correo (punto 2).');
+ else r3('wait','Respuesta inesperada: <code>'+c+'</code>');
+}
+
+const r4=row('4. Base de datos Firestore');
+const r5=row('5. Reglas de seguridad');
+try{
+ await FS.getDoc(FS.doc(db,'config','global'));
+ r4('ok','La base de datos existe.');
+ r5('bad','<b>La base de datos está abierta a cualquiera.</b> Pega las reglas de <a href="https://github.com/samanat2026/natara/blob/main/firestore.rules" target="_blank" rel="noopener">firestore.rules</a> en Firebase → Firestore → Reglas → Publicar.');
+}catch(e){
+ const c=e.code||'';const m=(e.message||'');
+ if(c==='permission-denied'){r4('ok','La base de datos existe.');r5('ok','Protegida: sin iniciar sesión no se puede leer nada. Si pegaste las reglas de Natara, ya está.<br>Si al entrar a la app como administradora te sale “no tiene permisos”, falta pegar las reglas.')}
+ else if(/does not exist|not.?found|NOT_FOUND/i.test(m+c)){r4('bad','<b>Falta crearla.</b> En Firebase → Firestore Database → Crear base de datos → edición Standard → ubicación <code>southamerica-east1</code> → modo de producción.');r5('wait','Primero crea la base de datos (punto 4).')}
+ else if(c==='unavailable'){r4('bad','No responde. Puede que no exista todavía o que no haya internet. Si ya la creaste, espera 1 minuto y recarga.<br><small>'+m+'</small>');r5('wait','Pendiente del punto 4.')}
+ else{r4('wait','Respuesta inesperada: <code>'+c+'</code> '+m);r5('wait','Pendiente del punto 4.')}
+}
+</script>
+</body>
+</html>

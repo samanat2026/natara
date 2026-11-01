@@ -1739,7 +1739,7 @@ async function fbAfterAuth(u){
   S.users=[prof];RB.synced['users/'+u.uid]=stable(prof);sess={uid:u.uid,view:sess.uid===u.uid?sess.view:null};saveSess();
   subscribe(prof);RB.authReady=true;RB.profileReady=true;lg.banner=null;lg.err={};
   if(prof.tid)liveEvent('login','Entró a Natara');render();
- }catch(e){console.error(e);RB.authReady=true;lg.banner=['bad',e.code==='permission-denied'?'Tu cuenta no tiene permisos. Habla con Samanat.':'No pudimos cargar tu cuenta. Revisa tu conexión e intenta de nuevo.'];try{await FB.signOut(FB.auth)}catch(_){}render()}
+ }catch(e){console.error(e);RB.authReady=true;lg.banner=['bad',e.code==='permission-denied'?(u.email===ADMIN_EMAIL?'Firestore rechazó el acceso: falta pegar las reglas de seguridad (Firebase → Firestore → Reglas → Publicar). Revísalo en samanat2026.github.io/natara/diagnostico/':'Tu cuenta no tiene permisos. Habla con Samanat.'):/does not exist|not.?found/i.test(e.message||'')?'La base de datos de Firestore todavía no está creada. Revísalo en samanat2026.github.io/natara/diagnostico/':'No pudimos cargar tu cuenta. Revisa tu conexión e intenta de nuevo.'];try{await FB.signOut(FB.auth)}catch(_){}render()}
 }
 function fbBoot(){
  FB.onAuthStateChanged(FB.auth,u=>{
