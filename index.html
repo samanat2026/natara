@@ -124,7 +124,7 @@ h1,h2,h3{margin:0;text-wrap:balance}
 .pill.good{background:var(--good-soft);color:var(--good)}
 .pill.warn{background:var(--warn-soft);color:var(--warn)}
 .pill.bad{background:var(--bad-soft);color:var(--bad)}
-.pill.acc{background:var(--accent-soft);color:var(--accent)}
+.pill.ac{background:var(--accent-soft);color:var(--accent)}
 .muted{color:var(--ink-3)}
 .small{font-size:13px}
 .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -600,7 +600,7 @@ function afterRender(){
    LOGIN
    ========================================================= */
 function viewLogin(){
- const acc=u=>{const t=S.tenants.find(x=>x.id===u.tid);return`<button class="acc" data-a="login" data-id="${u.id}"><div class="avatar">${initials(u.name)}</div><div class="who"><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin · Samanat':(u.role==='dueno'?'Dueño(a)':'Cajero(a)')+' · '+esc(t?.name)}</span></div>${t?pillDue(t):`<span class="pill acc">Admin</span>`}</button>`};
+ const acc=u=>{const t=S.tenants.find(x=>x.id===u.tid);return`<button class="acc" data-a="login" data-id="${u.id}"><div class="avatar">${initials(u.name)}</div><div class="who"><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin · Samanat':(u.role==='dueno'?'Dueño(a)':'Cajero(a)')+' · '+esc(t?.name)}</span></div>${t?pillDue(t):`<span class="pill ac">Admin</span>`}</button>`};
  const byT=S.tenants.map(t=>`<div class="acc-group"><span>${esc(t.name)} · ${esc(t.type)}</span>${S.users.filter(u=>u.tid===t.id&&u.active).map(acc).join('')}</div>`).join('');
  return `<div class="login">
   <section class="login-brand">
@@ -660,7 +660,7 @@ function viewInicio(){
    <div class="card"><h2>Stock bajo <span class="sub">${low.length} productos</span></h2>${!has('inventario')?`<p class="muted small">Activa el módulo de inventario para ver alertas de stock.</p>`:low.length?`<div class="stack">${low.slice(0,7).map(p=>`<div class="spread"><div style="min-width:0"><b class="small">${esc(p.name)}</b><div class="muted small">Mínimo ${num(p.min)}</div></div><span class="pill ${p.stock<=0?'bad':'warn'}">${num(p.stock)} und</span></div>`).join('')}</div>`:`<div class="empty">${ic('check',26)}Todo el inventario está sobre el mínimo.</div>`}</div>
   </div>`;
 }
-const payPill=s=>s.status==='anulada'?`<span class="pill bad">Anulada</span>`:s.method==='efectivo'?`<span class="pill">Efectivo</span>`:s.method==='fiado'?`<span class="pill acc">Fiado</span>`:s.confirmed?`<span class="pill good">${esc(s.bank||'Transf.')}</span>`:`<span class="pill warn">${esc(s.bank||'Transf.')} · por confirmar</span>`;
+const payPill=s=>s.status==='anulada'?`<span class="pill bad">Anulada</span>`:s.method==='efectivo'?`<span class="pill">Efectivo</span>`:s.method==='fiado'?`<span class="pill ac">Fiado</span>`:s.confirmed?`<span class="pill good">${esc(s.bank||'Transf.')}</span>`:`<span class="pill warn">${esc(s.bank||'Transf.')} · por confirmar</span>`;
 
 /* =========================================================
    CAJA / POS
@@ -1004,7 +1004,7 @@ function purchaseModal(sp){
 function viewEmpleados(){
  const t=tenant();const E=S.users.filter(u=>u.tid===t.id);const today=sod(Date.now());
  return `<div class="page-head"><div><h1>Empleados</h1><p>Cada persona entra con su usuario y sus ventas quedan a su nombre.</p></div><div class="actions"><button class="btn primary" data-a="emp-new">${ic('plus',16)} Nuevo empleado</button></div></div>
-  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Correo</th><th>PIN</th><th class="r">Ventas hoy</th><th>Activo</th></tr></thead><tbody>${E.map(u=>{const s=okSales().filter(x=>x.seller===u.id&&x.at>=today);return`<tr><td><div class="row"><div class="avatar">${initials(u.name)}</div><b>${esc(u.name)}</b></div></td><td>${u.role==='dueno'?'<span class="pill acc">Dueño(a)</span>':'<span class="pill">Cajero(a)</span>'}</td><td class="small">${esc(u.email)}</td><td class="mono">••••</td><td class="r num">${money(sum(s,x=>x.total))} <span class="muted small">(${s.length})</span></td><td>${u.role==='dueno'?'':`<button class="switch ${u.active?'on':''}" data-a="emp-toggle" data-id="${u.id}" aria-label="Activar o desactivar ${esc(u.name)}"></button>`}</td></tr>`}).join('')}</tbody></table></div></div>`;
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Correo</th><th>PIN</th><th class="r">Ventas hoy</th><th>Activo</th></tr></thead><tbody>${E.map(u=>{const s=okSales().filter(x=>x.seller===u.id&&x.at>=today);return`<tr><td><div class="row"><div class="avatar">${initials(u.name)}</div><b>${esc(u.name)}</b></div></td><td>${u.role==='dueno'?'<span class="pill ac">Dueño(a)</span>':'<span class="pill">Cajero(a)</span>'}</td><td class="small">${esc(u.email)}</td><td class="mono">••••</td><td class="r num">${money(sum(s,x=>x.total))} <span class="muted small">(${s.length})</span></td><td>${u.role==='dueno'?'':`<button class="switch ${u.active?'on':''}" data-a="emp-toggle" data-id="${u.id}" aria-label="Activar o desactivar ${esc(u.name)}"></button>`}</td></tr>`}).join('')}</tbody></table></div></div>`;
 }
 
 /* =========================================================
@@ -1030,7 +1030,7 @@ function viewMensajes(){
  let ch=false;M.forEach(m=>{if(!m.readBy.includes(t.id)){m.readBy.push(t.id);ch=true}});if(ch)setTimeout(()=>{save();const b=document.querySelector('[data-v="mensajes"] .count');if(b)b.remove()},600);
  return html;
 }
-const kindPill=k=>({aviso:'<span class="pill">Aviso</span>',vencimiento:'<span class="pill warn">Pago</span>',promo:'<span class="pill acc">Novedad</span>',suspension:'<span class="pill bad">Cuenta</span>'})[k]||'';
+const kindPill=k=>({aviso:'<span class="pill">Aviso</span>',vencimiento:'<span class="pill warn">Pago</span>',promo:'<span class="pill ac">Novedad</span>',suspension:'<span class="pill bad">Cuenta</span>'})[k]||'';
 function viewUpsell(mid){
  const m=modById(mid);const t=tenant();const asked=S.requests.some(r=>r.tid===t.id&&r.mod===mid&&r.status==='pendiente');
  return `<div class="card" style="max-width:560px;margin:40px auto;text-align:center"><div class="stack" style="align-items:center"><div class="avatar" style="width:56px;height:56px">${ic(m.icon,26)}</div><h1 style="font-family:var(--f-display);font-weight:500;font-size:22px">${m.name}</h1><p class="muted">${m.desc}</p><p><b>${money(m.price)}</b> <span class="muted">al mes${PLANS.find(p=>p.mods.includes(mid))?', o incluido en el plan '+PLANS.find(p=>p.mods.includes(mid)).name:''}</span></p>${asked?'<span class="pill warn">Ya lo solicitaste. Samanat te contactará.</span>':`<button class="btn primary" data-a="req-mod" data-v="${mid}">Solicitar este módulo</button>`}</div></div>`;
@@ -1098,7 +1098,7 @@ function aMensajes(){
 function aPlanes(){
  return `<div class="page-head"><div><h1>Planes y precios</h1><p>Lo que ofreces a tus clientes. Los módulos sueltos se suman a cualquier plan.</p></div></div>
   <div class="grid g3">${PLANS.map(p=>`<div class="card plan-card"><div class="spread"><b style="font-size:17px">${p.name}</b><span class="pill">${S.tenants.filter(t=>t.plan===p.id).length} clientes</span></div><span class="price">${money(p.price)}<span class="muted small" style="font-weight:500"> /mes</span></span><p class="muted small" style="margin:0">${p.pitch}</p><ul>${p.mods.map(m=>`<li>${modById(m).name}</li>`).join('')}</ul></div>`).join('')}</div>
-  <div class="card"><h2>Módulos sueltos y complementos</h2><div class="tbl-wrap"><table><thead><tr><th>Módulo</th><th>Qué hace</th><th class="r">Precio</th></tr></thead><tbody>${MODS.map(m=>`<tr><td><b>${m.name}</b>${m.addon?' <span class="pill acc">Complemento</span>':''}</td><td class="small muted">${m.desc}</td><td class="r num">${money(m.price)}</td></tr>`).join('')}</tbody></table></div></div>
+  <div class="card"><h2>Módulos sueltos y complementos</h2><div class="tbl-wrap"><table><thead><tr><th>Módulo</th><th>Qué hace</th><th class="r">Precio</th></tr></thead><tbody>${MODS.map(m=>`<tr><td><b>${m.name}</b>${m.addon?' <span class="pill ac">Complemento</span>':''}</td><td class="small muted">${m.desc}</td><td class="r num">${money(m.price)}</td></tr>`).join('')}</tbody></table></div></div>
   <div class="card" style="max-width:560px"><h2>Contacto que ven los clientes suspendidos</h2><form class="row" data-f="contact"><input class="input" id="f-contact" name="contact" value="${esc(S.config.contact)}" style="flex:1;min-width:200px"><button class="btn primary" type="submit">Guardar</button></form></div>
   <div class="card" style="max-width:560px"><h2>Datos de la demo</h2><p class="muted small" style="margin:0 0 10px">Vuelve a los datos de ejemplo. Borra las ventas, productos y clientes que hayas creado.</p><button class="btn danger" data-a="reset-ask">${ic('refresh',16)} Restablecer demo</button></div>`;
 }
