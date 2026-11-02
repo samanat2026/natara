@@ -231,6 +231,8 @@ tbody tr.click:hover{background:var(--surface-2)}
 @media (max-width:560px){.cta-login{grid-template-columns:auto minmax(0,1fr)}.cta-go{grid-column:1/-1;justify-content:center}}
 .cta-buy{display:flex;flex-direction:column;gap:4px;padding:16px 18px;border-radius:14px;border:1px dashed var(--accent);background:var(--accent-soft)}
 .cta-buy b{font-size:16px}.cta-buy span{font-size:14px;color:var(--ink-2)}.cta-buy .mono{color:var(--accent);font-weight:600;user-select:all}
+.rc{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px dashed var(--line);border-radius:10px;grid-column:1/-1}
+.rc-row{display:flex;gap:8px;align-items:center}.rc-row select{flex:1;min-width:0}
 .seller-line{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:14px}
 .acc-group > span{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);font-weight:600}
 .acc{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;text-align:left;width:100%}
@@ -357,7 +359,7 @@ details.hint summary{cursor:pointer}
    ========================================================= */
 const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';const DEMO_ADMIN=MODE==='demo'&&window.NATARA_DEMO_ADMIN===true;const ADMIN_EMAIL='samanat2026@gmail.com';
 const REAL_URL='https://samanat2026.github.io/natara/',DEMO_URL='https://samanat2026.github.io/natara/demo/';
-const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v7';
+const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v8';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 
@@ -543,6 +545,9 @@ function seed(){
  const byName=n=>S.products.find(x=>x.tid==='t1'&&x.name===n);
  const buy=(supName,list,at,method)=>{const sp=supBy(supName);const items=list.map(([n,q])=>{const pr=byName(n);return{pid:pr.id,name:pr.name,qty:q,unit:pr.unit,cost:pr.cost}});const total=sum(items,i=>i.qty*i.cost);S.purchases.push({id:uid(),tid:'t1',sid:sp.id,at,items,total,method});mv('t1','egreso','Compra de mercancía',`Compra a ${sp.name}`,total,at,method)};
  for(let w=0;w<5;w++){buy('Molinos del Valle',[['Harina de trigo',50],['Azúcar',ri(15,25)],['Levadura fresca',2]],today-w*7*DAY-DAY+8*3600e3,'efectivo');if(w<3)buy('Lácteos La Pradera',[['Mantequilla',4],['Leche para producción',20],['Queso costeño para pandebono',5]],today-w*7*DAY-3*DAY+9*3600e3,'transferencia')}
+ const mkCombo=(code,name,price,parts)=>{const recipe=parts.map(([n,q])=>({pid:byName(n).id,qty:q}));S.products.push({id:uid(),tid:'t1',code,name,cat:'Combos',cost:Math.round(sum(recipe,c=>S.products.find(x=>x.id===c.pid).cost*c.qty)),price,stock:0,min:0,supplier:'',kind:'venta',unit:'und',recipe})};
+ mkCombo('COMBO1','Desayuno: chocolate con pan y queso',7500,[['Chocolate caliente',1],['Pan francés',2],['Queso costeño para pandebono',0.05]]);
+ mkCombo('COMBO2','Tinto con pandebono',2800,[['Café tinto',1],['Pan de bono',1]]);
  // caja abierta hoy
  S.sessions.push({id:uid(),tid:'t1',openedAt:today+6*3600e3,openedBy:'u2',base:150000,closedAt:null});
  S.sessions.push({id:uid(),tid:'t2',openedAt:today+7*3600e3,openedBy:'u5',base:100000,closedAt:null});
@@ -944,7 +949,7 @@ function salesCount(pid){if(!_sc){_sc={};okSales().forEach(s=>s.items.forEach(i=
 function posResults(){
  const P=posMatches();
  if(!P.length)return `<div class="card empty">${ic('search',26)}No hay productos que coincidan con “${esc(pos.q)}”.</div>`;
- return `<div class="muted small" style="margin-bottom:8px">${pos.q?`${P.length} resultado${P.length>1?'s':''}`:'Más vendidos'}</div><div class="tiles">${P.map(p=>`<button class="tile ${p.stock<=0?'out':''}" data-a="add" data-id="${p.id}"><strong>${esc(p.name)}</strong>${has('lector')?`<span class="st mono">${esc(p.code)}</span>`:`<span class="st">${esc(p.cat)}</span>`}<span class="spread"><span class="price">${money(p.price)}</span><span class="st">${num(p.stock)} disp.</span></span></button>`).join('')}</div>`;
+ return `<div class="muted small" style="margin-bottom:8px">${pos.q?`${P.length} resultado${P.length>1?'s':''}`:'Más vendidos'}</div><div class="tiles">${P.map(p=>`<button class="tile ${availOf(p)<=0?'out':''}" data-a="add" data-id="${p.id}"><strong>${esc(p.name)}</strong>${has('lector')?`<span class="st mono">${esc(p.code)}</span>`:`<span class="st">${esc(p.cat)}</span>`}<span class="spread"><span class="price">${money(p.price)}</span><span class="st">${recipeOf(p)?`alcanza ${num(availOf(p))}`:`${num(p.stock)} disp.`}</span></span></button>`).join('')}</div>`;
 }
 function cartTotal(){return sum(cart,i=>i.price*i.qty)}
 function cartPanel(){
@@ -977,8 +982,8 @@ function refreshPOS(){const c=$('#cart-panel');if(c)c.innerHTML=cartPanel()}
 function addToCart(p,qty=1){
  if(!p)return;
  const ex=cart.find(i=>i.pid===p.id);const want=(ex?ex.qty:0)+qty;
- if(p.stock<want&&has('inventario'))toast(`Ojo: solo hay ${num(p.stock)} de ${p.name} en inventario`,'bad');
- if(ex)ex.qty=want;else cart.push({pid:p.id,name:p.name,price:p.price,cost:p.cost,qty});
+ if(availOf(p)<want&&has('inventario'))toast(recipeOf(p)?`Ojo: con los ingredientes que hay solo alcanza para ${num(availOf(p))} de ${p.name}`:`Ojo: solo hay ${num(p.stock)} de ${p.name} en inventario`,'bad');
+ if(ex)ex.qty=want;else cart.push({pid:p.id,name:p.name,price:p.price,cost:effCost(p),qty});
  refreshPOS();
 }
 function checkout(){
@@ -989,7 +994,7 @@ function checkout(){
  const t=tenant();const last=Math.max(1000,...T('sales').map(s=>s.num));
  const sale={id:uid(),tid:t.id,at:Date.now(),items:cart.map(i=>({...i})),total,method:pos.method,bank:pos.method==='transferencia'?pos.bank:'',ref:pos.method==='transferencia'?pos.ref:'',confirmed:pos.method!=='transferencia'||pos.verified,received:pos.method==='efectivo'?(parseMoney(pos.received)||total):0,seller:me().id,customer:pos.method==='fiado'?pos.customer:'',status:'ok',num:last+1};
  S.sales.push(sale);liveEvent('venta',`Venta #${sale.num} por ${money(total)}`,null,total);
- sale.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p){p.stock-=i.qty;S.kardex.push({id:uid(),tid:t.id,pid:p.id,type:'salida',qty:i.qty,at:sale.at,note:`Venta #${sale.num}`})}});
+ sale.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,-1,`Venta #${sale.num}`,sale.at,t.id)});
  if(sale.method==='fiado')S.ledger.push({id:uid(),tid:t.id,cid:sale.customer,type:'cargo',amount:total,at:sale.at,note:`Venta fiada #${sale.num}`,sid:sale.id});
  save();_sc=null;
  cart=[];pos={...pos,q:'',received:'',ref:'',verified:false,customer:''};
@@ -1086,7 +1091,7 @@ function viewInventario(){
  if(inv.cat&&cats.includes(inv.cat))P=P.filter(p=>p.cat===inv.cat);if(inv.low)P=P.filter(p=>p.min>0&&p.stock<=p.min);
  P=P.slice().sort((a,b)=>a.name.localeCompare(b.name));
  const lowPill=p=>{const low=p.min>0&&p.stock<=p.min;return`<span class="pill ${p.stock<=0?'bad':low?'warn':''}">${num(p.stock)}${isIns?' '+esc(p.unit||'und'):''}</span>`};
- const rowsVenta=P.map(p=>`<tr>${L?`<td class="mono">${esc(p.code)}</td>`:''}<td><b>${esc(p.name)}</b>${L?'':`<div class="muted small mono">${esc(p.code)}</div>`}</td><td class="muted">${esc(p.cat)}</td>${costs?`<td class="r num">${money(p.cost)}</td>`:''}<td class="r num">${money(p.price)}</td>${costs?`<td class="r num">${p.price?Math.round((p.price-p.cost)/p.price*100):0}%</td>`:''}<td class="r">${lowPill(p)}</td>${own?`<td class="r" style="white-space:nowrap"><button class="btn sm" data-a="stock-adj" data-id="${p.id}">Ajustar</button> <button class="icon-btn" data-a="prod-edit" data-id="${p.id}" aria-label="Editar">${ic('edit',16)}</button></td>`:''}</tr>`).join('');
+ const rowsVenta=P.map(p=>`<tr>${L?`<td class="mono">${esc(p.code)}</td>`:''}<td><b>${esc(p.name)}</b>${L?'':`<div class="muted small mono">${esc(p.code)}</div>`}</td><td class="muted">${esc(p.cat)}</td>${costs?`<td class="r num">${money(effCost(p))}</td>`:''}<td class="r num">${money(p.price)}</td>${costs?`<td class="r num">${p.price?Math.round((p.price-effCost(p))/p.price*100):0}%</td>`:''}<td class="r">${recipeOf(p)?`<span class="pill ac" title="${esc(p.recipe.map(c=>`${num(c.qty)} ${S.products.find(x=>x.id===c.pid)?.name||''}`).join(' + '))}">Receta · alcanza ${num(availOf(p))}</span>`:lowPill(p)}</td>${own?`<td class="r" style="white-space:nowrap">${recipeOf(p)?'':`<button class="btn sm" data-a="stock-adj" data-id="${p.id}">Ajustar</button>`} <button class="icon-btn" data-a="prod-edit" data-id="${p.id}" aria-label="Editar">${ic('edit',16)}</button></td>`:''}</tr>`).join('');
  const supName=id=>S.suppliers.find(x=>x.id===id)?.name||'—';
  const rowsIns=P.map(p=>`<tr><td><b>${esc(p.name)}</b><div class="muted small">${esc(p.cat)}</div></td><td>${esc(supName(p.supplier))}</td><td class="r num">${money(p.cost)} <span class="muted small">/ ${esc(p.unit)}</span></td><td class="r">${lowPill(p)}</td><td class="r num">${money(Math.max(0,p.stock)*p.cost)}</td><td class="r" style="white-space:nowrap"><button class="btn sm" data-a="stock-adj" data-id="${p.id}">Registrar consumo</button> <button class="icon-btn" data-a="prod-edit" data-id="${p.id}" aria-label="Editar">${ic('edit',16)}</button></td></tr>`).join('');
  return `<div class="page-head"><div><h1>Inventario</h1><p>${ventas.length} productos para vender${insumos.length?` · ${insumos.length} insumos`:''}</p></div>
@@ -1106,7 +1111,27 @@ function viewInventario(){
   ${false?`<div class="hint">${ic('barcode',15)} <b>¿Tienes lector de código de barras?</b> Con el complemento de lector vendes más rápido: escaneas el producto y entra solo a la venta. <button class="btn sm" data-a="go" data-v="plan" style="margin-left:6px">Ver en Mi plan</button></div>`:''}
   ${own&&!isIns&&L?`<div class="hint">${ic('barcode',15)} <b>¿Cómo funciona el código de barras?</b> Casi todos los productos traen un código impreso (EAN-13). Un lector USB o Bluetooth funciona como un teclado: haz clic en el campo “Código”, dispara el lector y el número se escribe solo. Para productos que tú haces (pan, tortas) inventa un código corto como PAN01 o imprime etiquetas.</div>`:''}`;
 }
+/* ---------- recetas: productos que se arman con otros ---------- */
+const recipeOf=p=>p&&Array.isArray(p.recipe)&&p.recipe.length?p.recipe:null;
+const recipeCost=r=>sum(r||[],c=>(S.products.find(x=>x.id===c.pid)?.cost||0)*(Number(c.qty)||0));
+const effCost=p=>recipeOf(p)?Math.round(recipeCost(p.recipe)):p.cost;
+function availOf(p){const r=recipeOf(p);if(!r)return p.stock;return Math.max(0,Math.min(...r.map(c=>{const x=S.products.find(y=>y.id===c.pid);return x&&c.qty>0?Math.floor((x.stock+1e-9)/c.qty):0})))}
+function moveStock(p,qty,sign,note,at,tid){
+ const r=recipeOf(p);
+ if(r){r.forEach(c=>{const x=S.products.find(y=>y.id===c.pid);if(!x)return;const q=Math.round(c.qty*qty*1000)/1000;x.stock=Math.round((x.stock+sign*q)*1000)/1000;S.kardex.push({id:uid(),tid,pid:x.id,type:sign<0?'salida':'entrada',qty:q,at,note:`${note} · ${p.name}`})});return}
+ p.stock=Math.round((p.stock+sign*qty)*1000)/1000;S.kardex.push({id:uid(),tid,pid:p.id,type:sign<0?'salida':'entrada',qty,at,note});
+}
+let pfRecipe=[],pfSelf='';
+function recipeBox(){
+ const opts=T('products').filter(x=>x.id!==pfSelf&&!recipeOf(x)).sort((a,b)=>(a.kind==='insumo'?0:1)-(b.kind==='insumo'?0:1)||a.name.localeCompare(b.name));
+ const rows=pfRecipe.map((r,ix)=>{const c=S.products.find(x=>x.id===r.pid);return `<div class="rc-row"><select class="input" data-c="rc-pid" data-ix="${ix}" aria-label="Ingrediente">${opts.map(o=>`<option value="${o.id}" ${o.id===r.pid?'selected':''}>${esc(o.name)}${o.kind==='insumo'?' · insumo':''}</option>`).join('')}</select><input class="input num" type="number" min="0" step="any" inputmode="decimal" value="${r.qty}" data-c="rc-qty" data-ix="${ix}" aria-label="Cantidad" style="width:84px"><span class="muted small" style="min-width:56px">${esc(c?.unit||'und')}</span><button type="button" class="icon-btn" data-a="rc-rm" data-ix="${ix}" aria-label="Quitar ingrediente" style="color:var(--ink-3)">${ic('trash',15)}</button></div>`}).join('');
+ return `<div class="spread"><b class="small">Receta: qué lleva cada unidad</b>${pfRecipe.length?`<span class="small muted">Costo calculado: <b>${money(recipeCost(pfRecipe))}</b></span>`:''}</div>
+  ${rows||`<p class="muted small" style="margin:0">Opcional. Si este producto se arma con otros (por ejemplo, arepa + chorizo + queso), agrégalos aquí: al venderlo se descuentan solos del inventario.</p>`}
+  <button type="button" class="btn sm" data-a="rc-add" style="align-self:flex-start">${ic('plus',14)} Agregar ingrediente</button>`;
+}
+function rcRefresh(){const b=$('#rc-box');if(b)b.innerHTML=recipeBox();const has_=pfRecipe.length>0;const sw=$('#pf-stock-wrap');if(sw)sw.hidden=has_;const cw=$('#pf-cost-wrap');if(cw)cw.hidden=has_;const n=$('#pf-made-note');if(n)n.hidden=!has_}
 function productForm(p,kind){
+ if(!p||!p._keep){pfRecipe=(p?.recipe||[]).map(x=>({...x}));pfSelf=p?.id||''}
  kind=p?.kind||kind||'venta';const ins=kind==='insumo';const edit=!!p?.id;
  const sup=has('proveedores')?T('suppliers'):[];const L=has('lector');
  const codeField=L&&!ins?field('Código de barras',inp('code',p?.code||'','text','required placeholder="Escanea o escribe" autocomplete="off"')):field('Código interno (opcional)',inp('code',p?.code||'','text','placeholder="Se crea solo si lo dejas vacío" autocomplete="off"'));
@@ -1117,10 +1142,12 @@ function productForm(p,kind){
   <datalist id="cat-list">${[...new Set(T('products').filter(x=>(x.kind||'venta')===kind).map(x=>x.cat))].map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
   ${codeField}
   ${ins?field('Unidad de medida',sel('unit',UNITS,p?.unit||'kg')):''}
-  ${field(ins?'Costo por unidad':'Costo',minp('cost',p?.cost??'','required'))}
+  <div id="pf-cost-wrap" ${!ins&&pfRecipe.length?'hidden':''}>${field(ins?'Costo por unidad':'Costo',minp('cost',p?.cost??'',''))}</div>
   ${ins?'':field('Precio de venta',minp('price',p?.price??'','required'))}
-  ${field(edit?'Stock actual':'Stock inicial',inp('stock',p?.stock??0,'number','step="any" required'+(edit?' readonly':'')))}
-  ${field('Stock mínimo (alerta)',inp('min',p?.min??0,'number','min="0" step="any"'))}
+  ${ins?'':`<div class="rc full" id="rc-box">${recipeBox()}</div><p class="muted small full" id="pf-made-note" style="margin:0" ${pfRecipe.length?'':'hidden'}>Este producto no lleva inventario propio: se arma al momento de venderlo, y su costo sale de la receta.</p>`}
+  <div class="form-grid full" id="pf-stock-wrap" style="grid-column:1/-1" ${!ins&&pfRecipe.length?'hidden':''}>
+  ${field(edit?'Stock actual':'Stock inicial',inp('stock',p?.stock??0,'number','step="any"'+(edit?' readonly':'')))}
+  ${field('Stock mínimo (alerta)',inp('min',p?.min??0,'number','min="0" step="any"'))}</div>
   ${sup.length?field('Proveedor',sel('supplier',[['','Sin proveedor'],...sup.map(x=>[x.id,x.name])],p?.supplier||''),'full'):''}
  </div>${edit?`<p class="muted small">Para cambiar el stock usa “${ins?'Registrar consumo':'Ajustar'}”, así queda registrado en el kardex.</p>`:''}</form>`;
 }
@@ -1510,9 +1537,11 @@ document.addEventListener('click',e=>{
   sale:()=>showReceipt(S.sales.find(s=>s.id===id)),
   'confirm-tr':()=>{const s=S.sales.find(x=>x.id===id);s.confirmed=true;save();closeModal();render();toast('Transferencia confirmada')},
   'void-ask':()=>{const s=S.sales.find(x=>x.id===id);openModal(`Anular venta #${s.num}`,`<p>El stock de los productos vuelve al inventario y la venta deja de contar en los reportes.</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="void-do" data-id="${id}">Anular venta</button>`)},
-  'void-do':()=>{const s=S.sales.find(x=>x.id===id);s.status='anulada';s.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p){p.stock+=i.qty;S.kardex.push({id:uid(),tid:s.tid,pid:p.id,type:'entrada',qty:i.qty,at:Date.now(),note:`Anulación venta #${s.num}`})}});S.ledger=S.ledger.filter(l=>l.sid!==s.id);save();_sc=null;closeModal();render();toast('Venta anulada')},
+  'void-do':()=>{const s=S.sales.find(x=>x.id===id);s.status='anulada';s.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,1,`Anulación venta #${s.num}`,Date.now(),s.tid)});S.ledger=S.ledger.filter(l=>l.sid!==s.id);save();_sc=null;closeModal();render();toast('Venta anulada')},
   'export-sales':()=>saveFile(`ventas-${dkey(Date.now())}.xlsx`,T('sales').map(s=>({Numero:s.num,Fecha:new Date(s.at).toLocaleString('es-CO'),Productos:s.items.map(i=>i.qty+'x '+i.name).join(', '),Vendedor:userName(s.seller),Pago:s.method,Banco:s.bank,Referencia:s.ref,Confirmada:s.confirmed?'Sí':'No',Estado:s.status,Total:s.total})),'Ventas'),
   // inventario
+  'rc-add':()=>{const used=new Set(pfRecipe.map(r=>r.pid));const o=T('products').filter(x=>x.id!==pfSelf&&!recipeOf(x)).sort((a,b)=>(a.kind==='insumo'?0:1)-(b.kind==='insumo'?0:1)).find(x=>!used.has(x.id));if(!o)return toast('No hay más productos o insumos para agregar','bad');pfRecipe.push({pid:o.id,qty:1});rcRefresh()},
+  'rc-rm':()=>{pfRecipe.splice(+el.dataset.ix,1);rcRefresh()},
   'inv-kind':()=>{inv.kind=v;inv.cat='';inv.q='';render()},
   'pur-add':()=>purAdd(S.products.find(p=>p.id===id)),
   'pur-rm':()=>{pur.items.splice(+el.dataset.ix,1);purRefresh()},
@@ -1604,7 +1633,8 @@ document.addEventListener('change',e=>{
   'fin-type':()=>{fin.type=el.value;render()},
   'imp-file':()=>{if(el.files[0])readImport(el.files[0])},
   'pur-method':()=>pur.method=el.value,
-  'pf-kind':()=>{const f=$('#prod-form');const d=Object.fromEntries(new FormData(f).entries());const o={code:d.code,name:d.name,cat:d.cat,cost:parseMoney(d.cost),price:parseMoney(d.price),stock:Number(d.stock)||0,min:Number(d.min)||0,supplier:d.supplier||'',unit:d.unit};f.outerHTML=productForm(o,el.value);const h=document.querySelector('.modal-h h3');if(h)h.textContent=el.value==='insumo'?'Nuevo insumo':'Nuevo producto'},
+  'rc-pid':()=>{pfRecipe[+el.dataset.ix].pid=el.value;rcRefresh()},'rc-qty':()=>{pfRecipe[+el.dataset.ix].qty=Number(el.value)||0;rcRefresh()},
+  'pf-kind':()=>{const f=$('#prod-form');const d=Object.fromEntries(new FormData(f).entries());const o={code:d.code,name:d.name,cat:d.cat,cost:parseMoney(d.cost),price:parseMoney(d.price),stock:Number(d.stock)||0,min:Number(d.min)||0,supplier:d.supplier||'',unit:d.unit,_keep:true};if(el.value==='insumo')pfRecipe=[];f.outerHTML=productForm(o,el.value);const h=document.querySelector('.modal-h h3');if(h)h.textContent=el.value==='insumo'?'Nuevo insumo':'Nuevo producto'},
   'tm-plan':()=>{const p=planById(el.value);document.querySelectorAll('#tm-mods input').forEach(c=>{if(p.mods.includes(c.value))c.checked=true})},
  };
  M[k]?.();
@@ -1632,8 +1662,10 @@ document.addEventListener('submit',e=>{
   'open-cash':()=>{liveEvent('caja','Abrió la caja');S.sessions.push({id:uid(),tid:t.id,openedAt:Date.now(),openedBy:u.id,base:parseMoney(d.base),closedAt:null});save();render();toast('Caja abierta')},
   'close-cash':()=>{liveEvent('caja','Cerró la caja');const s=openSession();const x=sessionTotals(s);const counted=parseMoney(d.counted);Object.assign(s,{closedAt:Date.now(),closedBy:u.id,counted,expected:x.expected,diff:counted-x.expected});save();render();toast(s.diff===0?'Caja cerrada. ¡Cuadró perfecto!':`Caja cerrada con diferencia de ${money(s.diff)}`)},
   'prod-save':()=>{const kind=d.kind||'venta';const code=d.code.trim()||autoCode(null,kind==='insumo'?'INS':'P');const dup=S.products.find(p=>p.tid===t.id&&p.code===code&&p.id!==d.id);if(dup){toast(`El código ${code} ya es de “${dup.name}”`,'bad');return}
-   const data={code,name:d.name.trim(),cat:d.cat.trim(),cost:parseMoney(d.cost),price:kind==='insumo'?0:parseMoney(d.price),kind,unit:kind==='insumo'?(d.unit||'kg'):'und',min:Number(d.min)||0,supplier:d.supplier||''};if(d.id)delete data.kind;
-   if(d.id){Object.assign(S.products.find(p=>p.id===d.id),data)}else{const np={id:uid(),tid:t.id,...data,stock:Number(d.stock)||0};S.products.push(np);if(np.stock)S.kardex.push({id:uid(),tid:t.id,pid:np.id,type:'entrada',qty:np.stock,at:Date.now(),note:'Stock inicial'})}
+   const recipe=kind==='insumo'?[]:pfRecipe.filter(r=>r.pid&&Number(r.qty)>0).map(r=>({pid:r.pid,qty:Number(r.qty)}));
+   if(!recipe.length&&!parseMoney(d.cost)&&d.cost!=='0'){toast('Escribe el costo del producto','bad');return}
+   const data={code,name:d.name.trim(),cat:d.cat.trim(),cost:recipe.length?Math.round(recipeCost(recipe)):parseMoney(d.cost),price:kind==='insumo'?0:parseMoney(d.price),kind,unit:kind==='insumo'?(d.unit||'kg'):'und',min:recipe.length?0:(Number(d.min)||0),supplier:d.supplier||'',recipe};if(d.id)delete data.kind;
+   if(d.id){Object.assign(S.products.find(p=>p.id===d.id),data)}else{const np={id:uid(),tid:t.id,...data,stock:recipe.length?0:(Number(d.stock)||0)};S.products.push(np);if(np.stock)S.kardex.push({id:uid(),tid:t.id,pid:np.id,type:'entrada',qty:np.stock,at:Date.now(),note:'Stock inicial'})}
    save();closeModal();render();toast(d.id?'Guardado':kind==='insumo'?'Insumo creado':'Producto creado')},
   'stock-adj':()=>{const p=S.products.find(x=>x.id===d.id);const q=Number(d.qty)||0;let delta=d.type==='entrada'?q:d.type==='salida'?-q:q-p.stock;p.stock=Math.round((p.stock+delta)*100)/100;S.kardex.push({id:uid(),tid:t.id,pid:p.id,type:d.type,qty:d.type==='ajuste'?q:Math.abs(delta),at:Date.now(),note:d.note||(d.type==='entrada'?'Entrada manual':d.type==='salida'?(p.kind==='insumo'?'Consumo en producción':'Salida manual'):'Conteo físico')});save();closeModal();render();toast(`${p.name}: quedan ${num(p.stock)} ${p.unit||'und'}`)},
   'cust-new':()=>{S.customers.push({id:uid(),tid:t.id,name:d.name,phone:d.phone,limit:parseMoney(d.limit)});save();closeModal();render();toast('Cliente creado')},
