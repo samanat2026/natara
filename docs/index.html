@@ -241,6 +241,8 @@ tbody tr.click:hover{background:var(--surface-2)}
 .co-plan{display:flex;flex-direction:column;gap:4px;padding:12px;border:2px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;text-align:left}
 .co-plan.on{border-color:var(--accent);background:var(--accent-soft)}
 .co-price{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}.co-price small{font-size:12px;font-weight:500;color:var(--ink-3)}
+.co-extras{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px}
+@media (max-width:620px){.co-extras{grid-template-columns:1fr}}
 .co-total{display:flex;justify-content:space-between;align-items:baseline;padding:12px 14px;border-radius:10px;background:var(--surface-2)}
 .co-total b{font-size:24px;font-variant-numeric:tabular-nums}
 .guide-toc{display:flex;flex-wrap:wrap;gap:8px}
@@ -1229,6 +1231,13 @@ function breBox(amount,ref){const pi=payInfo();return `<div class="pay-box">
   <div class="pay-row"><span>Referencia</span><b class="mono">${esc(ref)}</b><button type="button" class="btn sm" data-a="copy" data-v="${esc(ref)}">${ic('copy',14)} Copiar</button></div>
  </div>
  <ol class="guide-steps" style="margin:0"><li>Abre la app de tu banco o billetera (Nequi, Bancolombia, Daviplata…) y elige <b>enviar con llave Bre-B</b>.</li><li>Pega la llave <b class="mono">${esc(pi.llave)}</b>, revisa que salga <b>${esc(pi.titular)}</b> y envía <b>${money(amount)}</b>.</li><li>En la descripción o mensaje escribe la referencia <b class="mono">${esc(ref)}</b>.</li><li>Vuelve aquí y toca <b>Ya pagué</b>.</li></ol>`}
+const modOrder=(t,mod)=>(S.orders||[]).find(o=>o.id===`mod_${t.id}_${mod}`&&o.status==='pendiente');
+let modState=null;
+function modBuyModal(){const t=tenant();const it=reqItem(modState.mod);const setup=modState.mod==='implementacion';
+ openModal(`Contratar ${it.name}`,`<p class="muted small" style="margin:0">${setup?'Pago único. Después de confirmarlo te escribimos para agendar el día.':`Pagas hoy el primer mes. Apenas Samanat confirme el pago, el módulo aparece en tu menú y desde tu próxima cuota se suma: tu cuota mensual queda en <b>${money(fee(t)+it.price)}</b>.`}</p>
+  ${breBox(it.price,modState.ref)}
+  <form class="stack" data-f="mod-report" id="mod-form" novalidate>${field('Número de comprobante (opcional)',inp('comp','','text','placeholder="Lo encuentras en el recibo de tu banco" autocomplete="off"'))}</form>`,
+  `<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="mod-form">${ic('check',16)} Ya pagué</button>`)}
 let payState=null;
 function payModal(){
  const t=tenant();if(!payState)payState={months:1,ref:genRef()};const amt=fee(t)*(payState.months===12?ANNUAL_MONTHS:1);
@@ -1240,6 +1249,7 @@ function payModal(){
 }
 // ---- compra desde la demo
 let co=null;
+const coExtras=()=>MODS.filter(m=>m.id!=='lector'&&!planById(co.plan).mods.includes(m.id));
 function coTotal(){const p=planById(co.plan);const monthly=p.price+sum(co.extra,m=>modById(m).price);return monthly*(co.months===12?ANNUAL_MONTHS:1)+(co.setup?SETUP.price:0)}
 function coCapture(){const f=$('#co-form');if(f)Object.assign(co.form,Object.fromEntries(new FormData(f).entries()))}
 function coOpen(plan){co={step:1,plan:plan||'basico',extra:[],months:1,setup:false,form:{},ref:genRef()};coRender();
@@ -1249,7 +1259,7 @@ function coRender(){
  if(co.step===1){
   openModal('Contrata Natara',`<p class="muted small" style="margin:0">Elige tu plan, cuéntanos de tu negocio y paga con Bre-B. Cuando confirmemos el pago te llega un correo con tu usuario y contraseña.</p>
   <div class="co-plans">${PLANS.map(p=>`<button type="button" class="co-plan ${co.plan===p.id?'on':''}" data-a="co-plan" data-v="${p.id}"><b>${p.name}</b><span class="co-price">${money(p.price)}<small>/mes</small></span><span class="small muted">${p.mods.map(m=>modById(m).name).join(' · ')}</span></button>`).join('')}</div>
-  <label class="check"><input type="checkbox" data-c="co-extra" value="recetas" ${co.extra.includes('recetas')?'checked':''}><span>Agregar Recetas y combos (+${money(modById('recetas').price)}/mes)<small>Para negocios que preparan lo que venden: arepas, desayunos, combos.</small></span></label>
+  ${coExtras().length?`<div class="stack" style="gap:6px"><b class="small">Agrega módulos a tu plan (opcional)</b><div class="co-extras">${coExtras().map(m=>`<label class="check"><input type="checkbox" data-c="co-extra" value="${m.id}" ${co.extra.includes(m.id)?'checked':''}><span>${m.name} <b class="num">+${money(m.price)}/mes</b><small>${m.desc}</small></span></label>`).join('')}</div></div>`:''}
   <div class="seg"><button type="button" class="${co.months===1?'on':''}" data-a="co-months" data-v="1">Pago mensual</button><button type="button" class="${co.months===12?'on':''}" data-a="co-months" data-v="12">Pago anual (2 meses gratis)</button></div>
   <label class="check"><input type="checkbox" data-c="co-setup" ${co.setup?'checked':''}><span>Implementación asistida (+${money(SETUP.price)}, una sola vez)<small>${SETUP.desc}</small></span></label>
   <form class="form-grid" id="co-form" data-f="co-next" novalidate>
@@ -1265,7 +1275,7 @@ function coRender(){
  }else if(co.step===2){
   openModal('Paga con Bre-B',`${breBox(coTotal(),co.ref)}
   <form class="stack" data-f="co-pay" id="co-pay-form" novalidate>${field('Número de comprobante (opcional)',`<input class="input" name="comp" autocomplete="off" placeholder="Lo encuentras en el recibo de tu banco">`)}</form>
-  <p class="muted small" style="margin:0">Compras el plan ${planById(co.plan).name}${co.extra.length?' + Recetas y combos':''} · ${co.months===12?'12 meses':'1 mes'}${co.setup?' · con implementación':''}, para <b>${esc(F.business)}</b>.</p><div id="co-err"></div>`,
+  <p class="muted small" style="margin:0">Compras el plan ${planById(co.plan).name}${co.extra.length?' + '+co.extra.map(m=>modById(m).name).join(', '):''} · ${co.months===12?'12 meses':'1 mes'}${co.setup?' · con implementación':''}, para <b>${esc(F.business)}</b>.</p><div id="co-err"></div>`,
   `<button class="btn" data-a="co-back">Atrás</button><button class="btn primary" data-a="submit" data-form="co-pay-form" id="co-paid">${ic('check',16)} Ya pagué</button>`,true);
  }else{
   openModal('¡Recibimos tu pedido!',`<div class="empty" style="padding:10px 0">${mark(56)}<b style="color:var(--ink);font-size:18px">Gracias, ${esc((F.owner||'').split(' ')[0])}</b><span>Samanat va a confirmar tu pago de <b>${money(coTotal())}</b> con la referencia <b class="mono">${esc(co.ref)}</b>.</span><span>Apenas lo confirmemos, te llega un correo a <b>${esc(F.email)}</b> con tu usuario y una contraseña temporal para entrar.</span></div>`,
@@ -1290,7 +1300,7 @@ Negocio: ${order.business} (${order.btype||'-'}, ${order.city||'-'})
 Dueño: ${order.owner}
 Correo: ${order.email}
 Celular: ${order.phone}
-Compra: Plan ${p.name}${order.mods.length?' + Recetas y combos':''} · ${order.months===12?'12 meses':'1 mes'}${order.setup?' · con implementación asistida':''}
+Compra: Plan ${p.name}${order.mods.length?' + '+order.mods.map(m=>modById(m).name).join(', '):''} · ${order.months===12?'12 meses':'1 mes'}${order.setup?' · con implementación asistida':''}
 
 ${saved?'Revisa en tu banco que llegó el valor exacto con esa referencia y apruébalo en la consola: Pagos y solicitudes → Aprobar. Al aprobar se crea el negocio y le llega su usuario por correo.':'OJO: el pedido no quedó guardado en la consola. Si el pago llegó, créalo a mano en Clientes → Nuevo cliente con estos datos.'}
 ${REAL_URL}`);
@@ -1369,7 +1379,8 @@ function guideSections(){
   'Cada venta queda a nombre de quien la hizo: nadie puede cambiarlo.']});
  if(own)S_.push({id:'plan',icon:'star',title:'Tu plan y mensajes',go:'plan',steps:[
   'En <b>Mi plan</b> ves tu cuota, la fecha de pago y los módulos que tienes.',
-  '¿Quieres algo más? Toca <b>Solicitar</b> en el módulo y Samanat te lo activa.',
+  '¿Quieres algo más? Toca <b>Contratar</b> en el módulo, paga con la llave Bre-B que aparece y toca <b>Ya pagué</b>. Apenas Samanat confirme el pago, el módulo aparece en tu menú.',
+  'Para pagar tu cuota toca <b>Pagar mi cuota</b>: eliges 1 o 12 meses, pagas con la llave y tocas <b>Ya pagué</b>. Mientras Samanat revisa, tu cuenta no se bloquea.',
   'En <b>Mensajes</b> te llegan los avisos de Samanat: pagos, novedades y cambios de precio.',
   'Si la cuota se vence, tienes '+GRACE_DAYS+' días de gracia antes de que se bloquee el acceso. Tus datos nunca se pierden.']});
  return S_;
@@ -1648,8 +1659,8 @@ function viewPlan(){
    <div class="card kpi"><span class="lbl">Cuota mensual</span><span class="val">${money(fee(t))}</span>${(()=>{const nx=pendingChanges()[0];if(!nx)return'';const f2=feeAt(t,nx.from+1);return f2!==fee(t)?`<span class="foot" style="color:var(--warn)">Desde el ${fdate(nx.from)}: ${money(f2)}</span>`:''})()}<span class="foot">o ${money(fee(t)*ANNUAL_MONTHS)} al año (2 meses gratis)</span></div>
    <div class="card kpi"><span class="lbl">Próximo pago</span><span class="val">${fshort(t.due)}</span><span class="foot">${dd<0?`<span style="color:var(--bad)">Vencido</span>`:dd<=5?`<span style="color:var(--warn)">En ${dd} días</span>`:`En ${dd} días`}</span></div>
   </div>
-  <div class="grid g3">${MODS.filter(m=>m.id!=='lector'||t.mods.includes('lector')).map(m=>{const on=t.mods.includes(m.id);const asked=reqs.includes(m.id);return`<div class="mod ${on?'has':''}"><div class="spread"><span class="row" style="gap:8px">${ic(m.icon)}<strong>${m.name}</strong></span>${on?'<span class="pill good">Activo</span>':asked?'<span class="pill warn">Solicitado</span>':''}</div><p>${m.desc}</p><div class="foot spread"><span class="small muted">${p.mods.includes(m.id)?'Incluido en tu plan':(m.addon?'Complemento · ':'')+'+ '+money(m.price)+'/mes'}</span>${on||asked?'':`<button class="btn sm primary" data-a="req-mod" data-v="${m.id}">Solicitar</button>`}</div></div>`}).join('')}</div>
-  <div class="mod ${t.setupPaid?'has':''}" style="max-width:760px"><div class="spread"><span class="row" style="gap:8px">${ic('users')}<strong>${SETUP.name}</strong></span>${t.setupPaid?'<span class="pill good">Incluida</span>':reqs.includes('implementacion')?'<span class="pill warn">Solicitada</span>':''}</div><p>${SETUP.desc}</p><div class="foot spread"><span class="small muted">${money(SETUP.price)} · pago único</span>${t.setupPaid||reqs.includes('implementacion')?'':`<button class="btn sm primary" data-a="req-mod" data-v="implementacion">Solicitar</button>`}</div></div>
+  <div class="grid g3">${MODS.filter(m=>m.id!=='lector'||t.mods.includes('lector')).map(m=>{const on=t.mods.includes(m.id);const asked=reqs.includes(m.id);const paying=modOrder(t,m.id);return`<div class="mod ${on?'has':''}"><div class="spread"><span class="row" style="gap:8px">${ic(m.icon)}<strong>${m.name}</strong></span>${on?'<span class="pill good">Activo</span>':paying?'<span class="pill warn">Pago en revisión</span>':asked?'<span class="pill warn">Solicitado</span>':''}</div><p>${m.desc}</p><div class="foot spread"><span class="small muted">${p.mods.includes(m.id)?'Incluido en tu plan':(m.addon?'Complemento · ':'')+'+ '+money(m.price)+'/mes'}</span>${on||asked||paying?'':`<button class="btn sm primary" data-a="mod-buy" data-v="${m.id}">Contratar</button>`}</div></div>`}).join('')}</div>
+  <div class="mod ${t.setupPaid?'has':''}" style="max-width:760px"><div class="spread"><span class="row" style="gap:8px">${ic('users')}<strong>${SETUP.name}</strong></span>${t.setupPaid?'<span class="pill good">Incluida</span>':modOrder(t,'implementacion')?'<span class="pill warn">Pago en revisión</span>':reqs.includes('implementacion')?'<span class="pill warn">Solicitada</span>':''}</div><p>${SETUP.desc}</p><div class="foot spread"><span class="small muted">${money(SETUP.price)} · pago único</span>${t.setupPaid||reqs.includes('implementacion')||modOrder(t,'implementacion')?'':`<button class="btn sm primary" data-a="mod-buy" data-v="implementacion">Contratar</button>`}</div></div>
   <div class="card"><h2>Historial de pagos</h2><div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Medio</th><th class="r">Valor</th></tr></thead><tbody>${S.payments.filter(x=>x.tid===t.id).sort((a,b)=>b.at-a.at).map(x=>`<tr><td>${fdate(x.at)}</td><td>${esc(x.concept||'Mensualidad')}</td><td>${esc(x.method)}</td><td class="r num">${money(x.amount)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Sin pagos registrados</td></tr>'}</tbody></table></div></div>`;
 }
 function viewMensajes(){
@@ -1663,7 +1674,7 @@ function viewMensajes(){
 const kindPill=k=>({aviso:'<span class="pill">Aviso</span>',vencimiento:'<span class="pill warn">Pago</span>',promo:'<span class="pill ac">Novedad</span>',suspension:'<span class="pill bad">Cuenta</span>'})[k]||'';
 function viewUpsell(mid){
  const m=modById(mid);const t=tenant();const asked=S.requests.some(r=>r.tid===t.id&&r.mod===mid&&r.status==='pendiente');
- return `<div class="card" style="max-width:560px;margin:40px auto;text-align:center"><div class="stack" style="align-items:center"><div class="avatar" style="width:56px;height:56px">${ic(m.icon,26)}</div><h1 style="font-family:var(--f-display);font-weight:500;font-size:22px">${m.name}</h1><p class="muted">${m.desc}</p><p><b>${money(m.price)}</b> <span class="muted">al mes${PLANS.find(p=>p.mods.includes(mid))?', o incluido en el plan '+PLANS.find(p=>p.mods.includes(mid)).name:''}</span></p>${asked?'<span class="pill warn">Ya lo solicitaste. Samanat te contactará.</span>':`<button class="btn primary" data-a="req-mod" data-v="${mid}">Solicitar este módulo</button>`}</div></div>`;
+ return `<div class="card" style="max-width:560px;margin:40px auto;text-align:center"><div class="stack" style="align-items:center"><div class="avatar" style="width:56px;height:56px">${ic(m.icon,26)}</div><h1 style="font-family:var(--f-display);font-weight:500;font-size:22px">${m.name}</h1><p class="muted">${m.desc}</p><p><b>${money(m.price)}</b> <span class="muted">al mes${PLANS.find(p=>p.mods.includes(mid))?', o incluido en el plan '+PLANS.find(p=>p.mods.includes(mid)).name:''}</span></p>${modOrder(t,mid)?'<span class="pill warn">Tu pago está en revisión. Apenas Samanat lo confirme, se activa.</span>':asked?'<span class="pill warn">Ya lo solicitaste. Samanat te contactará.</span>':me().role==='dueno'?`<button class="btn primary" data-a="mod-buy" data-v="${mid}">${ic('cart',16)} Contratar este módulo</button>`:'<span class="muted small">Pídele al dueño del negocio que lo contrate.</span>'}</div></div>`;
 }
 
 /* =========================================================
@@ -1740,11 +1751,11 @@ function tenantModal(t){
 function aSolicitudes(){
  const R=S.requests.slice().sort((a,b)=>b.at-a.at);
  const O=(S.orders||[]).filter(o=>o.status==='pendiente').sort((a,b)=>b.at-a.at);const H=(S.orders||[]).filter(o=>o.status!=='pendiente').sort((a,b)=>(b.doneAt||b.at)-(a.doneAt||a.at)).slice(0,10);
- const what=o=>`Plan ${planById(o.plan).name}${(o.mods||[]).length?' + '+o.mods.map(m=>modById(m)?.name).join(', '):''} · ${o.months===12?'12 meses':'1 mes'}${o.setup?' · con implementación':''}`;
+ const what=o=>o.type==='modulo'?(o.mod==='implementacion'?'Implementación asistida (pago único)':`Módulo ${reqItem(o.mod)?.name} (primer mes)`):`Plan ${planById(o.plan).name}${(o.mods||[]).length?' + '+o.mods.map(m=>modById(m)?.name).join(', '):''} · ${o.months===12?'12 meses':'1 mes'}${o.setup?' · con implementación':''}`;
  const who=o=>o.type==='nuevo'?`<b>${esc(o.business)}</b><div class="muted small">${esc(o.owner)} · ${esc(o.email)} · ${esc(o.phone)}</div>`:`<b>${esc(S.tenants.find(x=>x.id===o.tid)?.name||o.business||'')}</b>`;
  return `<div class="page-head"><div><h1>Solicitudes y pagos</h1><p>Pagos con tu llave Bre-B por confirmar, y módulos que tus clientes quieren.</p></div></div>
   <div class="card"><h2>Pagos por confirmar <span class="sub">llave ${esc(payInfo().llave)} · <a href="#" data-a="go" data-v="planes">cambiar</a></span></h2>${O.length?`<div class="hint" style="margin-bottom:12px">${ic('info',15)} Busca en tu banco un pago por el <b>valor exacto</b> con la <b>referencia</b>. Al aprobar una renovación se extiende la cuenta; al aprobar un cliente nuevo se crea el negocio y le llega el correo con su acceso.</div>
-   <div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Quién</th><th>Qué paga</th><th>Referencia</th><th class="r">Valor</th><th></th></tr></thead><tbody>${O.map(o=>`<tr><td style="white-space:nowrap">${fdt(o.at)}</td><td>${o.type==='nuevo'?'<span class="pill ac">Cliente nuevo</span>':'<span class="pill">Renovación</span>'}</td><td>${who(o)}</td><td class="small">${what(o)}</td><td><span class="mono">${esc(o.ref)}</span>${o.comprobante?`<div class="muted small">Comp. ${esc(o.comprobante)}</div>`:''}</td><td class="r num"><b>${money(o.amount)}</b></td><td class="r" style="white-space:nowrap"><button class="btn sm" data-a="ord-no" data-id="${o.id}">Rechazar</button> <button class="btn sm primary" data-a="ord-ok" data-id="${o.id}">${ic('check',14)} Aprobar</button></td></tr>`).join('')}</tbody></table></div>`:`<p class="muted small" style="margin:0">No hay pagos pendientes. Cuando un cliente pague su cuota o alguien compre desde la demo, aparece aquí.</p>`}
+   <div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Quién</th><th>Qué paga</th><th>Referencia</th><th class="r">Valor</th><th></th></tr></thead><tbody>${O.map(o=>`<tr><td style="white-space:nowrap">${fdt(o.at)}</td><td>${o.type==='nuevo'?'<span class="pill ac">Cliente nuevo</span>':o.type==='modulo'?'<span class="pill warn">Módulo</span>':'<span class="pill">Renovación</span>'}</td><td>${who(o)}</td><td class="small">${what(o)}</td><td><span class="mono">${esc(o.ref)}</span>${o.comprobante?`<div class="muted small">Comp. ${esc(o.comprobante)}</div>`:''}</td><td class="r num"><b>${money(o.amount)}</b></td><td class="r" style="white-space:nowrap"><button class="btn sm" data-a="ord-no" data-id="${o.id}">Rechazar</button> <button class="btn sm primary" data-a="ord-ok" data-id="${o.id}">${ic('check',14)} Aprobar</button></td></tr>`).join('')}</tbody></table></div>`:`<p class="muted small" style="margin:0">No hay pagos pendientes. Cuando un cliente pague su cuota o alguien compre desde la demo, aparece aquí.</p>`}
    ${H.length?`<details style="margin-top:12px"><summary class="small"><b>Historial de pagos revisados</b></summary><div class="tbl-wrap"><table><tbody>${H.map(o=>`<tr><td class="small">${fdate(o.doneAt||o.at)}</td><td class="small">${o.type==='nuevo'?esc(o.business):esc(S.tenants.find(x=>x.id===o.tid)?.name||'')}</td><td class="mono small">${esc(o.ref)}</td><td class="r num small">${money(o.amount)}</td><td>${o.status==='aprobada'?'<span class="pill good">Aprobado</span>':'<span class="pill bad">Rechazado</span>'}</td></tr>`).join('')}</tbody></table></div></details>`:''}</div>
   <h2 style="font-size:16px;margin-top:4px">Módulos solicitados</h2>
   <div class="card">${R.length?`<div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Módulo</th><th class="r">Valor</th><th>Estado</th><th></th></tr></thead><tbody>${R.map(r=>{const t=S.tenants.find(x=>x.id===r.tid);const m=reqItem(r.mod);return`<tr><td>${fdate(r.at)}</td><td><b>${esc(t?.name)}</b></td><td>${m.name}</td><td class="r num">${money(m.price)}${m.once?' una vez':'/mes'}</td><td>${r.status==='pendiente'?'<span class="pill warn">Pendiente</span>':r.status==='aprobada'?'<span class="pill good">Activado</span>':'<span class="pill">Rechazada</span>'}</td><td class="r" style="white-space:nowrap">${r.status==='pendiente'?`<button class="btn sm" data-a="req-no" data-id="${r.id}">Rechazar</button> <button class="btn sm primary" data-a="req-ok" data-id="${r.id}">Activar</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">${ic('inbox',26)}No hay solicitudes.</div>`}</div>`;
@@ -1894,16 +1905,23 @@ document.addEventListener('click',e=>{
    if(notify)pc.tenants.forEach(x=>{const lines=x.items.map(c=>`• ${itemName(c.kind,c.id)}: de ${money(c.old)} a ${money(c.price)} al mes`).join('\n');S.messages.push({id:uid(),to:x.t.id,kind:'vencimiento',title:`Cambio de precio desde el ${fdate(pc.from)}`,body:`Hola, te contamos que a partir del ${fdate(pc.from)} cambian estos precios:\n${lines}\n\nTu cuota mensual pasa de ${money(x.before)} a ${money(x.after)}. Si tienes preguntas, escríbenos.`,at:Date.now(),readBy:[]})});
    save();closeModal();render();toast(`Precios programados${notify&&pc.tenants.length?` · ${pc.tenants.length} cliente${pc.tenants.length>1?'s':''} avisado${pc.tenants.length>1?'s':''}`:''}`)},
   'pay-open':()=>{payState=null;payModal()},
+  'mod-buy':()=>{modState={mod:v,ref:genRef()};modBuyModal()},
   'pay-months':()=>{payState.months=Number(v);payModal()},
   'copy':()=>{navigator.clipboard?.writeText(v).then(()=>toast('Copiado')).catch(()=>toast('Selecciónalo y cópialo a mano','bad'))},
   'co-open':()=>coOpen(v),
-  'co-plan':()=>{coCapture();co.plan=v;coRender()},
+  'co-plan':()=>{coCapture();co.plan=v;co.extra=co.extra.filter(m=>!planById(v).mods.includes(m));coRender()},
   'co-months':()=>{coCapture();co.months=Number(v);coRender()},
   'co-back':()=>{co.step=1;coRender()},
   'co-next':()=>{coCapture();const F=co.form;const er=m=>{$('#co-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};
    if(!(F.business||'').trim())return er('Escribe el nombre de tu negocio.');if(!(F.owner||'').trim())return er('Escribe tu nombre.');if(!phoneOk(F.phone))return er('Revisa el celular: debe tener 10 dígitos, por ejemplo 300 123 4567.');if(!EMAIL_RE.test((F.email||'').trim()))return er('Revisa el correo: debe tener la forma nombre@dominio.com.');
    co.step=2;coRender()},
   'ord-ok':()=>{const o=S.orders.find(x=>x.id===id);if(!o)return;
+   if(o.type==='modulo'){const t=S.tenants.find(x=>x.id===o.tid);if(!t)return toast('Ese negocio ya no existe','bad');const it=reqItem(o.mod);
+    if(o.mod==='implementacion'){t.setupPaid=true;S.messages.push({id:uid(),to:t.id,kind:'aviso',title:'Recibimos tu pago de la implementación',body:`Confirmamos tu pago de ${money(o.amount)} (ref. ${o.ref}). Te escribiremos por WhatsApp para acordar el día. Ten a mano tu lista de productos o fotos del inventario.`,at:Date.now(),readBy:[]})}
+    else{if(!t.mods.includes(o.mod))t.mods.push(o.mod);S.messages.push({id:uid(),to:t.id,kind:'promo',title:`Activamos ${it.name}`,body:`Confirmamos tu pago de ${money(o.amount)} (ref. ${o.ref}). Ya tienes ${it.name} en tu menú. Desde tu próxima cuota pagas ${money(fee(t))} al mes.`,at:Date.now(),readBy:[]})}
+    S.payments.push({id:uid(),tid:t.id,amount:o.amount,at:Date.now(),method:'Bre-B',concept:o.mod==='implementacion'?'Implementación asistida':`Módulo ${it.name} (primer mes)`,ref:o.ref});
+    S.requests.filter(r=>r.tid===t.id&&r.mod===o.mod&&r.status==='pendiente').forEach(r=>r.status='aprobada');
+    S.orders=S.orders.filter(x=>x.id!==o.id);S.orders.push({...o,id:'h'+uid(),status:'aprobada',doneAt:Date.now()});save();render();return toast(`${it.name} activado para ${t.name}`)}
    if(o.type==='renovacion'){const t=S.tenants.find(x=>x.id===o.tid);if(!t)return toast('Ese negocio ya no existe','bad');const d0=new Date(Math.max(t.due,sod(Date.now())));d0.setMonth(d0.getMonth()+(o.months||1));t.due=d0.getTime();t.status='activo';
     S.payments.push({id:uid(),tid:t.id,amount:o.amount,at:Date.now(),method:'Bre-B',concept:o.months===12?'Anualidad':'Mensualidad',ref:o.ref});
     S.messages.push({id:uid(),to:t.id,kind:'vencimiento',title:'Recibimos tu pago',body:`Confirmamos tu pago de ${money(o.amount)} (ref. ${o.ref}). Tu cuenta queda activa hasta el ${fdate(t.due)}. ¡Gracias!`,at:Date.now(),readBy:[]});
@@ -1912,8 +1930,8 @@ document.addEventListener('click',e=>{
    const d={name:o.business,type:o.btype||'Negocio',city:o.city||'',phone:o.phone,plan:o.plan,owner:o.owner,setup:o.setup,months:o.months,extra:o.mods||[],amount:o.amount,concept:`Compra desde la demo (${o.months===12?'anual':'mensual'})`,ref:o.ref,orderId:o.id};
    if(REAL)return rTenantNew(d,email,m=>toast(m,'bad'));
    toast('En la demo, los clientes nuevos se aprueban desde la app real','bad')},
-  'ord-no':()=>{const o=S.orders.find(x=>x.id===id);openModal('Rechazar pago',`<p style="margin:0">¿No encontraste el pago de <b>${money(o.amount)}</b> con la referencia <b class="mono">${esc(o.ref)}</b>? ${o.type==='renovacion'?'Al cliente le llega un mensaje para que lo revise.':'El pedido queda rechazado.'}</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="ord-no-do" data-id="${id}">Rechazar</button>`)},
-  'ord-no-do':()=>{const o=S.orders.find(x=>x.id===id);if(o.type==='renovacion'){S.messages.push({id:uid(),to:o.tid,kind:'vencimiento',title:'No pudimos confirmar tu pago',body:`No encontramos el pago de ${money(o.amount)} con la referencia ${o.ref}. Revisa que hayas enviado el valor exacto a la llave ${payInfo().llave}, o escríbenos.`,at:Date.now(),readBy:[]});S.orders=S.orders.filter(x=>x.id!==o.id);S.orders.push({...o,id:'h'+uid(),status:'rechazada',doneAt:Date.now()})}else{o.status='rechazada';o.doneAt=Date.now()}save();closeModal();render();toast('Pago rechazado')},
+  'ord-no':()=>{const o=S.orders.find(x=>x.id===id);openModal('Rechazar pago',`<p style="margin:0">¿No encontraste el pago de <b>${money(o.amount)}</b> con la referencia <b class="mono">${esc(o.ref)}</b>? ${o.type!=='nuevo'?'Al cliente le llega un mensaje para que lo revise.':'El pedido queda rechazado.'}</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="ord-no-do" data-id="${id}">Rechazar</button>`)},
+  'ord-no-do':()=>{const o=S.orders.find(x=>x.id===id);if(o.type!=='nuevo'){S.messages.push({id:uid(),to:o.tid,kind:'vencimiento',title:'No pudimos confirmar tu pago',body:`No encontramos el pago de ${money(o.amount)} con la referencia ${o.ref}. Revisa que hayas enviado el valor exacto a la llave ${payInfo().llave}, o escríbenos.`,at:Date.now(),readBy:[]});S.orders=S.orders.filter(x=>x.id!==o.id);S.orders.push({...o,id:'h'+uid(),status:'rechazada',doneAt:Date.now()})}else{o.status='rechazada';o.doneAt=Date.now()}save();closeModal();render();toast('Pago rechazado')},
   'pay-cfg-do':()=>{S.config.pay={llave:v,titular:el.dataset.t};save();closeModal();render();
    pubSync();toast('Llave de cobro actualizada')},
   'tenant-del-ask':()=>{const t=S.tenants.find(x=>x.id===id);const n={users:S.users.filter(x=>x.tid===id).length,products:S.products.filter(x=>x.tid===id).length,sales:S.sales.filter(x=>x.tid===id).length};
@@ -1960,7 +1978,7 @@ document.addEventListener('change',e=>{
   'imp-file':()=>{if(el.files[0])readImport(el.files[0])},
   'pur-method':()=>pur.method=el.value,
   'rc-pid':()=>{pfRecipe[+el.dataset.ix].pid=el.value;rcRefresh()},'rc-qty':()=>{pfRecipe[+el.dataset.ix].qty=Number(el.value)||0;rcRefresh()},
-  'co-extra':()=>{coCapture();co.extra=el.checked?['recetas']:[];coRender()},
+  'co-extra':()=>{coCapture();co.extra=co.extra.filter(m=>m!==el.value);if(el.checked)co.extra.push(el.value);coRender()},
   'co-setup':()=>{coCapture();co.setup=el.checked;coRender()},
   'pf-kind':()=>{const f=$('#prod-form');const d=Object.fromEntries(new FormData(f).entries());const o={code:d.code,name:d.name,cat:d.cat,cost:parseMoney(d.cost),price:parseMoney(d.price),stock:Number(d.stock)||0,min:Number(d.min)||0,supplier:d.supplier||'',unit:d.unit,_keep:true};if(el.value==='insumo')pfRecipe=[];f.outerHTML=productForm(o,el.value);const h=document.querySelector('.modal-h h3');if(h)h.textContent=el.value==='insumo'?'Nuevo insumo':'Nuevo producto'},
   'tm-plan':()=>{const p=planById(el.value);document.querySelectorAll('#tm-mods input').forEach(c=>{if(p.mods.includes(c.value))c.checked=true})},
@@ -2057,6 +2075,20 @@ Vence el: ${fdate(t.due)}
 Revisa en tu banco que llegó el valor exacto con esa referencia y apruébalo en la consola: Pagos y solicitudes → Aprobar.
 ${REAL_URL}`)},
   'co-pay':()=>coSubmit(d.comp),
+  'mod-report':()=>{const t=tenant();const it=reqItem(modState.mod);const o={id:`mod_${t.id}_${modState.mod}`,type:'modulo',tid:t.id,mod:modState.mod,business:t.name,plan:t.plan,status:'pendiente',at:Date.now(),ref:modState.ref,months:1,amount:it.price,comprobante:(d.comp||'').trim().slice(0,60)};
+   S.orders=S.orders.filter(x=>x.id!==o.id);S.orders.push(o);save();closeModal();render();toast('Listo. Samanat confirma tu pago y activa '+it.name);
+   if(REAL)notifyAdmin(`Compra de módulo: ${t.name} pagó ${money(o.amount)} por ${it.name} (${o.ref})`,`Entró un pago por la compra de un módulo.
+
+Tipo: COMPRA DE MÓDULO
+Negocio: ${t.name}
+Módulo: ${it.name}${o.mod==='implementacion'?' (pago único)':' (primer mes; luego se suma a la cuota)'}
+Reportado por: ${me().name} (${me().email})
+Valor: ${money(o.amount)}
+Referencia: ${o.ref}
+Comprobante: ${o.comprobante||'(no lo escribió)'}
+
+Revisa en tu banco que llegó el valor exacto con esa referencia y apruébalo en la consola: Pagos y solicitudes → Aprobar. Al aprobar, el módulo se activa al instante.
+${REAL_URL}`)},
   'force-change':()=>{lg.err={};const pe=passErrors(d.np);if(!d.np)lg.err.np='Escribe la contraseña nueva.';else if(pe.length)lg.err.np='Le falta: '+pe.join(', ')+'.';const u=me();if(!lg.err.np&&d.np===u.pass)lg.err.np='Debe ser distinta a la temporal.';if(!lg.err.np&&d.np!==d.np2)lg.err.np2='Las contraseñas no coinciden.';if(Object.keys(lg.err).length)return render();if(REAL)return rForceChange(d.np);u.pass=d.np;delete u.mustChange;save();lg.err={};liveEvent('login','Creó su contraseña');render();toast('Contraseña creada. ¡Bienvenido a Natara!')},
   'pay-cfg':()=>{const llave=(d.llave||'').trim(),titular=(d.titular||'').trim(),notify=(d.notify||'').trim();if(llave.length<3||!titular)return toast('Escribe la llave y el nombre del titular','bad');
    const prev=payInfo();const nChanged=notify!==notifyTpl();if(nChanged){S.config.payNotify=notify;save();if(prev.llave===llave&&prev.titular===titular){pubSync();render();return toast(notify?'Aviso de pagos configurado':'Aviso de pagos desactivado')}}

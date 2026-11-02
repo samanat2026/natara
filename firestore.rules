@@ -101,6 +101,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Pago reportado por el dueño: cuota (pend_<negocio>) o módulo (mod_<negocio>_<módulo>)
+    function ownOrder(id, d) {
+      return isOwnerOf(d.tid) && d.status == 'pendiente'
+        && ((d.type == 'renovacion' && id == 'pend_' + d.tid)
+            || (d.type == 'modulo' && id == 'mod_' + d.tid + '_' + d.mod
+                && d.mod in ['inventario','caja','finanzas','estadisticas','empleados','fiados','proveedores','recetas','lector','implementacion']));
+    }
+
     // Pagos con llave Bre-B: renovaciones (pend_<negocio>) y compras desde la demo
     match /orders/{id} {
       allow read: if isAdmin() || (active() && resource.data.get('tid', '') == profile().tid);
@@ -117,12 +125,9 @@ service cloud.firestore {
             && request.resource.data.business is string && request.resource.data.business.size() < 120
             && request.resource.data.owner is string && request.resource.data.owner.size() < 120
             && request.resource.data.comprobante.size() <= 60)
-        || (isOwnerOf(request.resource.data.tid) && id == 'pend_' + request.resource.data.tid
-            && request.resource.data.type == 'renovacion' && request.resource.data.status == 'pendiente');
+        || ownOrder(id, request.resource.data);
       allow update: if isAdmin()
-        || (isOwnerOf(resource.data.tid) && id == 'pend_' + resource.data.tid
-            && request.resource.data.tid == resource.data.tid
-            && request.resource.data.type == 'renovacion' && request.resource.data.status == 'pendiente');
+        || (ownOrder(id, request.resource.data) && request.resource.data.tid == resource.data.tid);
       allow delete: if isAdmin();
     }
 
