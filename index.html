@@ -312,6 +312,9 @@ details.guide[open] summary{margin-bottom:10px}
 .tile.out{opacity:.55}
 .cart{position:sticky;top:16px}
 .cart-items{display:flex;flex-direction:column;max-height:340px;overflow-y:auto;margin:0 -6px;padding:0 6px}
+.fid{border:1px dashed var(--line);border-radius:10px;padding:10px 12px}
+.fid.on{border-style:solid;background:var(--surface-2)}
+.fid .input{flex:1;min-width:0}
 .ci{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
 .ci .nm{font-weight:600;font-size:14px}
 .ci .unit{font-size:12px;color:var(--ink-3)}
@@ -409,7 +412,7 @@ details.hint summary{cursor:pointer}
    ========================================================= */
 const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';const DEMO_ADMIN=MODE==='demo'&&window.NATARA_DEMO_ADMIN===true;const ADMIN_EMAIL='samanat2026@gmail.com';
 const REAL_URL='https://samanat2026.github.io/natara/',DEMO_URL='https://samanat2026.github.io/natara/demo/';
-const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v9';
+const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v10';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 
@@ -473,6 +476,7 @@ const IC={
  info:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-5M12 8h.01',
  chef:'M6 13.9V20h12v-6.1A4 4 0 0 0 17 6a5 5 0 0 0-10 0 4 4 0 0 0-1 7.9zM6 17h12',
  arrow:'M5 12h14M13 6l6 6-6 6',
+ gift:'M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z',
 };
 const ic=(n,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n]||''}"/></svg>`;
 const LOGO='data:image/webp;base64,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';
@@ -489,6 +493,7 @@ const MODS=[
  {id:'proveedores',name:'Proveedores',icon:'truck',price:19900,desc:'Directorio de proveedores y registro de compras que suben el inventario y quedan como egreso.'},
  {id:'recetas',name:'Recetas y combos',icon:'chef',price:10000,addon:true,desc:'Arma productos con lo que tienes en inventario: una arepa con chorizo y queso, un desayuno, un combo. Al venderlos, cada ingrediente se descuenta solo, y ves cuánto te cuesta y cuánto ganas en cada uno.'},
  {id:'lector',name:'Lector de código de barras',icon:'barcode',price:14900,addon:true,desc:'Vende y busca productos escaneando el código con un lector USB o Bluetooth. Ideal si el negocio vende productos empacados.'},
+ {id:'fidelizacion',name:'Puntos y fidelización',icon:'gift',price:5000,addon:true,desc:'Tus clientes se afilian gratis con su cédula, acumulan puntos con cada compra y los usan como descuento en la caja, al estilo de Puntos Colombia. Tú decides cada cuánto se gana un punto, cuánto vale y cuándo vence.'},
 ];
 const PLANS=[
  {id:'basico',name:'Básico',price:59900,mods:['inventario','caja'],pitch:'Para empezar a controlar el inventario y la caja.'},
@@ -516,10 +521,10 @@ const INC_CATS=['Pedido especial','Abono de fiado','Préstamo','Otros'];
 function seed(){
  const r=mulberry32(20261101), rnd=()=>r(), pick=a=>a[Math.floor(rnd()*a.length)], ri=(a,b)=>a+Math.floor(rnd()*(b-a+1));
  const now=Date.now(), today=sod(now);
- const S={v:1,config:{contact:'WhatsApp +57 300 000 0000',brand:'Samanat'},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[]};
+ const S={v:1,config:{contact:'WhatsApp +57 300 000 0000',brand:'Samanat'},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[],members:[],pmoves:[],settings:[]};
  if(MODE==='real'){S.config.contact='Escríbenos a samanat2026@gmail.com';S.users=[{id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'samanat2026@gmail.com',pass:'',mustChange:true,perms:[],active:true}];return S}
  S.tenants=[
-  {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:[...PLANS[2].mods,'recetas'],status:'activo',due:today+18*DAY,since:today-140*DAY},
+  {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:[...PLANS[2].mods,'recetas','fidelizacion'],status:'activo',due:today+18*DAY,since:today-140*DAY},
   {id:'t2',name:'Droguería Vida Sana',type:'Farmacia',city:'Envigado',phone:'311 208 9934',plan:'pro',mods:PLANS[1].mods.slice(),status:'activo',due:today+3*DAY,since:today-75*DAY},
   {id:'t3',name:'Minimercado Don Pacho',type:'Minimercado',city:'Bello',phone:'320 744 1180',plan:'basico',mods:PLANS[0].mods.slice(),status:'activo',due:today+12*DAY,since:today-64*DAY},
   {id:'t4',name:'Papelería Arcoíris',type:'Papelería',city:'Itagüí',phone:'315 630 2257',plan:'pro',mods:PLANS[1].mods.slice(),status:'suspendido',due:today-4*DAY,since:today-50*DAY},
@@ -601,6 +606,8 @@ function seed(){
  const mkCombo=(code,name,price,parts)=>{const recipe=parts.map(([n,q])=>({pid:byName(n).id,qty:q}));S.products.push({id:uid(),tid:'t1',code,name,cat:'Combos',cost:Math.round(sum(recipe,c=>S.products.find(x=>x.id===c.pid).cost*c.qty)),price,stock:0,min:0,supplier:'',kind:'venta',unit:'und',recipe})};
  mkCombo('COMBO1','Desayuno: chocolate con pan y queso',7500,[['Chocolate caliente',1],['Pan francés',2],['Queso costeño para pandebono',0.05]]);
  mkCombo('COMBO2','Tinto con pandebono',2800,[['Café tinto',1],['Pan de bono',1]]);
+ // clientes afiliados a puntos (La Espiga): [puntos, hace cuántos días los ganó]
+ [['1036654321','Luisa Fernanda Restrepo','300 455 1290',[[420,40],[180,200]]],['71789456','Jorge Iván Cardona','312 778 4410',[[95,10],[60,350]]],['1017223344','Valentina Zapata','318 902 3366',[[35,5]]]].forEach(([doc,name,phone,ls])=>{const id=uid();S.members.push({id,tid:'t1',doc,name,phone,consent:true,since:today-210*DAY,last:today-DAY,lotes:ls.map(([p,d])=>({p,v:today+(365-d)*DAY})).sort((a,b)=>a.v-b.v)});ls.forEach(([p,d])=>S.pmoves.push({id:uid(),tid:'t1',mid:id,type:'acumula',pts:p,note:'Compras',sid:'',at:today-d*DAY+11*3600e3,by:'u2'}))});
  // caja abierta hoy
  S.sessions.push({id:uid(),tid:'t1',openedAt:today+6*3600e3,openedBy:'u2',base:150000,closedAt:null});
  S.sessions.push({id:uid(),tid:'t2',openedAt:today+7*3600e3,openedBy:'u5',base:100000,closedAt:null});
@@ -622,7 +629,7 @@ function save(){if(REAL)return syncDiff();try{localStorage.setItem(KEY,JSON.stri
 let sess={uid:null,view:null};
 try{const r=sessionStorage.getItem(SESS);if(r)sess=JSON.parse(r)}catch(e){}
 function saveSess(){try{sessionStorage.setItem(SESS,JSON.stringify(sess))}catch(e){}}
-load();S.orders=S.orders||[];
+load();S.orders=S.orders||[];['members','pmoves','settings'].forEach(k=>S[k]=S[k]||[]);
 if(DEMO_ADMIN&&!S.users.some(u=>u.role==='superadmin')){S.users.unshift({id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'natalia@samanat.co',pin:'0000',active:true,pass:'Natara2026*',perms:[]});save()}
 window.addEventListener('storage',e=>{
  if(REAL||e.key!==KEY)return;
@@ -780,6 +787,7 @@ const NAV=[
  {v:'inventario',label:'Inventario',icon:'box',mod:'inventario',roles:['dueno'],perm:['ver_inventario','inv_edit']},
  {v:'recetas',label:'Recetas y combos',icon:'chef',mod:'recetas',roles:['dueno'],perm:'recetas'},
  {v:'fiados',label:'Fiados',icon:'heart',mod:'fiados',roles:['dueno'],perm:'fiados'},
+ {v:'puntos',label:'Puntos',icon:'gift',mod:'fidelizacion',roles:['dueno']},
  {v:'finanzas',label:'Ingresos y egresos',icon:'wallet',mod:'finanzas',roles:['dueno'],perm:'finanzas',sec:'Gestión'},
  {v:'estadisticas',label:'Estadísticas',icon:'chart',mod:'estadisticas',roles:['dueno'],perm:'estadisticas'},
  {v:'proveedores',label:'Proveedores',icon:'truck',mod:'proveedores',roles:['dueno'],perm:'proveedores'},
@@ -806,7 +814,7 @@ function tenantView(){
  if(!n||!navAllowed(n,u)){v=sess.view=u.role==='cajero'&&t.mods.includes('caja')?'caja':'inicio';saveSess()}
  const nn=NAV.find(x=>x.v===v);
  if(nn.mod&&!t.mods.includes(nn.mod))return viewUpsell(nn.mod);
- return ({inicio:viewInicio,caja:viewCaja,cierre:viewCierre,ventas:viewVentas,inventario:viewInventario,recetas:viewRecetas,guia:viewGuia,fiados:viewFiados,finanzas:viewFinanzas,estadisticas:viewStats,proveedores:viewProveedores,empleados:viewEmpleados,plan:viewPlan,mensajes:viewMensajes})[v]();
+ return ({inicio:viewInicio,caja:viewCaja,cierre:viewCierre,ventas:viewVentas,inventario:viewInventario,recetas:viewRecetas,guia:viewGuia,fiados:viewFiados,puntos:viewPuntos,finanzas:viewFinanzas,estadisticas:viewStats,proveedores:viewProveedores,empleados:viewEmpleados,plan:viewPlan,mensajes:viewMensajes})[v]();
 }
 function afterRender(){
  if(sess.view==='caja'&&!$('#modal-root').innerHTML){const q=$('#pos-q');if(q)q.focus()}
@@ -987,7 +995,7 @@ const payPill=s=>s.status==='anulada'?`<span class="pill bad">Anulada</span>`:s.
 /* =========================================================
    CAJA / POS
    ========================================================= */
-let cart=[];let pos={q:'',method:'efectivo',received:'',bank:'Nequi',ref:'',verified:false,seller:null,customer:''};
+let cart=[];let pos={q:'',method:'efectivo',received:'',bank:'Nequi',ref:'',verified:false,seller:null,customer:'',fdoc:'',mid:'',useP:false,fmiss:false};
 function viewCaja(){
  const u=me();
  const sess0=openSession();
@@ -1015,8 +1023,9 @@ function posResults(){
  return `<div class="muted small" style="margin-bottom:8px">${pos.q?`${P.length} resultado${P.length>1?'s':''}`:'Más vendidos'}</div><div class="tiles">${P.map(p=>`<button class="tile ${availOf(p)<=0?'out':''}" data-a="add" data-id="${p.id}"><strong>${esc(p.name)}</strong>${has('lector')?`<span class="st mono">${esc(p.code)}</span>`:`<span class="st">${esc(p.cat)}</span>`}<span class="spread"><span class="price">${money(p.price)}</span><span class="st">${recipeOf(p)?`alcanza ${num(availOf(p))}`:`${num(p.stock)} disp.`}</span></span></button>`).join('')}</div>`;
 }
 function cartTotal(){return sum(cart,i=>i.price*i.qty)}
+const payTotal=()=>{const s=cartTotal();return s-fidDisc(s)};
 function cartPanel(){
- const u=me(),total=cartTotal();
+ const u=me(),sub=cartTotal(),disc=fidDisc(sub),total=sub-disc;
  const emps=S.users.filter(x=>x.tid===u.tid&&x.active);
  const methods=[['efectivo','Efectivo'],['transferencia','Transferencia']];if(has('fiados')&&canDo('fiados'))methods.push(['fiado','Fiado']);
  const rec=parseMoney(pos.received);
@@ -1032,8 +1041,10 @@ function cartPanel(){
    <div class="qty"><button data-a="qty" data-ix="${ix}" data-d="-1" aria-label="Menos">−</button><input type="number" min="1" value="${i.qty}" data-c="qty-set" data-ix="${ix}" aria-label="Cantidad"><button data-a="qty" data-ix="${ix}" data-d="1" aria-label="Más">+</button></div>
    <div class="num" style="text-align:right;min-width:78px"><b>${money(i.price*i.qty)}</b><br><button class="icon-btn" style="color:var(--ink-3);padding:2px" data-a="rm" data-ix="${ix}" aria-label="Quitar">${ic('trash',15)}</button></div></div>`).join('')}</div>`
   :`<div class="empty">${ic(has('lector')?'barcode':'cart',30)}${has('lector')?'Escanea un producto o tócalo en la lista para agregarlo.':'Busca un producto o tócalo en la lista para agregarlo.'}</div>`}
+  ${disc?`<div class="spread small" style="margin-top:8px"><span class="muted">Subtotal</span><span class="num">${money(sub)}</span></div><div class="spread small" style="color:var(--good)"><span>Descuento con puntos</span><span class="num">− ${money(disc)}</span></div>`:''}
   <div class="total-row"><span class="muted">Total</span><span class="big">${money(total)}</span></div>
   <div class="stack" style="margin-top:14px">
+   ${fidBox(sub)}
    <div class="seller-line"><div class="avatar" style="width:28px;height:28px;font-size:11px">${initials(u.name)}</div><span>Vende <b>${esc(u.name)}</b></span><span class="muted small" style="margin-left:auto">${ic('lock',13)} queda a tu nombre</span></div>
    <div class="seg" role="tablist">${methods.map(([k,l])=>`<button class="${pos.method===k?'on':''}" data-a="pay" data-v="${k}">${l}</button>`).join('')}</div>
    ${payBox}
@@ -1050,17 +1061,26 @@ function addToCart(p,qty=1){
  refreshPOS();
 }
 function checkout(){
- const total=cartTotal();if(!cart.length)return;
+ if(!cart.length)return;
+ const sub=cartTotal();const fm=has('fidelizacion')&&pos.mid?T('members').find(x=>x.id===pos.mid):null;const cfg=fidCfg();
+ const used=fm&&pos.useP?maxRedeem(fm,sub,cfg):0;const disc=used*cfg.valorPunto;const total=sub-disc;
  if(!openSession()){toast('Abre la caja antes de cobrar','bad');return}
  if(pos.method==='efectivo'&&pos.received!==''&&parseMoney(pos.received)<total){toast('El dinero recibido no alcanza para el total','bad');return}
  if(pos.method==='fiado'&&!pos.customer){toast('Selecciona el cliente que se lleva fiado','bad');return}
  const t=tenant();const last=Math.max(1000,...T('sales').map(s=>s.num));
  const sale={id:uid(),tid:t.id,at:Date.now(),items:cart.map(i=>({...i})),total,method:pos.method,bank:pos.method==='transferencia'?pos.bank:'',ref:pos.method==='transferencia'?pos.ref:'',confirmed:pos.method!=='transferencia'||pos.verified,received:pos.method==='efectivo'?(parseMoney(pos.received)||total):0,seller:me().id,customer:pos.method==='fiado'?pos.customer:'',status:'ok',num:last+1};
+ if(fm)Object.assign(sale,{mid:fm.id,sub,disc,ptsUsed:used});
+ if(fm){
+  if(used){ptsConsume(fm,used);ptsMove(fm,'redime',-used,`Venta #${sale.num}`,sale.id)}
+  const earned=sale.method==='fiado'?0:earnPts(total,cfg);
+  if(earned){fm.lotes=[...lotesVig(fm),{p:earned,v:addMonths(Date.now(),cfg.mesesVigencia),sid:sale.id}];ptsMove(fm,'acumula',earned,`Venta #${sale.num}`,sale.id)}
+  sale.ptsEarned=earned;sale.ptsAfter=ptsOf(fm);fm.last=Date.now();
+ }
  S.sales.push(sale);liveEvent('venta',`Venta #${sale.num} por ${money(total)}`,null,total);
  sale.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,-1,`Venta #${sale.num}`,sale.at,t.id)});
  if(sale.method==='fiado')S.ledger.push({id:uid(),tid:t.id,cid:sale.customer,type:'cargo',amount:total,at:sale.at,note:`Venta fiada #${sale.num}`,sid:sale.id});
  save();_sc=null;
- cart=[];pos={...pos,q:'',received:'',ref:'',verified:false,customer:''};
+ cart=[];pos={...pos,q:'',received:'',ref:'',verified:false,customer:'',fdoc:'',mid:'',useP:false,fmiss:false};
  showReceipt(sale,true);
  const pr=$('#pos-results');if(pr)pr.innerHTML=posResults();const q=$('#pos-q');if(q)q.value='';
  refreshPOS();
@@ -1071,14 +1091,97 @@ function showReceipt(s,fresh=false){
   <div class="receipt"><div class="c"><b>${esc(t.name)}</b><br>${esc(t.city)} · Tel. ${esc(t.phone)}</div><hr>
   <div class="ln"><span>Venta #${s.num}</span><span>${fdt(s.at)}</span></div><div class="ln"><span>Atendió</span><span>${esc(userName(s.seller))}</span></div><hr>
   ${s.items.map(i=>`<div class="ln"><span>${i.qty} × ${esc(i.name)}</span><span>${money(i.qty*i.price)}</span></div>`).join('')}<hr>
+  ${s.disc?`<div class="ln"><span>Subtotal</span><span>${money(s.sub)}</span></div><div class="ln"><span>Descuento ${num(s.ptsUsed)} puntos</span><span>−${money(s.disc)}</span></div>`:''}
   <div class="ln"><b>TOTAL</b><b>${money(s.total)}</b></div>
   <div class="ln"><span>Pago</span><span>${s.method==='efectivo'?'Efectivo':s.method==='fiado'?'Fiado: '+esc(S.customers.find(c=>c.id===s.customer)?.name||''):esc(s.bank)+(s.ref?' · ref '+esc(s.ref):'')}</span></div>
   ${s.method==='efectivo'?`<div class="ln"><span>Recibido</span><span>${money(s.received)}</span></div><div class="ln"><span>Cambio</span><span>${money(Math.max(0,s.received-s.total))}</span></div>`:''}
+  ${s.mid?`<hr><div class="ln"><span>Cliente</span><span>${esc(S.members.find(m=>m.id===s.mid)?.name||'')}</span></div><div class="ln"><span>Puntos ganados</span><span>${num(s.ptsEarned||0)}</span></div><div class="ln"><span>Saldo de puntos</span><span>${num(s.ptsAfter||0)}</span></div>`:''}
   ${s.status==='anulada'?`<hr><div class="c"><b>VENTA ANULADA</b></div>`:''}
   <hr><div class="c">Gracias por tu compra · natara</div></div>`;
  const can=canDo('anular')&&s.status!=='anulada';
  const foot=`${s.method==='transferencia'&&!s.confirmed&&s.status!=='anulada'?`<button class="btn" data-a="confirm-tr" data-id="${s.id}">${ic('check',16)} Confirmar transferencia</button>`:''}${can&&!fresh?`<button class="btn danger" data-a="void-ask" data-id="${s.id}">Anular venta</button>`:''}<button class="btn primary" data-a="close-modal">${fresh?'Nueva venta':'Cerrar'}</button>`;
  openModal(fresh?'Venta registrada':`Venta #${s.num}`,body,foot);
+}
+
+/* =========================================================
+   PUNTOS Y FIDELIZACIÓN (módulo 'fidelizacion')
+   El dueño paga el módulo; para el cliente final afiliarse es gratis.
+   Cada cliente guarda sus puntos en lotes {p: puntos, v: vence (ms)}:
+   al usar puntos se gastan primero los que vencen antes.
+   ========================================================= */
+const FID_DEF={montoPorPunto:1000,valorPunto:7,minimoRedimir:100,mesesVigencia:12,bienvenida:0};
+function fidCfg(){const t=tenant();const r=t&&S.settings.find(x=>x.id==='fid_'+t.id);return {...FID_DEF,...(r||{})}}
+const docDigits=v=>String(v||'').replace(/\D/g,'');
+const memberByDoc=d=>T('members').find(m=>m.doc===docDigits(d));
+const lotesVig=m=>(m.lotes||[]).filter(l=>l.v>Date.now()&&l.p>0).sort((a,b)=>a.v-b.v);
+const ptsOf=m=>sum(lotesVig(m),l=>l.p);
+const ptsSoon=m=>sum(lotesVig(m).filter(l=>l.v<Date.now()+30*DAY),l=>l.p);
+const earnPts=(paid,cfg)=>Math.floor(Math.max(0,paid)/cfg.montoPorPunto);
+const addMonths=(ms,n)=>{const d=new Date(ms);d.setMonth(d.getMonth()+n);return d.getTime()};
+function ptsConsume(m,q){let r=q;m.lotes=lotesVig(m).map(l=>{const x=Math.min(l.p,r);r-=x;return {...l,p:l.p-x}}).filter(l=>l.p>0)}
+function ptsMove(m,type,pts,note,sid){S.pmoves.push({id:uid(),tid:m.tid,mid:m.id,type,pts,note,sid:sid||'',at:Date.now(),by:me()?.id||''})}
+// Puntos que se pueden usar en una compra: todos los disponibles, sin pasarse del total
+function maxRedeem(m,total,cfg){const p=ptsOf(m);if(p<cfg.minimoRedimir)return 0;return Math.min(p,Math.floor(total/cfg.valorPunto))}
+function fidDisc(total){if(!has('fidelizacion')||!pos.mid||!pos.useP)return 0;const m=T('members').find(x=>x.id===pos.mid);if(!m)return 0;const cfg=fidCfg();return maxRedeem(m,total,cfg)*cfg.valorPunto}
+function fidFind(){
+ const inp_=$('#fid-doc');if(inp_)pos.fdoc=inp_.value;const dc=docDigits(pos.fdoc);
+ if(dc.length<5){toast('Escribe la cédula completa del cliente','bad');return}
+ const m=memberByDoc(dc);pos.fdoc=dc;
+ if(m){pos.mid=m.id;pos.fmiss=false;pos.useP=false}else{pos.mid='';pos.fmiss=true}
+ refreshPOS();
+}
+function fidBox(total){
+ if(!has('fidelizacion'))return '';
+ const cfg=fidCfg();const m=pos.mid&&T('members').find(x=>x.id===pos.mid);
+ if(m){const p=ptsOf(m);const mx=maxRedeem(m,total,cfg);const disc=pos.useP?mx*cfg.valorPunto:0;const gana=pos.method==='fiado'?0:earnPts(total-disc,cfg);
+  return `<div class="fid on"><div class="spread"><span class="row" style="gap:8px">${ic('gift',16)}<b>${esc(m.name)}</b></span><button class="btn ghost sm" data-a="fid-clear">Quitar</button></div>
+   <div class="muted small" style="margin:2px 0 6px">C.C. ${esc(m.doc)} · <b>${num(p)} puntos</b> = ${money(p*cfg.valorPunto)}${ptsSoon(m)?` · <span style="color:var(--warn)">${num(ptsSoon(m))} vencen pronto</span>`:''}</div>
+   ${mx>0?`<label class="check"><input type="checkbox" data-c="fid-use" ${pos.useP?'checked':''}><span>Usar ${num(mx)} puntos<small>Descuenta ${money(mx*cfg.valorPunto)} de esta venta.</small></span></label>`:p>0?`<div class="muted small">Podrá usar sus puntos cuando tenga ${num(cfg.minimoRedimir)}.</div>`:''}
+   ${total?`<div class="small" style="margin-top:4px">${pos.method==='fiado'?'Las ventas fiadas no suman puntos.':`Con esta compra gana <b>${num(gana)}</b> punto${gana===1?'':'s'}.`}</div>`:''}</div>`}
+ return `<div class="fid"><div class="row" style="gap:8px;flex-wrap:nowrap">${ic('gift',16)}<input class="input" id="fid-doc" inputmode="numeric" placeholder="Cédula para puntos" value="${esc(pos.fdoc)}" data-i="fid-doc" autocomplete="off"><button class="btn sm" data-a="fid-find">Buscar</button></div>${pos.fmiss?`<div class="small" id="fid-miss" style="margin-top:6px">Esa cédula no está afiliada. <button type="button" class="linkish" data-a="fid-new">Afiliarlo ahora (gratis)</button></div>`:''}</div>`;
+}
+function fidVoid(s){
+ if(!s.mid)return;const m=S.members.find(x=>x.id===s.mid);if(!m)return;const cfg=fidCfg();
+ if(s.ptsEarned){let rest=s.ptsEarned;const l=(m.lotes||[]).find(x=>x.sid===s.id);if(l){const q=Math.min(l.p,rest);l.p-=q;rest-=q}m.lotes=lotesVig(m);if(rest>0)ptsConsume(m,Math.min(rest,ptsOf(m)));ptsMove(m,'anula',-s.ptsEarned,`Anulación venta #${s.num}`,s.id)}
+ if(s.ptsUsed){m.lotes=[...lotesVig(m),{p:s.ptsUsed,v:addMonths(Date.now(),cfg.mesesVigencia)}];ptsMove(m,'devuelve',s.ptsUsed,`Anulación venta #${s.num}: puntos devueltos`,s.id)}
+}
+function fidNewModal(dc=''){
+ openModal('Afiliar cliente a puntos',`<form class="stack" data-f="fid-new" id="fn-form"><p class="muted small" style="margin:0">Afiliarse es <b>gratis</b> para el cliente. Desde hoy suma puntos con cada compra.</p><div class="form-grid">${field('Cédula',inp('doc',dc,'text','inputmode="numeric" required'))}${field('Celular (opcional)',inp('phone','','tel'))}${field('Nombre completo',inp('name','','text','required'),'full')}</div>
+  <label class="check"><input type="checkbox" name="consent" value="1"><span>El cliente autoriza el uso de sus datos para el programa de puntos<small>Nombre, cédula y celular solo se usan para sus puntos (Ley 1581 de 2012, protección de datos).</small></span></label><div id="fn-err"></div></form>`,
+  `<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="fn-form">Afiliar</button>`);
+ setTimeout(()=>$(dc?'#f-name':'#f-doc')?.focus(),30);
+}
+function fidCfgModal(){
+ const c=fidCfg();
+ openModal('Configurar puntos',`<form class="stack" data-f="fid-cfg" id="fc-form"><div class="form-grid">
+  ${field('1 punto por cada (en compras)',minp('montoPorPunto',c.montoPorPunto))}${field('Cada punto vale al pagar',minp('valorPunto',c.valorPunto))}
+  ${field('Puntos mínimos para usarlos',inp('minimoRedimir',c.minimoRedimir,'number','min="1" step="1"'))}${field('Los puntos vencen a los (meses)',inp('mesesVigencia',c.mesesVigencia,'number','min="1" max="36" step="1"'))}
+  ${field('Puntos de bienvenida al afiliarse',inp('bienvenida',c.bienvenida,'number','min="0" step="1"'),'full')}</div>
+  <p class="muted small" style="margin:0">Referencia: Puntos Colombia da 1 punto por cada $700 a $2.500 según el aliado, y cada punto vale unos $7 al redimir. Con 1 punto por cada ${money(c.montoPorPunto)} y un valor de ${money(c.valorPunto)}, le devuelves al cliente el ${num(c.valorPunto/c.montoPorPunto*100)}% de lo que compra.</p><div id="fc-err"></div></form>`,
+  `<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="fc-form">Guardar</button>`);
+}
+const PM_LBL={afiliacion:'Afiliación',acumula:'Ganó',redime:'Usó',anula:'Anulación',devuelve:'Devueltos',vence:'Vencieron'};
+function fidMemberModal(m){
+ if(!m)return;const cfg=fidCfg();const p=ptsOf(m);
+ const L=S.pmoves.filter(x=>x.mid===m.id).sort((a,b)=>b.at-a.at).slice(0,60);
+ openModal(m.name,`<div class="spread"><span class="muted">C.C. ${esc(m.doc)}${m.phone?' · '+esc(m.phone):''}</span><span class="pill good">${num(p)} pts · ${money(p*cfg.valorPunto)}</span></div>
+  ${lotesVig(m).length?`<div class="small muted">Vencimientos: ${lotesVig(m).map(l=>`${num(l.p)} el ${fdate(l.v)}`).join(' · ')}</div>`:''}
+  <div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Detalle</th><th class="r">Puntos</th></tr></thead><tbody>${L.map(x=>`<tr><td>${fdate(x.at)}</td><td>${PM_LBL[x.type]||''} · ${esc(x.note)}</td><td class="r num" style="color:var(${x.pts<0?'--bad':'--good'})">${x.pts>0?'+':''}${num(x.pts)}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">Sin movimientos</td></tr>'}</tbody></table></div>`,
+  `<button class="btn primary" data-a="close-modal">Cerrar</button>`);
+}
+function viewPuntos(){
+ const cfg=fidCfg();const M=T('members').map(m=>({...m,p:ptsOf(m),soon:ptsSoon(m)})).sort((a,b)=>b.p-a.p);
+ const tot=sum(M,m=>m.p);const mv=T('pmoves');const m0=new Date();m0.setDate(1);const from=sod(m0);
+ const earn=sum(mv.filter(x=>x.type==='acumula'&&x.at>=from),x=>x.pts);const red=-sum(mv.filter(x=>x.type==='redime'&&x.at>=from),x=>x.pts);
+ const news=M.filter(m=>m.since>=from).length;
+ return `<div class="page-head"><div><h1>Puntos</h1><p>1 punto por cada <b>${money(cfg.montoPorPunto)}</b> en compras · cada punto vale <b>${money(cfg.valorPunto)}</b> · vencen a los ${cfg.mesesVigencia} meses</p></div><div class="actions"><button class="btn" data-a="fid-cfg">${ic('edit',16)} Configurar</button><button class="btn primary" data-a="fid-new">${ic('plus',16)} Afiliar cliente</button></div></div>
+  <div class="grid g4">
+   <div class="card kpi"><span class="lbl">Clientes afiliados</span><span class="val">${num(M.length)}</span><span class="foot">${news} nuevo${news===1?'':'s'} este mes</span></div>
+   <div class="card kpi"><span class="lbl">Puntos vigentes</span><span class="val">${num(tot)}</span><span class="foot">${money(tot*cfg.valorPunto)} en descuentos por usar</span></div>
+   <div class="card kpi"><span class="lbl">Ganados este mes</span><span class="val">${num(earn)}</span><span class="foot">en compras de clientes afiliados</span></div>
+   <div class="card kpi"><span class="lbl">Usados este mes</span><span class="val">${num(red)}</span><span class="foot">${money(red*cfg.valorPunto)} descontados en caja</span></div>
+  </div>
+  <div class="card">${M.length?`<div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th>Cédula</th><th>Celular</th><th>Última compra</th><th class="r">Por vencer (30 días)</th><th class="r">Puntos</th></tr></thead><tbody>${M.map(m=>`<tr class="click" data-a="fid-member" data-id="${m.id}"><td><b>${esc(m.name)}</b></td><td class="mono">${esc(m.doc)}</td><td class="mono">${esc(m.phone||'—')}</td><td>${m.last?fdate(m.last):'—'}</td><td class="r">${m.soon?`<span class="pill warn">${num(m.soon)}</span>`:'—'}</td><td class="r"><span class="pill good">${num(m.p)} · ${money(m.p*cfg.valorPunto)}</span></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">${ic('gift',26)}<b style="color:var(--ink)">Todavía no tienes clientes afiliados</b><span>Cuando un cliente pida unirse, afílialo en la caja con su cédula. Es gratis para él y desde esa compra empieza a sumar.</span></div>`}</div>`;
 }
 
 /* =========================================================
@@ -1334,7 +1437,8 @@ function guideSections(){
    'Cada toque agrega una unidad. Cambia la cantidad con <b>−</b> y <b>+</b>, o escríbela.',
    'Elige cómo te pagan: <b>Efectivo</b> (escribe lo que recibiste y te dice el cambio)'+',<b> Transferencia</b> (elige Nequi, Daviplata, Bancolombia o Bre-B y marca <i>Verifiqué que el dinero llegó</i>)'+(m('fiados')&&canDo('fiados')?' o <b>Fiado</b> (elige el cliente)':'')+'.',
    'Toca <b>Cobrar</b>. La venta queda a tu nombre, el inventario se descuenta solo y ves el recibo.',
-   ...(m('recetas')?['Las <b>recetas y combos</b> también se venden aquí: muestran “alcanza N” y al venderlos se descuenta cada ingrediente.']:[])]});
+   ...(m('recetas')?['Las <b>recetas y combos</b> también se venden aquí: muestran “alcanza N” y al venderlos se descuenta cada ingrediente.']:[]),
+   ...(m('fidelizacion')?['<b>Puntos:</b> antes de cobrar, escribe la cédula del cliente y toca <b>Buscar</b>. Con la compra suma puntos, y si tiene suficientes puedes marcar <b>Usar puntos</b> para descontarlos. Si quiere unirse, toca <b>Afiliarlo ahora</b>: es gratis para el cliente.']:[])]});
   S_.push({id:'ventas',icon:'receipt',title:allV?'Revisar las ventas':'Revisar tus ventas',go:'ventas',steps:[
    allV?'En <b>Ventas</b> ves todas las ventas del negocio. Filtra por fecha, forma de pago o vendedor.':'En <b>Mis ventas</b> ves solo las ventas que hiciste tú. Filtra por fecha o forma de pago.',
    'Toca una venta para ver el recibo.',
@@ -1847,11 +1951,16 @@ document.addEventListener('click',e=>{
   pay:()=>{pos.method=v;refreshPOS()},
   'quick-rec':()=>{pos.received=v;refreshPOS()},
   'clear-cart':()=>{cart=[];refreshPOS()},
+  'fid-find':()=>fidFind(),
+  'fid-clear':()=>{pos.mid='';pos.fdoc='';pos.useP=false;pos.fmiss=false;refreshPOS()},
+  'fid-new':()=>fidNewModal(sess.view==='caja'?docDigits(pos.fdoc):''),
+  'fid-cfg':()=>fidCfgModal(),
+  'fid-member':()=>fidMemberModal(T('members').find(m=>m.id===id)),
   checkout,
   sale:()=>showReceipt(S.sales.find(s=>s.id===id)),
   'confirm-tr':()=>{const s=S.sales.find(x=>x.id===id);s.confirmed=true;save();closeModal();render();toast('Transferencia confirmada')},
   'void-ask':()=>{const s=S.sales.find(x=>x.id===id);openModal(`Anular venta #${s.num}`,`<p>El stock de los productos vuelve al inventario y la venta deja de contar en los reportes.</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="void-do" data-id="${id}">Anular venta</button>`)},
-  'void-do':()=>{const s=S.sales.find(x=>x.id===id);s.status='anulada';s.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,1,`Anulación venta #${s.num}`,Date.now(),s.tid)});S.ledger=S.ledger.filter(l=>l.sid!==s.id);save();_sc=null;closeModal();render();toast('Venta anulada')},
+  'void-do':()=>{const s=S.sales.find(x=>x.id===id);s.status='anulada';s.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,1,`Anulación venta #${s.num}`,Date.now(),s.tid)});S.ledger=S.ledger.filter(l=>l.sid!==s.id);fidVoid(s);save();_sc=null;closeModal();render();toast('Venta anulada')},
   'export-sales':()=>saveFile(`ventas-${dkey(Date.now())}.xlsx`,T('sales').map(s=>({Numero:s.num,Fecha:new Date(s.at).toLocaleString('es-CO'),Productos:s.items.map(i=>i.qty+'x '+i.name).join(', '),Vendedor:userName(s.seller),Pago:s.method,Banco:s.bank,Referencia:s.ref,Confirmada:s.confirmed?'Sí':'No',Estado:s.status,Total:s.total})),'Ventas'),
   // inventario
   'rc-new':()=>recipeModal(null),
@@ -1963,7 +2072,8 @@ document.addEventListener('input',e=>{
  if(e.target.matches?.('[data-money]'))fmtMoneyInput(e.target);
  const el=e.target,k=el.dataset.i;if(!k)return;
  if(k==='pos-q'){pos.q=el.value;$('#pos-results').innerHTML=posResults()}
- else if(k==='pos-rec'){pos.received=el.value;const c=$('#pos-change');if(c)c.textContent=money(Math.max(0,parseMoney(el.value)-cartTotal()))}
+ else if(k==='pos-rec'){pos.received=el.value;const c=$('#pos-change');if(c)c.textContent=money(Math.max(0,parseMoney(el.value)-payTotal()))}
+ else if(k==='fid-doc'){pos.fdoc=el.value;if(pos.fmiss){pos.fmiss=false;const b=$('#fid-miss');if(b)b.remove()}}
  else if(k==='pos-ref')pos.ref=el.value;
  else if(k==='rc-price'){const sm=$('#rc-sum');if(sm)sm.innerHTML=rcSummary()}
  else if(k==='tm-email'){}
@@ -1977,7 +2087,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',e=>{
  const el=e.target,k=el.dataset.c;if(!k)return;
  const M={
-'pos-bank':()=>pos.bank=el.value,'pos-ver':()=>pos.verified=el.checked,'pos-cust':()=>pos.customer=el.value,
+'pos-bank':()=>pos.bank=el.value,'pos-ver':()=>pos.verified=el.checked,'pos-cust':()=>pos.customer=el.value,'fid-use':()=>{pos.useP=el.checked;refreshPOS()},
   'qty-set':()=>{cart[+el.dataset.ix].qty=Math.max(1,Number(el.value)||1);refreshPOS()},
   'vf-range':()=>{vf.range=el.value;render()},'vf-method':()=>{vf.method=el.value;render()},'vf-seller':()=>{vf.seller=el.value;render()},
   'inv-cat':()=>{inv.cat=el.value;render()},'inv-low':()=>{inv.low=el.checked;render()},
@@ -1998,6 +2108,7 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('keyup',e=>{if(e.target.id==='lg-pass'&&e.getModifierState){const c=$('#lg-caps');if(c)c.hidden=!e.getModifierState('CapsLock')}});
 document.addEventListener('keydown',e=>{
+ if(e.target.id==='fid-doc'&&e.key==='Enter'){e.preventDefault();fidFind();return}
  if(e.key==='Escape'&&$('#modal-root').innerHTML){closeModal();return}
  if(e.target.id==='pur-q'&&e.key==='Enter'){e.preventDefault();const q=e.target.value.trim().toLowerCase();if(!q)return;const ex=T('products').find(p=>p.code.toLowerCase()===q);const m=ex?[ex]:purMatches();if(m.length)purAdd(m[0]);return}
  if(e.target.id==='pos-q'&&e.key==='Enter'){
@@ -2031,6 +2142,23 @@ document.addEventListener('submit',e=>{
    if(d.id){Object.assign(S.products.find(p=>p.id===d.id),data)}else{const np={id:uid(),tid:t.id,...data,stock:recipe.length?0:(Number(d.stock)||0)};S.products.push(np);if(np.stock)S.kardex.push({id:uid(),tid:t.id,pid:np.id,type:'entrada',qty:np.stock,at:Date.now(),note:'Stock inicial'})}
    save();closeModal();render();toast(d.id?'Guardado':kind==='insumo'?'Insumo creado':'Producto creado')},
   'stock-adj':()=>{const p=S.products.find(x=>x.id===d.id);const q=Number(d.qty)||0;let delta=d.type==='entrada'?q:d.type==='salida'?-q:q-p.stock;p.stock=Math.round((p.stock+delta)*100)/100;S.kardex.push({id:uid(),tid:t.id,pid:p.id,type:d.type,qty:d.type==='ajuste'?q:Math.abs(delta),at:Date.now(),note:d.note||(d.type==='entrada'?'Entrada manual':d.type==='salida'?(p.kind==='insumo'?'Consumo en producción':'Salida manual'):'Conteo físico')});save();closeModal();render();toast(`${p.name}: quedan ${num(p.stock)} ${p.unit||'und'}`)},
+  'fid-new':()=>{const er=x=>{$('#fn-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${x}</div></div>`};
+   const dc=docDigits(d.doc);if(dc.length<5||dc.length>12)return er('Escribe la cédula completa, solo números.');
+   if(!(d.name||'').trim())return er('Escribe el nombre del cliente.');if(d.phone&&!phoneOk(d.phone))return er('Revisa el celular: deben ser 10 números.');
+   if(!d.consent)return er('El cliente debe autorizar el uso de sus datos para el programa de puntos.');
+   const ex=memberByDoc(dc);if(ex)return er(`Esa cédula ya está afiliada a nombre de ${esc(ex.name)}.`);
+   const cfg=fidCfg();const m={id:uid(),tid:t.id,doc:dc,name:d.name.trim(),phone:d.phone?fmtPhone(d.phone):'',consent:true,since:Date.now(),last:0,lotes:[],by:u.id};
+   if(cfg.bienvenida>0)m.lotes.push({p:cfg.bienvenida,v:addMonths(Date.now(),cfg.mesesVigencia)});
+   S.members.push(m);ptsMove(m,'afiliacion',cfg.bienvenida||0,cfg.bienvenida>0?'Puntos de bienvenida':'Afiliación');liveEvent('puntos',`Afilió a ${m.name} al programa de puntos`);
+   if(sess.view==='caja'){pos.mid=m.id;pos.fdoc=dc;pos.fmiss=false;pos.useP=false}
+   save();closeModal();if(sess.view==='caja')refreshPOS();else render();toast(`${m.name.split(' ')[0]} ya acumula puntos`)},
+  'fid-cfg':()=>{const er=x=>{$('#fc-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${x}</div></div>`};
+   const c={montoPorPunto:parseMoney(d.montoPorPunto),valorPunto:parseMoney(d.valorPunto),minimoRedimir:Math.max(1,Math.round(Number(d.minimoRedimir)||0)),mesesVigencia:Math.round(Number(d.mesesVigencia)||0),bienvenida:Math.max(0,Math.round(Number(d.bienvenida)||0))};
+   if(!c.montoPorPunto)return er('Escribe cada cuánto en compras se gana un punto.');if(!c.valorPunto)return er('Escribe cuánto vale un punto al pagar.');
+   if(c.valorPunto>=c.montoPorPunto)return er('El punto debe valer menos que lo que hay que comprar para ganarlo. Si no, regalarías más de lo que vendes.');
+   if(c.mesesVigencia<1||c.mesesVigencia>36)return er('La vigencia debe estar entre 1 y 36 meses.');
+   const id='fid_'+t.id;const r=S.settings.find(x=>x.id===id);if(r)Object.assign(r,c);else S.settings.push({id,tid:t.id,...c});
+   save();closeModal();render();toast('Programa de puntos actualizado')},
   'cust-new':()=>{S.customers.push({id:uid(),tid:t.id,name:d.name,phone:d.phone,limit:parseMoney(d.limit)});save();closeModal();render();toast('Cliente creado')},
   abono:()=>{const amt=parseMoney(d.amount);if(!amt){toast('Escribe el valor del abono','bad');return}S.ledger.push({id:uid(),tid:t.id,cid:d.cid,type:'abono',amount:amt,at:Date.now(),note:`Abono (${d.method})`,cash:d.method==='efectivo'});save();closeModal();render();toast(`Abono de ${money(amt)} registrado`)},
   move:()=>{if(!parseMoney(d.amount)){toast('Escribe el valor','bad');return}const at=new Date(d.date+'T12:00:00').getTime();const isToday=dkey(at)===dkey(Date.now());S.moves.push({id:uid(),tid:t.id,type:d.type,cat:d.cat,concept:d.concept,amount:parseMoney(d.amount),at:isToday?Date.now():at,method:d.method});save();closeModal();render();toast(d.type==='egreso'?'Egreso registrado':'Ingreso registrado')},
@@ -2056,7 +2184,7 @@ document.addEventListener('submit',e=>{
    if(d.amount){S.payments.push({id:uid(),tid:id,amount:d.amount,at:Date.now(),method:'Bre-B',concept:d.concept||'Compra desde la demo',ref:d.ref||''});if(d.setup)t.setupPaid=true}else{S.payments.push({id:uid(),tid:id,amount:p.price,at:Date.now(),method:'Transferencia',concept:'Mensualidad'});if(d.setup){t.setupPaid=true;S.payments.push({id:uid(),tid:id,amount:SETUP.price,at:Date.now(),method:'Transferencia',concept:'Implementación asistida'})}}S.messages.push({id:uid(),to:id,kind:'aviso',title:`Bienvenido a Natara, ${u.name.split(' ')[0]}`,body:'Tu cuenta está lista. Empieza cargando tu inventario desde Excel o creando tus productos.',at:Date.now(),readBy:[]});save();render();sendWelcome(t,u,pass)},
   'tenant-del':()=>{const t=S.tenants.find(x=>x.id===d.id);if(norm(d.confirm)!==norm(t.name)){$('#del-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">El nombre no coincide. Escríbelo tal como aparece arriba.</div></div>`;return}
    const ids=new Set(S.users.filter(x=>x.tid===t.id).map(x=>x.id));if(REAL)rPurge(t.id,[...ids]);
-   ['products','sales','moves','customers','ledger','suppliers','sessions','kardex','requests','purchases'].forEach(k=>S[k]=(S[k]||[]).filter(x=>x.tid!==t.id));
+   ['products','sales','moves','customers','ledger','suppliers','sessions','kardex','requests','purchases','members','pmoves','settings'].forEach(k=>S[k]=(S[k]||[]).filter(x=>x.tid!==t.id));
    S.users=REAL?S.users.map(x=>x.tid===t.id?{id:x.id,email:x.email,name:x.name,role:x.role,tid:null,perms:[],active:false,archived:true}:x):S.users.filter(x=>x.tid!==t.id);S.messages=S.messages.filter(m=>m.to!==t.id).map(m=>({...m,readBy:m.readBy.filter(r=>r!==t.id)}));
    S.payments.forEach(x=>{if(x.tid===t.id){x.formerName=t.name}});S.tenants=S.tenants.filter(x=>x.id!==t.id);
    liveRefresh();L0.feed=L0.feed.filter(e=>e.tid!==t.id);delete L0.views[t.id];ids.forEach(i=>delete L0.presence[i]);liveSave();
@@ -2138,10 +2266,10 @@ ${REAL_URL}`)},
 /* =========================================================
    APP REAL · Firebase (Auth + Firestore)
    ========================================================= */
-const TCOLLS=['products','sales','moves','customers','ledger','suppliers','sessions','kardex','purchases'];
+const TCOLLS=['products','sales','moves','customers','ledger','suppliers','sessions','kardex','purchases','members','pmoves','settings'];
 const SYNC_COLLS=[...TCOLLS,'tenants','users','payments','requests','messages','orders'];
 const RB={authReady:false,profileReady:false,user:null,unsubs:[],synced:{},needVerify:false,noProfile:false,pendingRender:false,lastBeat:0,renderT:null};
-function emptyState(){return {v:1,config:{contact:'Escríbenos a samanat2026@gmail.com',brand:'Samanat',priceChanges:[]},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[]}}
+function emptyState(){return {v:1,config:{contact:'Escríbenos a samanat2026@gmail.com',brand:'Samanat',priceChanges:[]},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[],members:[],pmoves:[],settings:[]}}
 const stable=o=>JSON.stringify(o,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((a,x)=>(a[x]=v[x],a),{}):v);
 const pathOf=(c,r)=>TCOLLS.includes(c)?`tenants/${r.tid}/${c}/${r.id}`:c==='tenants'?`tenants/${r.id}`:`${c}/${r.id}`;
 function authErr(e){const c=e&&e.code||'';return({'auth/email-already-in-use':'Ese correo ya tiene una cuenta en Natara.','auth/invalid-email':'Revisa el correo: debe tener la forma nombre@dominio.com.','auth/weak-password':'La contraseña es muy débil.','auth/network-request-failed':'No hay conexión a internet. Revisa tu conexión e intenta de nuevo.','auth/too-many-requests':'Demasiados intentos. Espera un momento e intenta de nuevo.','auth/operation-not-allowed':'El inicio con correo no está activado en Firebase (Authentication → Método de acceso).'})[c]||`Ocurrió un error (${c||'desconocido'}). Intenta de nuevo.`}

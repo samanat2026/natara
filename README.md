@@ -17,7 +17,7 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 
 | Correo | Rol | Qué ve |
 |---|---|---|
-| marta@laespiga.co | Dueña · Panadería La Espiga | Plan Total + Recetas y combos |
+| marta@laespiga.co | Dueña · Panadería La Espiga | Plan Total + Recetas y combos + Puntos |
 | juan@laespiga.co | Cajero · Panadería La Espiga | Caja + permisos: inventario, costos, recetas, proveedores y fiados |
 | laura@laespiga.co | Cajera · Panadería La Espiga | Sin permisos extra: solo vende y ve sus propias ventas |
 | pedro@laespiga.co | Cajero desactivado | Prueba el mensaje de usuario desactivado |
@@ -46,8 +46,21 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 | Proveedores | $19.900 |
 | Recetas y combos (complemento) | $10.000 |
 | Lector de código de barras (complemento, no se promociona) | $14.900 |
+| Puntos y fidelización (complemento) | $5.000 |
 
 Implementación opcional: $180.000 una sola vez (carga de inventario, configuración y capacitación).
+
+## Puntos y fidelización
+
+Complemento de $5.000/mes que paga el dueño del negocio; solo aparece si lo tiene activo. Para el cliente final afiliarse es gratis.
+
+- **Afiliación:** en la caja se escribe la cédula; si no está afiliado, *Afiliarlo ahora* pide nombre, celular y la autorización de datos (Ley 1581 de 2012).
+- **Acumular:** cada venta suma `floor(total pagado / monto por punto)` puntos. Las ventas fiadas no suman.
+- **Usar:** con el mínimo de puntos, *Usar N puntos* descuenta `N × valor del punto` sin pasarse del total. El total de la venta (caja, cierre y reportes) es lo que el cliente pagó en dinero.
+- **Vencimiento:** los puntos se guardan por lotes y vencen a los N meses; al usarlos se gastan primero los más viejos.
+- **Anular una venta** quita los puntos ganados y devuelve los usados.
+- **Configuración (dueño → Puntos → Configurar):** por defecto 1 punto por cada $1.000, cada punto vale $7, mínimo 100 para usarlos, vencen a los 12 meses, 0 de bienvenida.
+- Datos en Firestore: `tenants/{tid}/members` (afiliados con sus lotes), `tenants/{tid}/pmoves` (historial) y `tenants/{tid}/settings/fid_{tid}` (configuración).
 
 ## Pagos con llave Bre-B
 

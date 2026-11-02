@@ -35,9 +35,12 @@ service cloud.firestore {
     function isRecipe(coll, data) {
       return coll == 'products' && hasPerm('recetas') && data.get('recipe', []).size() > 0;
     }
+    // Puntos y fidelización: cualquier usuario del negocio afilia y suma puntos en la caja, si el negocio tiene el módulo
+    function hasMod(tid, m) { return m in get(/databases/$(database)/documents/tenants/$(tid)).data.get('mods', []); }
     function canWrite(tid, coll) {
       return isOwnerOf(tid)
         || coll in ['sales', 'sessions', 'kardex']
+        || (coll in ['members', 'pmoves'] && hasMod(tid, 'fidelizacion'))
         || (coll in ['customers', 'ledger'] && (hasPerm('fiados') || hasPerm('anular')))
         || (coll == 'products' && hasPerm('inv_edit'))
         || (coll in ['suppliers', 'purchases'] && hasPerm('proveedores'))
@@ -106,7 +109,7 @@ service cloud.firestore {
       return isOwnerOf(d.tid) && d.status == 'pendiente'
         && ((d.type == 'renovacion' && id == 'pend_' + d.tid)
             || (d.type == 'modulo' && id == 'mod_' + d.tid + '_' + d.mod
-                && d.mod in ['inventario','caja','finanzas','estadisticas','empleados','fiados','proveedores','recetas','lector','implementacion']));
+                && d.mod in ['inventario','caja','finanzas','estadisticas','empleados','fiados','proveedores','recetas','lector','fidelizacion','implementacion']));
     }
 
     // Pagos con llave Bre-B: renovaciones (pend_<negocio>) y compras desde la demo
