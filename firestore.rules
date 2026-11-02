@@ -22,7 +22,13 @@ service cloud.firestore {
     // Activo = no suspendido y sin pasar 3 días de gracia después del vencimiento (259200000 ms)
     function tenantActive(tid) {
       let t = get(/databases/$(database)/documents/tenants/$(tid)).data;
-      return t.status == 'activo' && t.due + 259200000 > request.time.toMillis();
+      return t.status == 'activo' && (t.due + 259200000 > request.time.toMillis() || payReported(tid));
+    }
+    // Si el dueño reportó un pago, la cuenta sigue activa 7 días (604800000 ms) mientras Samanat lo revisa
+    function payReported(tid) {
+      let path = /databases/$(database)/documents/orders/$('pend_' + tid);
+      return exists(path) && get(path).data.status == 'pendiente'
+        && get(path).data.at + 604800000 > request.time.toMillis();
     }
     function hasPerm(p) { return p in profile().get('perms', []); }
     // Recetas y combos: un cajero con el permiso 'recetas' solo toca productos que tienen receta
@@ -87,6 +93,37 @@ service cloud.firestore {
     match /payments/{id} {
       allow read: if isAdmin() || isOwnerOf(resource.data.tid);
       allow write: if isAdmin();
+    }
+
+    // Llave Bre-B pública para la demo
+    match /public/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Pagos con llave Bre-B: renovaciones (pend_<negocio>) y compras desde la demo
+    match /orders/{id} {
+      allow read: if isAdmin() || (active() && resource.data.get('tid', '') == profile().tid);
+      // Cualquiera puede pedir un plan desde la demo (queda pendiente hasta que Samanat apruebe)
+      allow create: if isAdmin()
+        || (request.resource.data.type == 'nuevo'
+            && request.resource.data.status == 'pendiente'
+            && !id.matches('pend_.*')
+            && request.resource.data.keys().hasOnly(['id','type','status','at','ref','plan','mods','months','setup','amount','business','btype','city','phone','owner','email','comprobante'])
+            && request.resource.data.plan in ['basico','pro','total']
+            && request.resource.data.months in [1, 12]
+            && request.resource.data.amount is number
+            && request.resource.data.email is string && request.resource.data.email.size() < 120
+            && request.resource.data.business is string && request.resource.data.business.size() < 120
+            && request.resource.data.owner is string && request.resource.data.owner.size() < 120
+            && request.resource.data.comprobante.size() <= 60)
+        || (isOwnerOf(request.resource.data.tid) && id == 'pend_' + request.resource.data.tid
+            && request.resource.data.type == 'renovacion' && request.resource.data.status == 'pendiente');
+      allow update: if isAdmin()
+        || (isOwnerOf(resource.data.tid) && id == 'pend_' + resource.data.tid
+            && request.resource.data.tid == resource.data.tid
+            && request.resource.data.type == 'renovacion' && request.resource.data.status == 'pendiente');
+      allow delete: if isAdmin();
     }
 
     // Solicitudes de módulos e implementación

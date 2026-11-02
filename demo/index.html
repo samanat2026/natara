@@ -230,6 +230,19 @@ tbody tr.click:hover{background:var(--surface-2)}
 @media (max-width:560px){.cta-login{grid-template-columns:auto minmax(0,1fr)}.cta-go{grid-column:1/-1;justify-content:center}}
 .cta-buy{display:flex;flex-direction:column;gap:4px;padding:16px 18px;border-radius:14px;border:1px dashed var(--accent);background:var(--accent-soft)}
 .cta-buy b{font-size:16px}.cta-buy span{font-size:14px;color:var(--ink-2)}.cta-buy .mono{color:var(--accent);font-weight:600;user-select:all}
+.pay-box{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.pay-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.pay-row:last-child{border-bottom:0}
+.pay-row span{color:var(--ink-3);font-size:13px;min-width:130px}
+.pay-row b{font-size:16px}.pay-row .btn{margin-left:auto}
+.pay-row.big{background:var(--accent-soft)}.pay-row.big b{font-size:24px;font-variant-numeric:tabular-nums}
+.co-plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:620px){.co-plans{grid-template-columns:1fr}}
+.co-plan{display:flex;flex-direction:column;gap:4px;padding:12px;border:2px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;text-align:left}
+.co-plan.on{border-color:var(--accent);background:var(--accent-soft)}
+.co-price{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}.co-price small{font-size:12px;font-weight:500;color:var(--ink-3)}
+.co-total{display:flex;justify-content:space-between;align-items:baseline;padding:12px 14px;border-radius:10px;background:var(--surface-2)}
+.co-total b{font-size:24px;font-variant-numeric:tabular-nums}
 .guide-toc{display:flex;flex-wrap:wrap;gap:8px}
 .guide-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:13.5px;font-weight:600}
 .guide-chip span{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:11px}
@@ -496,7 +509,7 @@ const INC_CATS=['Pedido especial','Abono de fiado','Préstamo','Otros'];
 function seed(){
  const r=mulberry32(20261101), rnd=()=>r(), pick=a=>a[Math.floor(rnd()*a.length)], ri=(a,b)=>a+Math.floor(rnd()*(b-a+1));
  const now=Date.now(), today=sod(now);
- const S={v:1,config:{contact:'WhatsApp +57 300 000 0000',brand:'Samanat'},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[]};
+ const S={v:1,config:{contact:'WhatsApp +57 300 000 0000',brand:'Samanat'},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[]};
  if(MODE==='real'){S.config.contact='Escríbenos a samanat2026@gmail.com';S.users=[{id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'samanat2026@gmail.com',pass:'',mustChange:true,perms:[],active:true}];return S}
  S.tenants=[
   {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:[...PLANS[2].mods,'recetas'],status:'activo',due:today+18*DAY,since:today-140*DAY},
@@ -602,7 +615,7 @@ function save(){if(REAL)return syncDiff();try{localStorage.setItem(KEY,JSON.stri
 let sess={uid:null,view:null};
 try{const r=sessionStorage.getItem(SESS);if(r)sess=JSON.parse(r)}catch(e){}
 function saveSess(){try{sessionStorage.setItem(SESS,JSON.stringify(sess))}catch(e){}}
-load();
+load();S.orders=S.orders||[];
 if(DEMO_ADMIN&&!S.users.some(u=>u.role==='superadmin')){S.users.unshift({id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'natalia@samanat.co',pin:'0000',active:true,pass:'Natara2026*',perms:[]});save()}
 window.addEventListener('storage',e=>{
  if(REAL||e.key!==KEY)return;
@@ -618,7 +631,8 @@ const me=()=>S.users.find(u=>u.id===sess.uid)||null;
 const tenant=()=>{const u=me();return u&&u.tid?S.tenants.find(t=>t.id===u.tid):null};
 const GRACE_DAYS=3; // días de gracia después del vencimiento antes del bloqueo automático
 const lockDate=t=>t.due+GRACE_DAYS*DAY;
-const overdueLocked=t=>!!t&&t.status==='activo'&&Date.now()>lockDate(t);
+const pendingPay=t=>(S.orders||[]).find(o=>o.id==='pend_'+t.id&&o.status==='pendiente'&&Date.now()<o.at+7*DAY);
+const overdueLocked=t=>!!t&&t.status==='activo'&&Date.now()>lockDate(t)&&!pendingPay(t);
 const tenantLocked=t=>!!t&&(t.status!=='activo'||overdueLocked(t));
 const isLocked=()=>tenantLocked(tenant());
 const has=m=>{const t=tenant();return !!(t&&t.mods.includes(m))};
@@ -810,7 +824,7 @@ function viewLogin(){
  const byT=S.tenants.slice().sort((a,b)=>(a.status!=='activo')-(b.status!=='activo')||rank[a.plan]-rank[b.plan]).map(t=>{const p=planById(t.plan);const extras=t.mods.filter(m=>!p.mods.includes(m));const susp=t.status!=='activo';
   return `<div class="plan-demo ${susp?'susp':''}"><div class="pd-head">${susp?`<div><span class="pd-kicker">Así se ve una cuenta suspendida</span><strong>${esc(t.name)}</strong><span class="muted small">${esc(t.type)} · plan ${p.name} sin pagar</span></div><span class="pill bad">${ic('lock',12)} Suspendida</span>`:`<div><span class="pd-kicker">Ejemplo: ${esc(t.name)} · ${esc(t.type)}</span><strong>Plan ${p.name}</strong><span class="muted small">${ideal[t.plan]}</span></div><div class="pd-price"><b>${money(fee(t))}</b><span class="muted small">al mes${extras.length?` · plan ${money(p.price)} + ${extras.map(m=>modById(m).name.toLowerCase()).join(', ')}`:''}</span></div>`}</div>
   ${susp?'':`<div class="chips">${t.mods.map(m=>`<span class="pill ${p.mods.includes(m)?'':'ac'}">${modById(m).name}</span>`).join('')}</div>`}
-  <div class="acc-group">${S.users.filter(u=>u.tid===t.id&&u.active).map(acc).join('')}</div></div>`}).join('');
+  <div class="acc-group">${S.users.filter(u=>u.tid===t.id&&u.active).map(acc).join('')}</div>${susp?'':`<button class="btn primary" data-a="co-open" data-v="${t.plan}" style="align-self:flex-start">${ic('cart',16)} Contratar el plan ${p.name}</button>`}</div>`}).join('');
  return `<div class="login">${loginBrand()}
   <section class="login-pick">
    <div><h2>${DEMO_ADMIN?'Demo · Consola de Samanat':'Entra a la demo'}</h2><p class="muted" style="margin:6px 0 0">${DEMO_ADMIN?'Esta página es solo para ti. Usa los mismos datos de la demo de clientes, más tu consola de superusuario.':'Elige una cuenta. Cada rol ve sus propios módulos.'}</p></div>
@@ -819,7 +833,7 @@ function viewLogin(){
    ${DEMO_ADMIN?`<button class="btn sm" data-a="lg-mode" data-v="form" style="align-self:flex-start">${ic('lock',15)} Ver el inicio de sesión con validaciones</button>`:''}
    <div class="hint">${ic('info',15)} <b>Así se ve Natara por dentro.</b> Cada negocio de ejemplo usa un plan distinto, con su precio. Entra como dueño para ver lo que incluye ese plan, o como cajero para ver solo lo que el dueño le permite. Los datos son de ejemplo: puedes vender, cargar inventario y probar sin miedo.</div>
    ${byT}
-   <div class="cta-buy"><b>¿Quieres Natara para tu negocio?</b><span>Escríbenos y lo dejamos listo con tu inventario cargado. Desde ${money(planById('basico').price)} al mes.</span><span class="mono">samanat2026@gmail.com</span></div>
+   <div class="cta-buy"><b>¿Quieres Natara para tu negocio?</b><span>Contrátalo aquí mismo y paga con Bre-B. Te llega tu usuario por correo. Desde ${money(planById('basico').price)} al mes.</span><button class="btn primary" data-a="co-open" data-v="basico" style="align-self:flex-start">${ic('cart',16)} Contratar Natara</button><span class="small muted">¿Dudas? <span class="mono">samanat2026@gmail.com</span></span></div>
    <button class="btn ghost sm" data-a="reset" style="align-self:flex-start">${ic('refresh',15)} Restablecer datos de la demo</button>
   </section></div>`;
 }
@@ -941,8 +955,8 @@ function viewInicio(){
  const delta=ytot?Math.round((tot-ytot)/ytot*100):0;
  const myToday=tdy.filter(s=>s.seller===u.id);
  const banners=[];
- if(u.role==='dueno'&&dd<0)banners.push(`<div class="banner bad">${ic('alert')}<div class="grow"><b>Tu cuota de Natara venció el ${fdate(t.due)}.</b> Si no se registra el pago, el acceso se bloquea automáticamente el ${fdate(lockDate(t))}. Tus datos no se pierden.</div><button class="btn sm" data-a="go" data-v="plan">Ver mi plan</button></div>`);
- else if(u.role==='dueno'&&dd<=5)banners.push(`<div class="banner">${ic('alert')}<div class="grow"><b>Tu cuota de Natara vence ${dd===0?'hoy':`en ${dd} día${dd===1?'':'s'}`}</b> (${fdate(t.due)}). Paga a tiempo para no perder el acceso.</div><button class="btn sm" data-a="go" data-v="plan">Ver mi plan</button></div>`);
+ if(u.role==='dueno'&&dd<0)banners.push(`<div class="banner bad">${ic('alert')}<div class="grow"><b>Tu cuota de Natara venció el ${fdate(t.due)}.</b> Si no se registra el pago, el acceso se bloquea automáticamente el ${fdate(lockDate(t))}. Tus datos no se pierden.</div><button class="btn sm primary" data-a="pay-open">Pagar ahora</button></div>`);
+ else if(u.role==='dueno'&&dd<=5)banners.push(`<div class="banner">${ic('alert')}<div class="grow"><b>Tu cuota de Natara vence ${dd===0?'hoy':`en ${dd} día${dd===1?'':'s'}`}</b> (${fdate(t.due)}). Paga a tiempo para no perder el acceso.</div><button class="btn sm primary" data-a="pay-open">Pagar ahora</button></div>`);
  if(u.role==='dueno'&&unread)banners.push(`<div class="banner info">${ic('bell')}<div class="grow">Tienes <b>${unread} mensaje${unread>1?'s':''} nuevo${unread>1?'s':''}</b> de Samanat.</div><button class="btn sm" data-a="go" data-v="mensajes">Leer</button></div>`);
  if(has('caja')&&!openSession())banners.push(`<div class="banner">${ic('register')}<div class="grow">La caja está cerrada. Ábrela con la base del día para empezar a vender.</div><button class="btn sm primary" data-a="go" data-v="cierre">Abrir caja</button></div>`);
  const recent=tdy.slice(-6).reverse();
@@ -1191,6 +1205,70 @@ function productForm(p,kind){
   ${field('Stock mínimo (alerta)',inp('min',p?.min??0,'number','min="0" step="any"'))}</div>
   ${sup.length?field('Proveedor',sel('supplier',[['','Sin proveedor'],...sup.map(x=>[x.id,x.name])],p?.supplier||''),'full'):''}
  </div>${edit?`<p class="muted small">Para cambiar el stock usa “${ins?'Registrar consumo':'Ajustar'}”, así queda registrado en el kardex.</p>`:''}</form>`;
+}
+/* =========================================================
+   PAGOS CON LLAVE BRE-B (cuota y compra desde la demo)
+   ========================================================= */
+const PAY_DEFAULT={llave:'@plata3208891929',titular:'Samanat'};
+const payInfo=()=>({...PAY_DEFAULT,...(S.config.pay||{})});
+const genRef=()=>'NAT-'+Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
+function breBox(amount,ref){const pi=payInfo();return `<div class="pay-box">
+  <div class="pay-row big"><span>Valor exacto a pagar</span><b>${money(amount)}</b></div>
+  <div class="pay-row"><span>Llave Bre-B</span><b class="mono">${esc(pi.llave)}</b><button type="button" class="btn sm" data-a="copy" data-v="${esc(pi.llave)}">${ic('copy',14)} Copiar</button></div>
+  <div class="pay-row"><span>A nombre de</span><b>${esc(pi.titular)}</b></div>
+  <div class="pay-row"><span>Referencia</span><b class="mono">${esc(ref)}</b><button type="button" class="btn sm" data-a="copy" data-v="${esc(ref)}">${ic('copy',14)} Copiar</button></div>
+ </div>
+ <ol class="guide-steps" style="margin:0"><li>Abre la app de tu banco o billetera (Nequi, Bancolombia, Daviplata…) y elige <b>enviar con llave Bre-B</b>.</li><li>Pega la llave <b class="mono">${esc(pi.llave)}</b>, revisa que salga <b>${esc(pi.titular)}</b> y envía <b>${money(amount)}</b>.</li><li>En la descripción o mensaje escribe la referencia <b class="mono">${esc(ref)}</b>.</li><li>Vuelve aquí y toca <b>Ya pagué</b>.</li></ol>`}
+let payState=null;
+function payModal(){
+ const t=tenant();if(!payState)payState={months:1,ref:genRef()};const amt=fee(t)*(payState.months===12?ANNUAL_MONTHS:1);
+ openModal('Pagar mi cuota',`<div class="seg"><button type="button" class="${payState.months===1?'on':''}" data-a="pay-months" data-v="1">1 mes · ${money(fee(t))}</button><button type="button" class="${payState.months===12?'on':''}" data-a="pay-months" data-v="12">12 meses · ${money(fee(t)*ANNUAL_MONTHS)} (2 gratis)</button></div>
+  ${breBox(amt,payState.ref)}
+  <form class="stack" data-f="pay-report" id="pay-form" novalidate>${field('Número de comprobante (opcional)',inp('comp','','text','placeholder="Lo encuentras en el recibo de tu banco" autocomplete="off"'))}</form>
+  <p class="muted small" style="margin:0">Samanat confirma el pago y extiende tu cuenta ${payState.months===12?'12 meses':'un mes'}. Mientras lo revisa, tu acceso no se bloquea.</p>`,
+  `<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="pay-form">${ic('check',16)} Ya pagué</button>`);
+}
+// ---- compra desde la demo
+let co=null;
+function coTotal(){const p=planById(co.plan);const monthly=p.price+sum(co.extra,m=>modById(m).price);return monthly*(co.months===12?ANNUAL_MONTHS:1)+(co.setup?SETUP.price:0)}
+function coCapture(){const f=$('#co-form');if(f)Object.assign(co.form,Object.fromEntries(new FormData(f).entries()))}
+function coOpen(plan){co={step:1,plan:plan||'basico',extra:[],months:1,setup:false,form:{},ref:genRef()};coRender();
+ if(window.FB&&!REAL)FB.getDoc(FB.doc(FB.db,'public','pay')).then(x=>{if(x.exists()){const v=x.data();if(v.llave){S.config.pay={llave:v.llave,titular:v.titular||PAY_DEFAULT.titular};if(co&&co.step===2)coRender()}}}).catch(()=>{})}
+function coRender(){
+ const F=co.form;const v=k=>esc(F[k]||'');
+ if(co.step===1){
+  openModal('Contrata Natara',`<p class="muted small" style="margin:0">Elige tu plan, cuéntanos de tu negocio y paga con Bre-B. Cuando confirmemos el pago te llega un correo con tu usuario y contraseña.</p>
+  <div class="co-plans">${PLANS.map(p=>`<button type="button" class="co-plan ${co.plan===p.id?'on':''}" data-a="co-plan" data-v="${p.id}"><b>${p.name}</b><span class="co-price">${money(p.price)}<small>/mes</small></span><span class="small muted">${p.mods.map(m=>modById(m).name).join(' · ')}</span></button>`).join('')}</div>
+  <label class="check"><input type="checkbox" data-c="co-extra" value="recetas" ${co.extra.includes('recetas')?'checked':''}><span>Agregar Recetas y combos (+${money(modById('recetas').price)}/mes)<small>Para negocios que preparan lo que venden: arepas, desayunos, combos.</small></span></label>
+  <div class="seg"><button type="button" class="${co.months===1?'on':''}" data-a="co-months" data-v="1">Pago mensual</button><button type="button" class="${co.months===12?'on':''}" data-a="co-months" data-v="12">Pago anual (2 meses gratis)</button></div>
+  <label class="check"><input type="checkbox" data-c="co-setup" ${co.setup?'checked':''}><span>Implementación asistida (+${money(SETUP.price)}, una sola vez)<small>${SETUP.desc}</small></span></label>
+  <form class="form-grid" id="co-form" data-f="co-next" novalidate>
+   ${field('Nombre del negocio',`<input class="input" name="business" value="${v('business')}" required>`,'full')}
+   ${field('Tipo de negocio',`<input class="input" name="btype" value="${v('btype')}" placeholder="Panadería, droguería…" list="types-co" required><datalist id="types-co">${['Panadería','Farmacia','Minimercado','Papelería','Ferretería','Tienda de ropa','Licorera','Cafetería','Restaurante'].map(x=>`<option value="${x}">`).join('')}</datalist>`)}
+   ${field('Ciudad',`<input class="input" name="city" value="${v('city')}" required>`)}
+   ${field('Tu nombre',`<input class="input" name="owner" value="${v('owner')}" required>`)}
+   ${field('Celular',`<input class="input" name="phone" value="${v('phone')}" inputmode="tel" placeholder="300 123 4567" required>`)}
+   ${field('Correo (será tu usuario)',`<input class="input" name="email" type="email" value="${v('email')}" required>`,'full')}
+  </form>
+  <div class="co-total"><span>Total a pagar hoy</span><b>${money(coTotal())}</b></div><div id="co-err"></div>`,
+  `<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="co-next">Continuar al pago ${ic('arrow',15)}</button>`,true);
+ }else if(co.step===2){
+  openModal('Paga con Bre-B',`${breBox(coTotal(),co.ref)}
+  <form class="stack" data-f="co-pay" id="co-pay-form" novalidate>${field('Número de comprobante (opcional)',`<input class="input" name="comp" autocomplete="off" placeholder="Lo encuentras en el recibo de tu banco">`)}</form>
+  <p class="muted small" style="margin:0">Compras el plan ${planById(co.plan).name}${co.extra.length?' + Recetas y combos':''} · ${co.months===12?'12 meses':'1 mes'}${co.setup?' · con implementación':''}, para <b>${esc(F.business)}</b>.</p><div id="co-err"></div>`,
+  `<button class="btn" data-a="co-back">Atrás</button><button class="btn primary" data-a="submit" data-form="co-pay-form" id="co-paid">${ic('check',16)} Ya pagué</button>`,true);
+ }else{
+  openModal('¡Recibimos tu pedido!',`<div class="empty" style="padding:10px 0">${mark(56)}<b style="color:var(--ink);font-size:18px">Gracias, ${esc((F.owner||'').split(' ')[0])}</b><span>Samanat va a confirmar tu pago de <b>${money(coTotal())}</b> con la referencia <b class="mono">${esc(co.ref)}</b>.</span><span>Apenas lo confirmemos, te llega un correo a <b>${esc(F.email)}</b> con tu usuario y una contraseña temporal para entrar.</span></div>`,
+  `<button class="btn primary" data-a="close-modal">Listo</button>`);
+ }
+}
+async function coSubmit(comp){
+ const F=co.form;const order={id:'o'+uid()+uid(),type:'nuevo',status:'pendiente',at:Date.now(),ref:co.ref,plan:co.plan,mods:co.extra.slice(),months:co.months,setup:!!co.setup,amount:coTotal(),business:F.business.trim(),btype:(F.btype||'').trim(),city:(F.city||'').trim(),phone:fmtPhone(F.phone),owner:F.owner.trim(),email:F.email.trim().toLowerCase(),comprobante:(comp||'').trim().slice(0,60)};
+ const err=m=>{$('#co-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};
+ if(!window.FB)return err(`No pudimos enviar el pedido desde aquí. Escríbenos a <b>samanat2026@gmail.com</b> con la referencia <b class="mono">${esc(co.ref)}</b> y el comprobante, y te activamos el mismo día.`);
+ const b=$('#co-paid');if(b){b.disabled=true;b.textContent='Enviando…'}
+ try{await FB.setDoc(FB.doc(FB.db,'orders',order.id),order);co.step=3;coRender()}
+ catch(e){if(b){b.disabled=false;b.textContent='Ya pagué'}err(`No se pudo enviar (${esc(e.code||e.message)}). Escríbenos a samanat2026@gmail.com con la referencia <b class="mono">${esc(co.ref)}</b>.`)}
 }
 /* =========================================================
    GUÍA DE USO (según plan contratado y permisos)
@@ -1534,7 +1612,9 @@ function permsModal(u){
 function viewPlan(){
  const t=tenant();const p=planById(t.plan);const dd=daysUntil(t.due);
  const reqs=S.requests.filter(r=>r.tid===t.id&&r.status==='pendiente').map(r=>r.mod);
- return `<div class="page-head"><div><h1>Mi plan</h1><p>Activa solo los módulos que necesitas. Puedes agregar más cuando quieras.</p></div></div>
+ const pp=pendingPay(t);
+ return `<div class="page-head"><div><h1>Mi plan</h1><p>Activa solo los módulos que necesitas. Puedes agregar más cuando quieras.</p></div><div class="actions">${pp?'':`<button class="btn primary" data-a="pay-open">${ic('wallet',16)} Pagar mi cuota</button>`}</div></div>
+  ${pp?`<div class="banner info">${ic('check')}<div class="grow"><b>Reportaste un pago de ${money(pp.amount)}</b> el ${fdt(pp.at)} con la referencia <span class="mono">${esc(pp.ref)}</span>. Samanat lo está revisando; mientras tanto tu cuenta sigue activa.</div></div>`:''}
   <div class="grid g3">
    <div class="card kpi"><span class="lbl">Plan actual</span><span class="val">${esc(p.name)}</span><span class="foot">${t.mods.length} de ${MODS.length} módulos activos</span></div>
    <div class="card kpi"><span class="lbl">Cuota mensual</span><span class="val">${money(fee(t))}</span>${(()=>{const nx=pendingChanges()[0];if(!nx)return'';const f2=feeAt(t,nx.from+1);return f2!==fee(t)?`<span class="foot" style="color:var(--warn)">Desde el ${fdate(nx.from)}: ${money(f2)}</span>`:''})()}<span class="foot">o ${money(fee(t)*ANNUAL_MONTHS)} al año (2 meses gratis)</span></div>
@@ -1561,8 +1641,8 @@ function viewUpsell(mid){
 /* =========================================================
    CONSOLA SAMANAT (superadmin)
    ========================================================= */
-const ANAV=[['resumen','Resumen','grid'],['actividad','Actividad en vivo','pulse'],['clientes','Clientes','users'],['solicitudes','Solicitudes','inbox'],['mensajes','Mensajes','mail'],['planes','Planes y precios','star']];
-function adminNav(){const pend=S.requests.filter(r=>r.status==='pendiente').length;return `<div class="nav-label">Samanat</div>`+ANAV.map(([v,l,i])=>navBtn(v,l,i,{count:v==='solicitudes'?pend:0})).join('')}
+const ANAV=[['resumen','Resumen','grid'],['actividad','Actividad en vivo','pulse'],['clientes','Clientes','users'],['solicitudes','Pagos y solicitudes','inbox'],['mensajes','Mensajes','mail'],['planes','Planes y precios','star']];
+function adminNav(){const pend=S.requests.filter(r=>r.status==='pendiente').length+(S.orders||[]).filter(o=>o.status==='pendiente').length;return `<div class="nav-label">Samanat</div>`+ANAV.map(([v,l,i])=>navBtn(v,l,i,{count:v==='solicitudes'?pend:0})).join('')}
 function adminView(){liveRefresh();if(!ANAV.find(a=>a[0]===sess.view)){sess.view='resumen';saveSess()}return({actividad:aActividad,resumen:aResumen,clientes:aClientes,solicitudes:aSolicitudes,mensajes:aMensajes,planes:aPlanes})[sess.view]()}
 function aResumen(){
  const act=S.tenants.filter(t=>t.status==='activo');const mrr=sum(act,fee);
@@ -1631,7 +1711,14 @@ function tenantModal(t){
 }
 function aSolicitudes(){
  const R=S.requests.slice().sort((a,b)=>b.at-a.at);
- return `<div class="page-head"><div><h1>Solicitudes</h1><p>Módulos e implementaciones que tus clientes quieren contratar.</p></div></div>
+ const O=(S.orders||[]).filter(o=>o.status==='pendiente').sort((a,b)=>b.at-a.at);const H=(S.orders||[]).filter(o=>o.status!=='pendiente').sort((a,b)=>(b.doneAt||b.at)-(a.doneAt||a.at)).slice(0,10);
+ const what=o=>`Plan ${planById(o.plan).name}${(o.mods||[]).length?' + '+o.mods.map(m=>modById(m)?.name).join(', '):''} · ${o.months===12?'12 meses':'1 mes'}${o.setup?' · con implementación':''}`;
+ const who=o=>o.type==='nuevo'?`<b>${esc(o.business)}</b><div class="muted small">${esc(o.owner)} · ${esc(o.email)} · ${esc(o.phone)}</div>`:`<b>${esc(S.tenants.find(x=>x.id===o.tid)?.name||o.business||'')}</b>`;
+ return `<div class="page-head"><div><h1>Solicitudes y pagos</h1><p>Pagos con tu llave Bre-B por confirmar, y módulos que tus clientes quieren.</p></div></div>
+  <div class="card"><h2>Pagos por confirmar <span class="sub">llave ${esc(payInfo().llave)} · <a href="#" data-a="go" data-v="planes">cambiar</a></span></h2>${O.length?`<div class="hint" style="margin-bottom:12px">${ic('info',15)} Busca en tu banco un pago por el <b>valor exacto</b> con la <b>referencia</b>. Al aprobar una renovación se extiende la cuenta; al aprobar un cliente nuevo se crea el negocio y le llega el correo con su acceso.</div>
+   <div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Quién</th><th>Qué paga</th><th>Referencia</th><th class="r">Valor</th><th></th></tr></thead><tbody>${O.map(o=>`<tr><td style="white-space:nowrap">${fdt(o.at)}</td><td>${o.type==='nuevo'?'<span class="pill ac">Cliente nuevo</span>':'<span class="pill">Renovación</span>'}</td><td>${who(o)}</td><td class="small">${what(o)}</td><td><span class="mono">${esc(o.ref)}</span>${o.comprobante?`<div class="muted small">Comp. ${esc(o.comprobante)}</div>`:''}</td><td class="r num"><b>${money(o.amount)}</b></td><td class="r" style="white-space:nowrap"><button class="btn sm" data-a="ord-no" data-id="${o.id}">Rechazar</button> <button class="btn sm primary" data-a="ord-ok" data-id="${o.id}">${ic('check',14)} Aprobar</button></td></tr>`).join('')}</tbody></table></div>`:`<p class="muted small" style="margin:0">No hay pagos pendientes. Cuando un cliente pague su cuota o alguien compre desde la demo, aparece aquí.</p>`}
+   ${H.length?`<details style="margin-top:12px"><summary class="small"><b>Historial de pagos revisados</b></summary><div class="tbl-wrap"><table><tbody>${H.map(o=>`<tr><td class="small">${fdate(o.doneAt||o.at)}</td><td class="small">${o.type==='nuevo'?esc(o.business):esc(S.tenants.find(x=>x.id===o.tid)?.name||'')}</td><td class="mono small">${esc(o.ref)}</td><td class="r num small">${money(o.amount)}</td><td>${o.status==='aprobada'?'<span class="pill good">Aprobado</span>':'<span class="pill bad">Rechazado</span>'}</td></tr>`).join('')}</tbody></table></div></details>`:''}</div>
+  <h2 style="font-size:16px;margin-top:4px">Módulos solicitados</h2>
   <div class="card">${R.length?`<div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Módulo</th><th class="r">Valor</th><th>Estado</th><th></th></tr></thead><tbody>${R.map(r=>{const t=S.tenants.find(x=>x.id===r.tid);const m=reqItem(r.mod);return`<tr><td>${fdate(r.at)}</td><td><b>${esc(t?.name)}</b></td><td>${m.name}</td><td class="r num">${money(m.price)}${m.once?' una vez':'/mes'}</td><td>${r.status==='pendiente'?'<span class="pill warn">Pendiente</span>':r.status==='aprobada'?'<span class="pill good">Activado</span>':'<span class="pill">Rechazada</span>'}</td><td class="r" style="white-space:nowrap">${r.status==='pendiente'?`<button class="btn sm" data-a="req-no" data-id="${r.id}">Rechazar</button> <button class="btn sm primary" data-a="req-ok" data-id="${r.id}">Activar</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">${ic('inbox',26)}No hay solicitudes.</div>`}</div>`;
 }
 let msgDraft={to:'all',kind:'aviso',title:'',body:''};
@@ -1659,6 +1746,9 @@ function aPlanes(){
    <div class="form-grid">${field('Los precios nuevos aplican desde',inp('from',dkey(Date.now()+30*DAY),'date','required'))}<div class="field" style="justify-content:flex-end"><button class="btn primary" type="submit">Revisar cambios</button></div></div>
    <p class="muted small" style="margin:0">Te recomendamos avisar con 30 días de anticipación. Los clientes que pagan un módulo incluido en su plan no se ven afectados por el precio suelto de ese módulo.</p></form></div>
   ${pendingChanges().length?`<div class="card"><h2>Cambios programados</h2><div class="tbl-wrap"><table><thead><tr><th>Aplica desde</th><th>Qué</th><th class="r">Antes</th><th class="r">Nuevo</th><th></th></tr></thead><tbody>${pendingChanges().map(c=>`<tr><td>${fdate(c.from)}</td><td>${esc(itemName(c.kind,c.id))}</td><td class="r num">${money(c.old)}</td><td class="r num"><b>${money(c.price)}</b></td><td class="r"><button class="btn sm" data-a="price-cancel" data-id="${c.cid}">Cancelar</button></td></tr>`).join('')}</tbody></table></div></div>`:''}
+  <div class="card" style="max-width:720px" id="pay-cfg"><h2>Cobros con llave Bre-B</h2>
+   <p class="muted small" style="margin:0 0 10px">Es la llave que ven tus clientes al pagar su cuota y quienes compran desde la demo. Si la cambias, todos ven la nueva al instante. Los pagos que ya estaban reportados no cambian.</p>
+   <form class="form-grid" data-f="pay-cfg">${field('Llave Bre-B',inp('llave',payInfo().llave,'text','required placeholder="@tullave, celular o correo" autocomplete="off"'))}${field('A nombre de (como aparece en el banco)',inp('titular',payInfo().titular,'text','required'))}<div class="field full" style="flex-direction:row;justify-content:flex-end"><button class="btn primary" type="submit">Guardar llave</button></div></form></div>
   <div class="card" style="max-width:720px"><h2>Envío de correos <span class="pill ${emailReady()?'good':'warn'}">${emailReady()?'Configurado':'Sin configurar'}</span></h2>
    <p class="muted small" style="margin:0 0 10px">Para que el correo de bienvenida salga solo, usamos <b>EmailJS</b> (gratis hasta 200 correos al mes). Crea una cuenta en emailjs.com, conecta tu Gmail como servicio, crea una plantilla con el texto de abajo y pega aquí los tres datos.</p>
    <form class="form-grid" data-f="emailjs">${field('Service ID',inp('service',ejs().service||'','text','placeholder="service_xxxxxxx"'))}${field('Template ID',inp('template',ejs().template||'','text','placeholder="template_xxxxxxx"'))}${field('Public Key',inp('key',ejs().key||'','text','placeholder="Tu public key"'))}<div class="field" style="justify-content:flex-end"><button class="btn primary" type="submit">Guardar</button></div></form>
@@ -1773,6 +1863,29 @@ document.addEventListener('click',e=>{
    pc.changes.forEach(c=>S.config.priceChanges.push({...c,cid:uid()}));
    if(notify)pc.tenants.forEach(x=>{const lines=x.items.map(c=>`• ${itemName(c.kind,c.id)}: de ${money(c.old)} a ${money(c.price)} al mes`).join('\n');S.messages.push({id:uid(),to:x.t.id,kind:'vencimiento',title:`Cambio de precio desde el ${fdate(pc.from)}`,body:`Hola, te contamos que a partir del ${fdate(pc.from)} cambian estos precios:\n${lines}\n\nTu cuota mensual pasa de ${money(x.before)} a ${money(x.after)}. Si tienes preguntas, escríbenos.`,at:Date.now(),readBy:[]})});
    save();closeModal();render();toast(`Precios programados${notify&&pc.tenants.length?` · ${pc.tenants.length} cliente${pc.tenants.length>1?'s':''} avisado${pc.tenants.length>1?'s':''}`:''}`)},
+  'pay-open':()=>{payState=null;payModal()},
+  'pay-months':()=>{payState.months=Number(v);payModal()},
+  'copy':()=>{navigator.clipboard?.writeText(v).then(()=>toast('Copiado')).catch(()=>toast('Selecciónalo y cópialo a mano','bad'))},
+  'co-open':()=>coOpen(v),
+  'co-plan':()=>{coCapture();co.plan=v;coRender()},
+  'co-months':()=>{coCapture();co.months=Number(v);coRender()},
+  'co-back':()=>{co.step=1;coRender()},
+  'co-next':()=>{coCapture();const F=co.form;const er=m=>{$('#co-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};
+   if(!(F.business||'').trim())return er('Escribe el nombre de tu negocio.');if(!(F.owner||'').trim())return er('Escribe tu nombre.');if(!phoneOk(F.phone))return er('Revisa el celular: debe tener 10 dígitos, por ejemplo 300 123 4567.');if(!EMAIL_RE.test((F.email||'').trim()))return er('Revisa el correo: debe tener la forma nombre@dominio.com.');
+   co.step=2;coRender()},
+  'ord-ok':()=>{const o=S.orders.find(x=>x.id===id);if(!o)return;
+   if(o.type==='renovacion'){const t=S.tenants.find(x=>x.id===o.tid);if(!t)return toast('Ese negocio ya no existe','bad');const d0=new Date(Math.max(t.due,sod(Date.now())));d0.setMonth(d0.getMonth()+(o.months||1));t.due=d0.getTime();t.status='activo';
+    S.payments.push({id:uid(),tid:t.id,amount:o.amount,at:Date.now(),method:'Bre-B',concept:o.months===12?'Anualidad':'Mensualidad',ref:o.ref});
+    S.messages.push({id:uid(),to:t.id,kind:'vencimiento',title:'Recibimos tu pago',body:`Confirmamos tu pago de ${money(o.amount)} (ref. ${o.ref}). Tu cuenta queda activa hasta el ${fdate(t.due)}. ¡Gracias!`,at:Date.now(),readBy:[]});
+    S.orders=S.orders.filter(x=>x.id!==o.id);S.orders.push({...o,id:'h'+uid(),status:'aprobada',doneAt:Date.now()});save();render();return toast(`Pago aprobado. ${t.name} queda activo hasta el ${fdate(t.due)}`)}
+   const email=o.email.toLowerCase();if(S.users.some(x=>x.email.toLowerCase()===email))return toast('Ya existe un usuario con ese correo. Revisa el pedido.','bad');
+   const d={name:o.business,type:o.btype||'Negocio',city:o.city||'',phone:o.phone,plan:o.plan,owner:o.owner,setup:o.setup,months:o.months,extra:o.mods||[],amount:o.amount,concept:`Compra desde la demo (${o.months===12?'anual':'mensual'})`,ref:o.ref,orderId:o.id};
+   if(REAL)return rTenantNew(d,email,m=>toast(m,'bad'));
+   toast('En la demo, los clientes nuevos se aprueban desde la app real','bad')},
+  'ord-no':()=>{const o=S.orders.find(x=>x.id===id);openModal('Rechazar pago',`<p style="margin:0">¿No encontraste el pago de <b>${money(o.amount)}</b> con la referencia <b class="mono">${esc(o.ref)}</b>? ${o.type==='renovacion'?'Al cliente le llega un mensaje para que lo revise.':'El pedido queda rechazado.'}</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="ord-no-do" data-id="${id}">Rechazar</button>`)},
+  'ord-no-do':()=>{const o=S.orders.find(x=>x.id===id);if(o.type==='renovacion'){S.messages.push({id:uid(),to:o.tid,kind:'vencimiento',title:'No pudimos confirmar tu pago',body:`No encontramos el pago de ${money(o.amount)} con la referencia ${o.ref}. Revisa que hayas enviado el valor exacto a la llave ${payInfo().llave}, o escríbenos.`,at:Date.now(),readBy:[]});S.orders=S.orders.filter(x=>x.id!==o.id);S.orders.push({...o,id:'h'+uid(),status:'rechazada',doneAt:Date.now()})}else{o.status='rechazada';o.doneAt=Date.now()}save();closeModal();render();toast('Pago rechazado')},
+  'pay-cfg-do':()=>{S.config.pay={llave:v,titular:el.dataset.t};save();closeModal();render();
+   if(REAL&&window.FB)FB.setDoc(FB.doc(FB.db,'public','pay'),S.config.pay).catch(e=>toast('La llave se guardó, pero la demo aún no la ve: pega las reglas nuevas en Firebase','bad'));toast('Llave de cobro actualizada')},
   'tenant-del-ask':()=>{const t=S.tenants.find(x=>x.id===id);const n={users:S.users.filter(x=>x.tid===id).length,products:S.products.filter(x=>x.tid===id).length,sales:S.sales.filter(x=>x.tid===id).length};
    openModal('Eliminar cliente',`<div class="banner bad">${ic('alert')}<div class="grow"><b>Esto no se puede deshacer.</b> ${REAL?'Se borran todos sus usuarios, productos, ventas':`Se borran ${n.users} usuarios, ${n.products} productos, ${num(n.sales)} ventas`} y todo lo demás de <b>${esc(t.name)}</b>: inventario, caja, fiados, proveedores, mensajes y actividad.</div></div>
     <p class="small" style="margin:0">Tu historial de pagos recibidos se conserva para tus cuentas. Si el cliente solo dejó de pagar, mejor apaga su <b>Acceso</b>: así puede volver con sus datos.</p>
@@ -1817,6 +1930,8 @@ document.addEventListener('change',e=>{
   'imp-file':()=>{if(el.files[0])readImport(el.files[0])},
   'pur-method':()=>pur.method=el.value,
   'rc-pid':()=>{pfRecipe[+el.dataset.ix].pid=el.value;rcRefresh()},'rc-qty':()=>{pfRecipe[+el.dataset.ix].qty=Number(el.value)||0;rcRefresh()},
+  'co-extra':()=>{coCapture();co.extra=el.checked?['recetas']:[];coRender()},
+  'co-setup':()=>{coCapture();co.setup=el.checked;coRender()},
   'pf-kind':()=>{const f=$('#prod-form');const d=Object.fromEntries(new FormData(f).entries());const o={code:d.code,name:d.name,cat:d.cat,cost:parseMoney(d.cost),price:parseMoney(d.price),stock:Number(d.stock)||0,min:Number(d.min)||0,supplier:d.supplier||'',unit:d.unit,_keep:true};if(el.value==='insumo')pfRecipe=[];f.outerHTML=productForm(o,el.value);const h=document.querySelector('.modal-h h3');if(h)h.textContent=el.value==='insumo'?'Nuevo insumo':'Nuevo producto'},
   'tm-plan':()=>{const p=planById(el.value);document.querySelectorAll('#tm-mods input').forEach(c=>{if(p.mods.includes(c.value))c.checked=true})},
  };
@@ -1877,9 +1992,9 @@ document.addEventListener('submit',e=>{
    if(changed&&d.resend){const pass=genTemp();o.pass=pass;o.mustChange=true;save();sendWelcome(tt,o,pass)}else{closeModal();toast(changed?`Datos guardados. ${o.name.split(' ')[0]} ahora entra con ${email}`:'Cambios aplicados. El cliente los ve al instante')}},
   'tenant-new':()=>{const email=(d.email||'').trim().toLowerCase();const er=m=>{$('#tn-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};if(!phoneOk(d.phone))return er('Revisa el celular: debe tener 10 dígitos, por ejemplo 300 123 4567.');if(!EMAIL_RE.test(email))return er('Revisa el correo del dueño: debe tener la forma nombre@dominio.com.');if(S.users.some(x=>x.email.toLowerCase()===email))return er('Ya existe un usuario con ese correo.');
    if(REAL)return rTenantNew(d,email,er);
-   const id='t'+uid();const p=planById(d.plan);const due=new Date();due.setMonth(due.getMonth()+1);const t={id,name:d.name.trim(),type:d.type,city:d.city,phone:fmtPhone(d.phone),plan:p.id,mods:p.mods.slice(),status:'activo',due:sod(due),since:sod(Date.now())};S.tenants.push(t);
+   const id='t'+uid();const p=planById(d.plan);const due=new Date();due.setMonth(due.getMonth()+(Number(d.months)||1));const t={id,name:d.name.trim(),type:d.type,city:d.city,phone:fmtPhone(d.phone),plan:p.id,mods:[...p.mods,...(d.extra||[]).filter(m=>!p.mods.includes(m))],status:'activo',due:sod(due),since:sod(Date.now())};S.tenants.push(t);
    const pass=genTemp();const u={id:uid(),tid:id,name:d.owner.trim(),role:'dueno',email,pass,mustChange:true,perms:[],active:true};S.users.push(u);
-   S.payments.push({id:uid(),tid:id,amount:p.price,at:Date.now(),method:'Transferencia',concept:'Mensualidad'});if(d.setup){t.setupPaid=true;S.payments.push({id:uid(),tid:id,amount:SETUP.price,at:Date.now(),method:'Transferencia',concept:'Implementación asistida'})}S.messages.push({id:uid(),to:id,kind:'aviso',title:`Bienvenido a Natara, ${u.name.split(' ')[0]}`,body:'Tu cuenta está lista. Empieza cargando tu inventario desde Excel o creando tus productos.',at:Date.now(),readBy:[]});save();render();sendWelcome(t,u,pass)},
+   if(d.amount){S.payments.push({id:uid(),tid:id,amount:d.amount,at:Date.now(),method:'Bre-B',concept:d.concept||'Compra desde la demo',ref:d.ref||''});if(d.setup)t.setupPaid=true}else{S.payments.push({id:uid(),tid:id,amount:p.price,at:Date.now(),method:'Transferencia',concept:'Mensualidad'});if(d.setup){t.setupPaid=true;S.payments.push({id:uid(),tid:id,amount:SETUP.price,at:Date.now(),method:'Transferencia',concept:'Implementación asistida'})}}S.messages.push({id:uid(),to:id,kind:'aviso',title:`Bienvenido a Natara, ${u.name.split(' ')[0]}`,body:'Tu cuenta está lista. Empieza cargando tu inventario desde Excel o creando tus productos.',at:Date.now(),readBy:[]});save();render();sendWelcome(t,u,pass)},
   'tenant-del':()=>{const t=S.tenants.find(x=>x.id===d.id);if(norm(d.confirm)!==norm(t.name)){$('#del-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">El nombre no coincide. Escríbelo tal como aparece arriba.</div></div>`;return}
    const ids=new Set(S.users.filter(x=>x.tid===t.id).map(x=>x.id));if(REAL)rPurge(t.id,[...ids]);
    ['products','sales','moves','customers','ledger','suppliers','sessions','kardex','requests','purchases'].forEach(k=>S[k]=(S[k]||[]).filter(x=>x.tid!==t.id));
@@ -1898,7 +2013,12 @@ document.addEventListener('submit',e=>{
     ${tenants.length?`<div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th class="r">Cuota actual</th><th class="r">Cuota nueva</th></tr></thead><tbody>${tenants.map(x=>`<tr><td>${esc(x.t.name)}</td><td class="r num">${money(x.before)}</td><td class="r num"><b>${money(x.after)}</b></td></tr>`).join('')}</tbody></table></div>
     <label class="check"><input type="checkbox" id="pc-notify" checked><span>Avisar a estos clientes en Natara<small>Les llega un mensaje con lo que cambia y su nueva cuota. Lo ven en Mensajes y en Mi plan.</small></span></label>`:''}`,
     `<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="price-confirm">Confirmar cambio</button>`,true)},
+  'pay-report':()=>{const t=tenant();const o={id:'pend_'+t.id,type:'renovacion',tid:t.id,business:t.name,plan:t.plan,status:'pendiente',at:Date.now(),ref:payState.ref,months:payState.months,amount:fee(t)*(payState.months===12?ANNUAL_MONTHS:1),comprobante:(d.comp||'').trim().slice(0,60)};S.orders=S.orders.filter(x=>x.id!==o.id);S.orders.push(o);save();closeModal();render();toast('Listo. Samanat revisa tu pago y te avisa por Mensajes')},
+  'co-pay':()=>coSubmit(d.comp),
   'force-change':()=>{lg.err={};const pe=passErrors(d.np);if(!d.np)lg.err.np='Escribe la contraseña nueva.';else if(pe.length)lg.err.np='Le falta: '+pe.join(', ')+'.';const u=me();if(!lg.err.np&&d.np===u.pass)lg.err.np='Debe ser distinta a la temporal.';if(!lg.err.np&&d.np!==d.np2)lg.err.np2='Las contraseñas no coinciden.';if(Object.keys(lg.err).length)return render();if(REAL)return rForceChange(d.np);u.pass=d.np;delete u.mustChange;save();lg.err={};liveEvent('login','Creó su contraseña');render();toast('Contraseña creada. ¡Bienvenido a Natara!')},
+  'pay-cfg':()=>{const llave=(d.llave||'').trim(),titular=(d.titular||'').trim();if(llave.length<3||!titular)return toast('Escribe la llave y el nombre del titular','bad');
+   const prev=payInfo();if(prev.llave===llave&&prev.titular===titular)return toast('No hay cambios');
+   openModal('Cambiar llave de cobro',`<p style="margin:0">Desde ahora tus clientes van a pagar a <b class="mono">${esc(llave)}</b> a nombre de <b>${esc(titular)}</b>.</p><p class="muted small" style="margin:8px 0 0">Antes: ${esc(prev.llave)} · ${esc(prev.titular)}. Revisa bien la llave: si está mal, los pagos llegan a otra persona.</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="pay-cfg-do" data-v="${esc(llave)}" data-t="${esc(titular)}">Sí, cambiar</button>`)},
   'emailjs':()=>{S.config.emailjs={service:d.service.trim(),template:d.template.trim(),key:d.key.trim()};save();toast(emailReady()?'Envío de correos configurado':'Guardado. Faltan datos para enviar correos')},
   'msg-send':()=>{S.messages.push({id:uid(),to:d.to,kind:d.kind,title:d.title,body:d.body,at:Date.now(),readBy:[]});msgDraft={to:'all',kind:'aviso',title:'',body:''};save();render();toast('Mensaje enviado')},
   'lg-login':()=>{const email=(d.email||'').trim().toLowerCase(),pass=d.pass||'';lg.email=email;lg.pass=pass;lg.err={};lg.banner=null;
@@ -1933,9 +2053,9 @@ document.addEventListener('submit',e=>{
    APP REAL · Firebase (Auth + Firestore)
    ========================================================= */
 const TCOLLS=['products','sales','moves','customers','ledger','suppliers','sessions','kardex','purchases'];
-const SYNC_COLLS=[...TCOLLS,'tenants','users','payments','requests','messages'];
+const SYNC_COLLS=[...TCOLLS,'tenants','users','payments','requests','messages','orders'];
 const RB={authReady:false,profileReady:false,user:null,unsubs:[],synced:{},needVerify:false,noProfile:false,pendingRender:false,lastBeat:0,renderT:null};
-function emptyState(){return {v:1,config:{contact:'Escríbenos a samanat2026@gmail.com',brand:'Samanat',priceChanges:[]},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[]}}
+function emptyState(){return {v:1,config:{contact:'Escríbenos a samanat2026@gmail.com',brand:'Samanat',priceChanges:[]},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[]}}
 const stable=o=>JSON.stringify(o,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((a,x)=>(a[x]=v[x],a),{}):v);
 const pathOf=(c,r)=>TCOLLS.includes(c)?`tenants/${r.tid}/${c}/${r.id}`:c==='tenants'?`tenants/${r.id}`:`${c}/${r.id}`;
 function authErr(e){const c=e&&e.code||'';return({'auth/email-already-in-use':'Ese correo ya tiene una cuenta en Natara.','auth/invalid-email':'Revisa el correo: debe tener la forma nombre@dominio.com.','auth/weak-password':'La contraseña es muy débil.','auth/network-request-failed':'No hay conexión a internet. Revisa tu conexión e intenta de nuevo.','auth/too-many-requests':'Demasiados intentos. Espera un momento e intenta de nuevo.','auth/operation-not-allowed':'El inicio con correo no está activado en Firebase (Authentication → Método de acceso).'})[c]||`Ocurrió un error (${c||'desconocido'}). Intenta de nuevo.`}
@@ -1966,7 +2086,7 @@ function subscribe(p){
  const on=(q,c)=>RB.unsubs.push(onSnapshot(q,s=>applySnap(c,s),warn(c)));
  RB.unsubs.push(onSnapshot(doc(db,'config/global'),d=>{if(d.exists()){const v=d.data();RB.synced['config/global']=stable(v);S.config={...emptyState().config,...v};scheduleRender()}},warn('config')));
  if(p.role==='superadmin'){
-  ['tenants','users','payments','requests','messages'].forEach(c=>on(collection(db,c),c));
+  ['tenants','users','payments','requests','messages','orders'].forEach(c=>on(collection(db,c),c));
   RB.unsubs.push(onSnapshot(collection(db,'presence'),s=>{L0.presence={};s.forEach(d=>L0.presence[d.id]=d.data().at||0);scheduleRender(true)},warn('presence')));
   RB.unsubs.push(onSnapshot(collection(db,'stats'),s=>{L0.views={};s.forEach(d=>L0.views[d.id]=d.data().views||{});scheduleRender(true)},warn('stats')));
   RB.unsubs.push(onSnapshot(query(collection(db,'activity'),orderBy('at','desc'),limit(120)),s=>{L0.feed=s.docs.map(d=>d.data()).reverse();scheduleRender(true)},warn('activity')));
@@ -1976,7 +2096,7 @@ function subscribe(p){
  RB.unsubs.push(onSnapshot(doc(db,'tenants',tid),d=>{const was=isLocked();applyDoc('tenants',d);if(!was&&isLocked())toast('Samanat suspendió el acceso de este negocio','bad')},warn('tenant')));
  on(query(collection(db,'users'),where('tid','==',tid)),'users');
  TCOLLS.forEach(c=>{const col=collection(db,'tenants',tid,c);on(c==='sales'?query(col,where('at','>=',Date.now()-120*DAY)):c==='kardex'?query(col,where('at','>=',Date.now()-60*DAY)):col,c)});
- on(query(collection(db,'messages'),where('to','==',tid)),'messages');on(query(collection(db,'messages'),where('to','==','all')),'messages');
+ on(query(collection(db,'orders'),where('tid','==',tid)),'orders');on(query(collection(db,'messages'),where('to','==',tid)),'messages');on(query(collection(db,'messages'),where('to','==','all')),'messages');
  if(p.role==='dueno'){on(query(collection(db,'payments'),where('tid','==',tid)),'payments');on(query(collection(db,'requests'),where('tid','==',tid)),'requests')}
 }
 async function fbAfterAuth(u){
@@ -2052,11 +2172,12 @@ async function rEmpNew(d,t,email,err){
 }
 async function rTenantNew(d,email,er){
  busy('tn-form','Creando…');const pass=genTemp();let uidA;try{uidA=await createAuthUser(email,pass)}catch(e){busy('tn-form');return er(authErr(e))}
- const id='t'+uid();const p=planById(d.plan);const due=new Date();due.setMonth(due.getMonth()+1);
- const t={id,name:d.name.trim(),type:d.type,city:d.city,phone:fmtPhone(d.phone),plan:p.id,mods:p.mods.slice(),status:'activo',due:sod(due),since:sod(Date.now())};S.tenants.push(t);
+ const id='t'+uid();const p=planById(d.plan);const due=new Date();due.setMonth(due.getMonth()+(Number(d.months)||1));
+ const t={id,name:d.name.trim(),type:d.type,city:d.city,phone:fmtPhone(d.phone),plan:p.id,mods:[...p.mods,...(d.extra||[]).filter(m=>!p.mods.includes(m))],status:'activo',due:sod(due),since:sod(Date.now())};S.tenants.push(t);
  const u={id:uidA,tid:id,name:d.owner.trim(),role:'dueno',email,mustChange:true,perms:[],active:true};S.users.push(u);
- S.payments.push({id:uid(),tid:id,amount:p.price,at:Date.now(),method:'Transferencia',concept:'Mensualidad'});if(d.setup){t.setupPaid=true;S.payments.push({id:uid(),tid:id,amount:SETUP.price,at:Date.now(),method:'Transferencia',concept:'Implementación asistida'})}
+ if(d.amount){S.payments.push({id:uid(),tid:id,amount:d.amount,at:Date.now(),method:'Bre-B',concept:d.concept||'Compra desde la demo',ref:d.ref||''});if(d.setup)t.setupPaid=true}else{S.payments.push({id:uid(),tid:id,amount:p.price,at:Date.now(),method:'Transferencia',concept:'Mensualidad'});if(d.setup){t.setupPaid=true;S.payments.push({id:uid(),tid:id,amount:SETUP.price,at:Date.now(),method:'Transferencia',concept:'Implementación asistida'})}}
  S.messages.push({id:uid(),to:id,kind:'aviso',title:`Bienvenido a Natara, ${u.name.split(' ')[0]}`,body:'Tu cuenta está lista. Empieza cargando tu inventario desde Excel o creando tus productos.',at:Date.now(),readBy:[]});
+ if(d.orderId){const o=S.orders.find(x=>x.id===d.orderId);if(o){o.status='aprobada';o.tid=id;o.doneAt=Date.now()}}
  save();render();sendWelcome(t,u,pass);
 }
 async function rTenantSave(d,f,tt,o,email,er){
@@ -2084,6 +2205,13 @@ if(REAL){const go=()=>fbBoot();if(window.FB)go();else window.addEventListener('f
 
 setInterval(()=>{const u=me();if(u&&u.tid&&isLocked()&&!document.querySelector('.lock-card'))render()},60000);
 render();
+</script>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getFirestore,doc,getDoc,setDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const app=initializeApp({apiKey:"AIzaSyDKv_qgOpQXSRElNl41tbGctHzf1_Qq9Hk",authDomain:"natara-96555.firebaseapp.com",projectId:"natara-96555",storageBucket:"natara-96555.firebasestorage.app",messagingSenderId:"673119474930",appId:"1:673119474930:web:22a50b2948b06f5c8b6c6b"});
+window.FB={app,db:getFirestore(app),doc,getDoc,setDoc};
 </script>
 
 </body>

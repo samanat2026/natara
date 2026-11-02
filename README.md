@@ -49,6 +49,13 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 
 Implementación opcional: $180.000 una sola vez (carga de inventario, configuración y capacitación).
 
+## Pagos con llave Bre-B
+
+- **Cuota:** el dueño entra a *Mi plan → Pagar mi cuota*, ve la llave, el valor exacto y una referencia (NAT-XXXXXX), paga desde su banco y toca *Ya pagué*. Mientras Samanat revisa, la cuenta no se bloquea (hasta 7 días).
+- **Compra desde la demo:** *Contratar este plan* → datos del negocio → pago con la llave → *Ya pagué*. El pedido llega a la consola.
+- **Aprobación:** en la consola, *Pagos y solicitudes → Aprobar*. Una renovación extiende la fecha de vencimiento; una compra nueva crea el negocio y el usuario y envía el correo de bienvenida.
+- La llave y el titular se cambian en *Planes y precios → Cobros con llave Bre-B*.
+
 ## Correo de bienvenida
 
 Al crear un cliente se genera una contraseña temporal y se envía por correo con [EmailJS](https://www.emailjs.com/) (configurable en Planes y precios → Envío de correos). En el primer ingreso el cliente debe crear su propia contraseña.
