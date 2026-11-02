@@ -1211,6 +1211,15 @@ function productForm(p,kind){
    ========================================================= */
 const PAY_DEFAULT={llave:'@plata3208891929',titular:'Samanat'};
 const payInfo=()=>({...PAY_DEFAULT,...(S.config.pay||{})});
+const notifyTpl=()=>S.config.payNotify||'';
+// Datos públicos que lee la demo: llave, titular y plantilla del aviso
+function pubSync(){if(REAL&&window.FB)return FB.setDoc(FB.doc(FB.db,'public','pay'),{...payInfo(),notify:notifyTpl()}).catch(()=>toast('Se guardó, pero la demo aún no lo ve: pega las reglas nuevas en Firebase','bad'))}
+// Aviso a Samanat cuando entra un pago (único correo que sale desde la demo)
+async function notifyAdmin(subject,message){
+ const c={...DEFAULT_EMAILJS,...(S.config.emailjs||{})};const tpl=notifyTpl();
+ if(!tpl||!window.emailjs)return false;
+ try{await window.emailjs.send(c.service,tpl,{to_email:ADMIN_EMAIL,to_name:'Samanat',subject,message},{publicKey:c.key});return true}catch(e){console.warn('aviso',e);return false}
+}
 const genRef=()=>'NAT-'+Array.from({length:6},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
 function breBox(amount,ref){const pi=payInfo();return `<div class="pay-box">
   <div class="pay-row big"><span>Valor exacto a pagar</span><b>${money(amount)}</b></div>
@@ -1233,7 +1242,7 @@ let co=null;
 function coTotal(){const p=planById(co.plan);const monthly=p.price+sum(co.extra,m=>modById(m).price);return monthly*(co.months===12?ANNUAL_MONTHS:1)+(co.setup?SETUP.price:0)}
 function coCapture(){const f=$('#co-form');if(f)Object.assign(co.form,Object.fromEntries(new FormData(f).entries()))}
 function coOpen(plan){co={step:1,plan:plan||'basico',extra:[],months:1,setup:false,form:{},ref:genRef()};coRender();
- if(window.FB&&!REAL)FB.getDoc(FB.doc(FB.db,'public','pay')).then(x=>{if(x.exists()){const v=x.data();if(v.llave){S.config.pay={llave:v.llave,titular:v.titular||PAY_DEFAULT.titular};if(co&&co.step===2)coRender()}}}).catch(()=>{})}
+ if(window.FB&&!REAL)FB.getDoc(FB.doc(FB.db,'public','pay')).then(x=>{if(x.exists()){const v=x.data();if(v.llave){S.config.pay={llave:v.llave,titular:v.titular||PAY_DEFAULT.titular};if(v.notify)S.config.payNotify=v.notify;if(co&&co.step===2)coRender()}}}).catch(()=>{})}
 function coRender(){
  const F=co.form;const v=k=>esc(F[k]||'');
  if(co.step===1){
@@ -1265,10 +1274,28 @@ function coRender(){
 async function coSubmit(comp){
  const F=co.form;const order={id:'o'+uid()+uid(),type:'nuevo',status:'pendiente',at:Date.now(),ref:co.ref,plan:co.plan,mods:co.extra.slice(),months:co.months,setup:!!co.setup,amount:coTotal(),business:F.business.trim(),btype:(F.btype||'').trim(),city:(F.city||'').trim(),phone:fmtPhone(F.phone),owner:F.owner.trim(),email:F.email.trim().toLowerCase(),comprobante:(comp||'').trim().slice(0,60)};
  const err=m=>{$('#co-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};
- if(!window.FB)return err(`No pudimos enviar el pedido desde aquí. Escríbenos a <b>samanat2026@gmail.com</b> con la referencia <b class="mono">${esc(co.ref)}</b> y el comprobante, y te activamos el mismo día.`);
  const b=$('#co-paid');if(b){b.disabled=true;b.textContent='Enviando…'}
- try{await FB.setDoc(FB.doc(FB.db,'orders',order.id),order);co.step=3;coRender()}
- catch(e){if(b){b.disabled=false;b.textContent='Ya pagué'}err(`No se pudo enviar (${esc(e.code||e.message)}). Escríbenos a samanat2026@gmail.com con la referencia <b class="mono">${esc(co.ref)}</b>.`)}
+ let saved=false;if(window.FB){try{await FB.setDoc(FB.doc(FB.db,'orders',order.id),order);saved=true}catch(e){console.warn('pedido',e)}}
+ const p=planById(order.plan);
+ const mailed=await notifyAdmin(`Nuevo negocio: ${order.business} pagó ${money(order.amount)} (${order.ref})`,
+`Entró un pago por la compra de Natara desde la demo.
+
+Tipo: CREACIÓN DE NEGOCIO NUEVO
+Valor: ${money(order.amount)}
+Referencia: ${order.ref}
+Comprobante: ${order.comprobante||'(no lo escribió)'}
+
+Negocio: ${order.business} (${order.btype||'-'}, ${order.city||'-'})
+Dueño: ${order.owner}
+Correo: ${order.email}
+Celular: ${order.phone}
+Compra: Plan ${p.name}${order.mods.length?' + Recetas y combos':''} · ${order.months===12?'12 meses':'1 mes'}${order.setup?' · con implementación asistida':''}
+
+${saved?'Revisa en tu banco que llegó el valor exacto con esa referencia y apruébalo en la consola: Pagos y solicitudes → Aprobar. Al aprobar se crea el negocio y le llega su usuario por correo.':'OJO: el pedido no quedó guardado en la consola. Si el pago llegó, créalo a mano en Clientes → Nuevo cliente con estos datos.'}
+${REAL_URL}`);
+ if(saved||mailed){co.step=3;coRender();return}
+ if(b){b.disabled=false;b.textContent='Ya pagué'}
+ err(`No pudimos enviar el pedido desde aquí. Escríbenos a <b>${ADMIN_EMAIL}</b> con la referencia <b class="mono">${esc(co.ref)}</b> y el comprobante, y te activamos el mismo día.`)
 }
 /* =========================================================
    GUÍA DE USO (según plan contratado y permisos)
@@ -1748,7 +1775,9 @@ function aPlanes(){
   ${pendingChanges().length?`<div class="card"><h2>Cambios programados</h2><div class="tbl-wrap"><table><thead><tr><th>Aplica desde</th><th>Qué</th><th class="r">Antes</th><th class="r">Nuevo</th><th></th></tr></thead><tbody>${pendingChanges().map(c=>`<tr><td>${fdate(c.from)}</td><td>${esc(itemName(c.kind,c.id))}</td><td class="r num">${money(c.old)}</td><td class="r num"><b>${money(c.price)}</b></td><td class="r"><button class="btn sm" data-a="price-cancel" data-id="${c.cid}">Cancelar</button></td></tr>`).join('')}</tbody></table></div></div>`:''}
   <div class="card" style="max-width:720px" id="pay-cfg"><h2>Cobros con llave Bre-B</h2>
    <p class="muted small" style="margin:0 0 10px">Es la llave que ven tus clientes al pagar su cuota y quienes compran desde la demo. Si la cambias, todos ven la nueva al instante. Los pagos que ya estaban reportados no cambian.</p>
-   <form class="form-grid" data-f="pay-cfg">${field('Llave Bre-B',inp('llave',payInfo().llave,'text','required placeholder="@tullave, celular o correo" autocomplete="off"'))}${field('A nombre de (como aparece en el banco)',inp('titular',payInfo().titular,'text','required'))}<div class="field full" style="flex-direction:row;justify-content:flex-end"><button class="btn primary" type="submit">Guardar llave</button></div></form></div>
+   <div class="hint" style="margin-bottom:10px">${ic(notifyTpl()?'check':'mail',15)} ${notifyTpl()?`Cuando alguien reporte un pago te llega un aviso a <b>${ADMIN_EMAIL}</b>.`:`<span><b>Falta el aviso a tu correo.</b> Crea una segunda plantilla en EmailJS con el texto de abajo y pega aquí su Template ID.</span>`}</div>
+   <details style="margin-bottom:10px"><summary class="small"><b>Texto para la plantilla del aviso</b></summary><p class="muted small">En EmailJS → Email Templates → Create New Template. En “To Email” escribe <span class="mono">{{to_email}}</span>, en “Subject” <span class="mono">{{subject}}</span> y en el contenido solo esto:</p><div class="wa mono">{{message}}</div><p class="muted small" style="margin-bottom:0">Guarda la plantilla y copia el Template ID que aparece arriba (empieza por template_).</p></details>
+   <form class="form-grid" data-f="pay-cfg">${field('Llave Bre-B',inp('llave',payInfo().llave,'text','required placeholder="@tullave, celular o correo" autocomplete="off"'))}${field('A nombre de (como aparece en el banco)',inp('titular',payInfo().titular,'text','required'))}${field('Template ID del aviso de pagos (EmailJS)',inp('notify',notifyTpl(),'text','placeholder="template_xxxxxxx" autocomplete="off"'),'full')}<div class="field full" style="flex-direction:row;justify-content:flex-end"><button class="btn primary" type="submit">Guardar llave</button></div></form></div>
   <div class="card" style="max-width:720px"><h2>Envío de correos <span class="pill ${emailReady()?'good':'warn'}">${emailReady()?'Configurado':'Sin configurar'}</span></h2>
    <p class="muted small" style="margin:0 0 10px">Para que el correo de bienvenida salga solo, usamos <b>EmailJS</b> (gratis hasta 200 correos al mes). Crea una cuenta en emailjs.com, conecta tu Gmail como servicio, crea una plantilla con el texto de abajo y pega aquí los tres datos.</p>
    <form class="form-grid" data-f="emailjs">${field('Service ID',inp('service',ejs().service||'','text','placeholder="service_xxxxxxx"'))}${field('Template ID',inp('template',ejs().template||'','text','placeholder="template_xxxxxxx"'))}${field('Public Key',inp('key',ejs().key||'','text','placeholder="Tu public key"'))}<div class="field" style="justify-content:flex-end"><button class="btn primary" type="submit">Guardar</button></div></form>
@@ -1885,7 +1914,7 @@ document.addEventListener('click',e=>{
   'ord-no':()=>{const o=S.orders.find(x=>x.id===id);openModal('Rechazar pago',`<p style="margin:0">¿No encontraste el pago de <b>${money(o.amount)}</b> con la referencia <b class="mono">${esc(o.ref)}</b>? ${o.type==='renovacion'?'Al cliente le llega un mensaje para que lo revise.':'El pedido queda rechazado.'}</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="ord-no-do" data-id="${id}">Rechazar</button>`)},
   'ord-no-do':()=>{const o=S.orders.find(x=>x.id===id);if(o.type==='renovacion'){S.messages.push({id:uid(),to:o.tid,kind:'vencimiento',title:'No pudimos confirmar tu pago',body:`No encontramos el pago de ${money(o.amount)} con la referencia ${o.ref}. Revisa que hayas enviado el valor exacto a la llave ${payInfo().llave}, o escríbenos.`,at:Date.now(),readBy:[]});S.orders=S.orders.filter(x=>x.id!==o.id);S.orders.push({...o,id:'h'+uid(),status:'rechazada',doneAt:Date.now()})}else{o.status='rechazada';o.doneAt=Date.now()}save();closeModal();render();toast('Pago rechazado')},
   'pay-cfg-do':()=>{S.config.pay={llave:v,titular:el.dataset.t};save();closeModal();render();
-   if(REAL&&window.FB)FB.setDoc(FB.doc(FB.db,'public','pay'),S.config.pay).catch(e=>toast('La llave se guardó, pero la demo aún no la ve: pega las reglas nuevas en Firebase','bad'));toast('Llave de cobro actualizada')},
+   pubSync();toast('Llave de cobro actualizada')},
   'tenant-del-ask':()=>{const t=S.tenants.find(x=>x.id===id);const n={users:S.users.filter(x=>x.tid===id).length,products:S.products.filter(x=>x.tid===id).length,sales:S.sales.filter(x=>x.tid===id).length};
    openModal('Eliminar cliente',`<div class="banner bad">${ic('alert')}<div class="grow"><b>Esto no se puede deshacer.</b> ${REAL?'Se borran todos sus usuarios, productos, ventas':`Se borran ${n.users} usuarios, ${n.products} productos, ${num(n.sales)} ventas`} y todo lo demás de <b>${esc(t.name)}</b>: inventario, caja, fiados, proveedores, mensajes y actividad.</div></div>
     <p class="small" style="margin:0">Tu historial de pagos recibidos se conserva para tus cuentas. Si el cliente solo dejó de pagar, mejor apaga su <b>Acceso</b>: así puede volver con sus datos.</p>
@@ -2013,11 +2042,24 @@ document.addEventListener('submit',e=>{
     ${tenants.length?`<div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th class="r">Cuota actual</th><th class="r">Cuota nueva</th></tr></thead><tbody>${tenants.map(x=>`<tr><td>${esc(x.t.name)}</td><td class="r num">${money(x.before)}</td><td class="r num"><b>${money(x.after)}</b></td></tr>`).join('')}</tbody></table></div>
     <label class="check"><input type="checkbox" id="pc-notify" checked><span>Avisar a estos clientes en Natara<small>Les llega un mensaje con lo que cambia y su nueva cuota. Lo ven en Mensajes y en Mi plan.</small></span></label>`:''}`,
     `<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="price-confirm">Confirmar cambio</button>`,true)},
-  'pay-report':()=>{const t=tenant();const o={id:'pend_'+t.id,type:'renovacion',tid:t.id,business:t.name,plan:t.plan,status:'pendiente',at:Date.now(),ref:payState.ref,months:payState.months,amount:fee(t)*(payState.months===12?ANNUAL_MONTHS:1),comprobante:(d.comp||'').trim().slice(0,60)};S.orders=S.orders.filter(x=>x.id!==o.id);S.orders.push(o);save();closeModal();render();toast('Listo. Samanat revisa tu pago y te avisa por Mensajes')},
+  'pay-report':()=>{const t=tenant();const o={id:'pend_'+t.id,type:'renovacion',tid:t.id,business:t.name,plan:t.plan,status:'pendiente',at:Date.now(),ref:payState.ref,months:payState.months,amount:fee(t)*(payState.months===12?ANNUAL_MONTHS:1),comprobante:(d.comp||'').trim().slice(0,60)};S.orders=S.orders.filter(x=>x.id!==o.id);S.orders.push(o);save();closeModal();render();toast('Listo. Samanat revisa tu pago y te avisa por Mensajes');
+   if(REAL)notifyAdmin(`Pago de cuota: ${t.name} pagó ${money(o.amount)} (${o.ref})`,`Entró un pago de cuota de un cliente.
+
+Tipo: PAGO DE CUOTA (renovación)
+Negocio: ${t.name}
+Reportado por: ${me().name} (${me().email})
+Valor: ${money(o.amount)} · ${o.months===12?'12 meses':'1 mes'}
+Referencia: ${o.ref}
+Comprobante: ${o.comprobante||'(no lo escribió)'}
+Vence el: ${fdate(t.due)}
+
+Revisa en tu banco que llegó el valor exacto con esa referencia y apruébalo en la consola: Pagos y solicitudes → Aprobar.
+${REAL_URL}`)},
   'co-pay':()=>coSubmit(d.comp),
   'force-change':()=>{lg.err={};const pe=passErrors(d.np);if(!d.np)lg.err.np='Escribe la contraseña nueva.';else if(pe.length)lg.err.np='Le falta: '+pe.join(', ')+'.';const u=me();if(!lg.err.np&&d.np===u.pass)lg.err.np='Debe ser distinta a la temporal.';if(!lg.err.np&&d.np!==d.np2)lg.err.np2='Las contraseñas no coinciden.';if(Object.keys(lg.err).length)return render();if(REAL)return rForceChange(d.np);u.pass=d.np;delete u.mustChange;save();lg.err={};liveEvent('login','Creó su contraseña');render();toast('Contraseña creada. ¡Bienvenido a Natara!')},
-  'pay-cfg':()=>{const llave=(d.llave||'').trim(),titular=(d.titular||'').trim();if(llave.length<3||!titular)return toast('Escribe la llave y el nombre del titular','bad');
-   const prev=payInfo();if(prev.llave===llave&&prev.titular===titular)return toast('No hay cambios');
+  'pay-cfg':()=>{const llave=(d.llave||'').trim(),titular=(d.titular||'').trim(),notify=(d.notify||'').trim();if(llave.length<3||!titular)return toast('Escribe la llave y el nombre del titular','bad');
+   const prev=payInfo();const nChanged=notify!==notifyTpl();if(nChanged){S.config.payNotify=notify;save();if(prev.llave===llave&&prev.titular===titular){pubSync();render();return toast(notify?'Aviso de pagos configurado':'Aviso de pagos desactivado')}}
+   if(prev.llave===llave&&prev.titular===titular)return toast('No hay cambios');
    openModal('Cambiar llave de cobro',`<p style="margin:0">Desde ahora tus clientes van a pagar a <b class="mono">${esc(llave)}</b> a nombre de <b>${esc(titular)}</b>.</p><p class="muted small" style="margin:8px 0 0">Antes: ${esc(prev.llave)} · ${esc(prev.titular)}. Revisa bien la llave: si está mal, los pagos llegan a otra persona.</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="pay-cfg-do" data-v="${esc(llave)}" data-t="${esc(titular)}">Sí, cambiar</button>`)},
   'emailjs':()=>{S.config.emailjs={service:d.service.trim(),template:d.template.trim(),key:d.key.trim()};save();toast(emailReady()?'Envío de correos configurado':'Guardado. Faltan datos para enviar correos')},
   'msg-send':()=>{S.messages.push({id:uid(),to:d.to,kind:d.kind,title:d.title,body:d.body,at:Date.now(),readBy:[]});msgDraft={to:'all',kind:'aviso',title:'',body:''};save();render();toast('Mensaje enviado')},
