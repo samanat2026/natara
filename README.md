@@ -17,11 +17,11 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 
 | Correo | Rol | Qué ve |
 |---|---|---|
-| marta@laespiga.co | Dueña · Panadería La Espiga | Todos los módulos del plan Total, sin lector |
+| marta@laespiga.co | Dueña · Panadería La Espiga | Todos los módulos del plan Total |
 | juan@laespiga.co | Cajero · Panadería La Espiga | Caja + permisos: consultar y editar inventario, costos, proveedores y fiados |
 | laura@laespiga.co | Cajera · Panadería La Espiga | Sin permisos extra: solo vende y ve sus propias ventas |
 | pedro@laespiga.co | Cajero desactivado | Prueba el mensaje de usuario desactivado |
-| carlos@vidasana.co | Dueño · Droguería Vida Sana | Plan Pro + lector de código de barras |
+| carlos@vidasana.co | Dueño · Droguería Vida Sana | Plan Pro |
 | pacho@minimercado.co | Dueño · Minimercado Don Pacho | Plan Básico |
 | andrea@arcoiris.co | Dueña · Papelería Arcoíris | Cuenta suspendida (pantalla de bloqueo) |
 

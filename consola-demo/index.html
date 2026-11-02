@@ -356,7 +356,7 @@ details.hint summary{cursor:pointer}
    ========================================================= */
 const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';const DEMO_ADMIN=MODE==='demo'&&window.NATARA_DEMO_ADMIN===true;const ADMIN_EMAIL='samanat2026@gmail.com';
 const REAL_URL='https://samanat2026.github.io/natara/',DEMO_URL='https://samanat2026.github.io/natara/demo/';
-const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v6';
+const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v7';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 
@@ -425,8 +425,8 @@ const mark=(s=30)=>`<img src="${LOGO}" width="${s}" height="${s}" alt="" style="
 
 /* ---------- catálogo comercial ---------- */
 const MODS=[
- {id:'inventario',name:'Inventario',icon:'box',price:29900,desc:'Productos con código de barras, stock mínimo con alertas, carga masiva desde Excel y kardex de movimientos.'},
- {id:'caja',name:'Caja y ventas',icon:'cart',price:29900,desc:'Punto de venta con búsqueda por nombre o lector de código de barras, efectivo y transferencia, apertura y cierre de caja.'},
+ {id:'inventario',name:'Inventario',icon:'box',price:29900,desc:'Tus productos y cuánto tienes de cada uno, alertas de stock mínimo, carga masiva desde Excel y kardex de movimientos.'},
+ {id:'caja',name:'Caja y ventas',icon:'cart',price:29900,desc:'Punto de venta rápido: buscas el producto por nombre, cobras en efectivo o transferencia, apertura y cierre de caja.'},
  {id:'finanzas',name:'Ingresos y egresos',icon:'wallet',price:24900,desc:'Registra gastos e ingresos extra y ve el balance del día, la semana o el mes.'},
  {id:'estadisticas',name:'Estadísticas',icon:'chart',price:24900,desc:'Ventas por día, productos estrella, rendimiento por vendedor, métodos de pago y utilidad.'},
  {id:'empleados',name:'Empleados',icon:'users',price:19900,desc:'Un usuario por empleado, con permisos que eliges tú. Cada venta queda a nombre de quien la hizo.'},
@@ -464,7 +464,7 @@ function seed(){
  if(MODE==='real'){S.config.contact='Escríbenos a samanat2026@gmail.com';S.users=[{id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'samanat2026@gmail.com',pass:'',mustChange:true,perms:[],active:true}];return S}
  S.tenants=[
   {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:PLANS[2].mods.slice(),status:'activo',due:today+18*DAY,since:today-140*DAY},
-  {id:'t2',name:'Droguería Vida Sana',type:'Farmacia',city:'Envigado',phone:'311 208 9934',plan:'pro',mods:[...PLANS[1].mods,'lector'],status:'activo',due:today+3*DAY,since:today-75*DAY},
+  {id:'t2',name:'Droguería Vida Sana',type:'Farmacia',city:'Envigado',phone:'311 208 9934',plan:'pro',mods:PLANS[1].mods.slice(),status:'activo',due:today+3*DAY,since:today-75*DAY},
   {id:'t3',name:'Minimercado Don Pacho',type:'Minimercado',city:'Bello',phone:'320 744 1180',plan:'basico',mods:PLANS[0].mods.slice(),status:'activo',due:today+12*DAY,since:today-64*DAY},
   {id:'t4',name:'Papelería Arcoíris',type:'Papelería',city:'Itagüí',phone:'315 630 2257',plan:'pro',mods:PLANS[1].mods.slice(),status:'suspendido',due:today-4*DAY,since:today-50*DAY},
  ];
@@ -753,7 +753,7 @@ const DEMO_PASS='Natara2026*';
 function loginBrand(){return `<section class="login-brand">
    <div class="logo">${mark(44)}<b>natara</b></div>
    <h1>Tu caja, tu inventario y tus cuentas, <em>en balance.</em></h1>
-   <div class="feat">${['Inventario con código de barras','Caja rápida con lector','Efectivo y transferencias','Apertura y cierre de caja','Ingresos y egresos','Estadísticas de ventas','Fiados y abonos','Empleados con permisos'].map(f=>`<div>${ic('check',16)} ${f}</div>`).join('')}</div>
+   <div class="feat">${['Inventario siempre al día','Caja rápida y sencilla','Efectivo y transferencias','Apertura y cierre de caja','Ingresos y egresos','Estadísticas de ventas','Fiados y abonos','Empleados con permisos'].map(f=>`<div>${ic('check',16)} ${f}</div>`).join('')}</div>
    <span class="by">Un producto de Samanat</span>
   </section>`}
 function viewLogin(){
@@ -923,7 +923,7 @@ function viewCaja(){
  const u=me();if(!pos.seller||!S.users.find(x=>x.id===pos.seller&&x.tid===u.tid))pos.seller=u.id;
  const sess0=openSession();
  return `<div class="page-head"><div><h1>Caja</h1><p>${sess0?`Caja abierta desde las ${ftime(sess0.openedAt)} por ${esc(userName(sess0.openedBy))}`:'La caja está cerrada'}</p></div>
-  <div class="actions">${has('lector')?`<span class="pill good">${ic('barcode',14)} Lector listo</span>`:isOwner()?`<button class="btn sm" data-a="go" data-v="plan">${ic('barcode',15)} ¿Tienes lector de barras?</button>`:''}</div></div>
+  <div class="actions">${has('lector')?`<span class="pill good">${ic('barcode',14)} Lector listo</span>`:false?`<button class="btn sm" data-a="go" data-v="plan">${ic('barcode',15)} ¿Tienes lector de barras?</button>`:''}</div></div>
   ${sess0?'':`<div class="banner">${ic('register')}<div class="grow">Abre la caja antes de cobrar. Así el cierre del día cuadra con lo que hay en el cajón.</div><button class="btn sm primary" data-a="go" data-v="cierre">Abrir caja</button></div>`}
   <div class="pos">
    <div class="stack">
@@ -1102,7 +1102,7 @@ function viewInventario(){
   :isIns?`<div class="tbl-wrap"><table><thead><tr><th>Insumo</th><th>Proveedor</th><th class="r">Costo</th><th class="r">Hay</th><th class="r">Valor</th><th></th></tr></thead><tbody>${rowsIns}</tbody></table></div>`
   :`<div class="tbl-wrap"><table><thead><tr>${L?'<th>Código</th>':''}<th>Producto</th><th>Categoría</th>${costs?'<th class="r">Costo</th>':''}<th class="r">Precio</th>${costs?'<th class="r">Margen</th>':''}<th class="r">Stock</th>${own?'<th></th>':''}</tr></thead><tbody>${rowsVenta}</tbody></table></div>`}
   </div>
-  ${own&&!isIns&&!L?`<div class="hint">${ic('barcode',15)} <b>¿Tienes lector de código de barras?</b> Con el complemento de lector vendes más rápido: escaneas el producto y entra solo a la venta. <button class="btn sm" data-a="go" data-v="plan" style="margin-left:6px">Ver en Mi plan</button></div>`:''}
+  ${false?`<div class="hint">${ic('barcode',15)} <b>¿Tienes lector de código de barras?</b> Con el complemento de lector vendes más rápido: escaneas el producto y entra solo a la venta. <button class="btn sm" data-a="go" data-v="plan" style="margin-left:6px">Ver en Mi plan</button></div>`:''}
   ${own&&!isIns&&L?`<div class="hint">${ic('barcode',15)} <b>¿Cómo funciona el código de barras?</b> Casi todos los productos traen un código impreso (EAN-13). Un lector USB o Bluetooth funciona como un teclado: haz clic en el campo “Código”, dispara el lector y el número se escribe solo. Para productos que tú haces (pan, tortas) inventa un código corto como PAN01 o imprime etiquetas.</div>`:''}`;
 }
 function productForm(p,kind){
@@ -1334,7 +1334,7 @@ function viewPlan(){
    <div class="card kpi"><span class="lbl">Cuota mensual</span><span class="val">${money(fee(t))}</span>${(()=>{const nx=pendingChanges()[0];if(!nx)return'';const f2=feeAt(t,nx.from+1);return f2!==fee(t)?`<span class="foot" style="color:var(--warn)">Desde el ${fdate(nx.from)}: ${money(f2)}</span>`:''})()}<span class="foot">o ${money(fee(t)*ANNUAL_MONTHS)} al año (2 meses gratis)</span></div>
    <div class="card kpi"><span class="lbl">Próximo pago</span><span class="val">${fshort(t.due)}</span><span class="foot">${dd<0?`<span style="color:var(--bad)">Vencido</span>`:dd<=5?`<span style="color:var(--warn)">En ${dd} días</span>`:`En ${dd} días`}</span></div>
   </div>
-  <div class="grid g3">${MODS.map(m=>{const on=t.mods.includes(m.id);const asked=reqs.includes(m.id);return`<div class="mod ${on?'has':''}"><div class="spread"><span class="row" style="gap:8px">${ic(m.icon)}<strong>${m.name}</strong></span>${on?'<span class="pill good">Activo</span>':asked?'<span class="pill warn">Solicitado</span>':''}</div><p>${m.desc}</p><div class="foot spread"><span class="small muted">${p.mods.includes(m.id)?'Incluido en tu plan':(m.addon?'Complemento · ':'')+'+ '+money(m.price)+'/mes'}</span>${on||asked?'':`<button class="btn sm primary" data-a="req-mod" data-v="${m.id}">Solicitar</button>`}</div></div>`}).join('')}</div>
+  <div class="grid g3">${MODS.filter(m=>m.id!=='lector'||t.mods.includes('lector')).map(m=>{const on=t.mods.includes(m.id);const asked=reqs.includes(m.id);return`<div class="mod ${on?'has':''}"><div class="spread"><span class="row" style="gap:8px">${ic(m.icon)}<strong>${m.name}</strong></span>${on?'<span class="pill good">Activo</span>':asked?'<span class="pill warn">Solicitado</span>':''}</div><p>${m.desc}</p><div class="foot spread"><span class="small muted">${p.mods.includes(m.id)?'Incluido en tu plan':(m.addon?'Complemento · ':'')+'+ '+money(m.price)+'/mes'}</span>${on||asked?'':`<button class="btn sm primary" data-a="req-mod" data-v="${m.id}">Solicitar</button>`}</div></div>`}).join('')}</div>
   <div class="mod ${t.setupPaid?'has':''}" style="max-width:760px"><div class="spread"><span class="row" style="gap:8px">${ic('users')}<strong>${SETUP.name}</strong></span>${t.setupPaid?'<span class="pill good">Incluida</span>':reqs.includes('implementacion')?'<span class="pill warn">Solicitada</span>':''}</div><p>${SETUP.desc}</p><div class="foot spread"><span class="small muted">${money(SETUP.price)} · pago único</span>${t.setupPaid||reqs.includes('implementacion')?'':`<button class="btn sm primary" data-a="req-mod" data-v="implementacion">Solicitar</button>`}</div></div>
   <div class="card"><h2>Historial de pagos</h2><div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Medio</th><th class="r">Valor</th></tr></thead><tbody>${S.payments.filter(x=>x.tid===t.id).sort((a,b)=>b.at-a.at).map(x=>`<tr><td>${fdate(x.at)}</td><td>${esc(x.concept||'Mensualidad')}</td><td>${esc(x.method)}</td><td class="r num">${money(x.amount)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Sin pagos registrados</td></tr>'}</tbody></table></div></div>`;
 }
