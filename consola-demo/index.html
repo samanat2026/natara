@@ -221,6 +221,16 @@ tbody tr.click:hover{background:var(--surface-2)}
 .pd-price{display:flex;flex-direction:column;align-items:flex-end;text-align:right}
 .pd-price b{font-size:22px;font-variant-numeric:tabular-nums}
 @media (max-width:520px){.pd-price{align-items:flex-start;text-align:left}}
+.cta-login{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px;padding:16px 18px;border-radius:16px;background:var(--side);color:var(--side-ink);text-decoration:none;border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);box-shadow:0 8px 28px color-mix(in srgb,var(--accent) 18%,transparent);transition:transform .15s,box-shadow .15s}
+.cta-login:hover{transform:translateY(-1px);box-shadow:0 12px 34px color-mix(in srgb,var(--accent) 28%,transparent)}
+.cta-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cta-txt small{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);font-weight:700}
+.cta-txt b{font-family:var(--f-display);font-weight:500;font-size:20px;color:#fff;letter-spacing:-.01em;line-height:1.2}
+.cta-txt span{font-size:13.5px}
+.cta-go{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--accent-ink);font-weight:700;padding:11px 16px;border-radius:10px;white-space:nowrap}
+@media (max-width:560px){.cta-login{grid-template-columns:auto minmax(0,1fr)}.cta-go{grid-column:1/-1;justify-content:center}}
+.cta-buy{display:flex;flex-direction:column;gap:4px;padding:16px 18px;border-radius:14px;border:1px dashed var(--accent);background:var(--accent-soft)}
+.cta-buy b{font-size:16px}.cta-buy span{font-size:14px;color:var(--ink-2)}.cta-buy .mono{color:var(--accent);font-weight:600;user-select:all}
 .acc-group > span{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);font-weight:600}
 .acc{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;text-align:left;width:100%}
 .acc:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
@@ -759,9 +769,11 @@ function viewLogin(){
   <section class="login-pick">
    <div><h2>${DEMO_ADMIN?'Demo · Consola de Samanat':'Entra a la demo'}</h2><p class="muted" style="margin:6px 0 0">${DEMO_ADMIN?'Esta página es solo para ti. Usa los mismos datos de la demo de clientes, más tu consola de superusuario.':'Elige una cuenta. Cada rol ve sus propios módulos.'}</p></div>
    ${DEMO_ADMIN?`<div class="hint">${ic('info',15)} <b>Pruébalo en vivo:</b> abre la <a class="linkish" href="${DEMO_URL}" target="_blank" rel="noopener">demo de clientes</a> en otra pestaña y entra como un negocio. Lo que hagas aquí como superusuario (suspender, activar módulos, mandar mensajes, cambiar precios) se ve allá al instante.</div><div class="acc-group"><span>Samanat</span>${acc(S.users.find(u=>u.role==='superadmin'))}</div>`:''}
-   <div class="row"><button class="btn" data-a="lg-mode" data-v="form">${ic('lock',16)} Ver el inicio de sesión real, con validaciones</button><a class="linkish small" href="${REAL_URL}">Ir a la app real →</a></div>
+   <a class="cta-login" href="${REAL_URL}"><span class="cta-ic">${mark(40)}</span><span class="cta-txt"><small>¿Ya eres cliente de Natara?</small><b>Inicia aquí tu experiencia</b><span>Entra con el correo y la contraseña que te enviamos.</span></span><span class="cta-go">Iniciar sesión ${ic('logout',18)}</span></a>
+   ${DEMO_ADMIN?`<button class="btn sm" data-a="lg-mode" data-v="form" style="align-self:flex-start">${ic('lock',15)} Ver el inicio de sesión con validaciones</button>`:''}
    <div class="hint">${ic('info',15)} <b>Así se ve Natara por dentro.</b> Cada negocio de ejemplo usa un plan distinto, con su precio. Entra como dueño para ver lo que incluye ese plan, o como cajero para ver solo lo que el dueño le permite. Los datos son de ejemplo: puedes vender, cargar inventario y probar sin miedo.</div>
    ${byT}
+   <div class="cta-buy"><b>¿Quieres Natara para tu negocio?</b><span>Escríbenos y lo dejamos listo con tu inventario cargado. Desde ${money(planById('basico').price)} al mes.</span><span class="mono">samanat2026@gmail.com</span></div>
    <button class="btn ghost sm" data-a="reset" style="align-self:flex-start">${ic('refresh',15)} Restablecer datos de la demo</button>
   </section></div>`;
 }
