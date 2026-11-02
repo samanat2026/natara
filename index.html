@@ -582,7 +582,11 @@ window.addEventListener('storage',e=>{
 
 const me=()=>S.users.find(u=>u.id===sess.uid)||null;
 const tenant=()=>{const u=me();return u&&u.tid?S.tenants.find(t=>t.id===u.tid):null};
-const isLocked=()=>{const t=tenant();return !!(t&&t.status!=='activo')};
+const GRACE_DAYS=3; // días de gracia después del vencimiento antes del bloqueo automático
+const lockDate=t=>t.due+GRACE_DAYS*DAY;
+const overdueLocked=t=>!!t&&t.status==='activo'&&Date.now()>lockDate(t);
+const tenantLocked=t=>!!t&&(t.status!=='activo'||overdueLocked(t));
+const isLocked=()=>tenantLocked(tenant());
 const has=m=>{const t=tenant();return !!(t&&t.mods.includes(m))};
 const isOwner=()=>me()?.role==='dueno';
 const PERMS=[
@@ -659,7 +663,7 @@ const field=(label,inner,cls='')=>`<div class="field ${cls}"><label>${label}</la
 const inp=(name,val='',type='text',extra='')=>`<input class="input" id="f-${name}" name="${name}" type="${type}" value="${esc(val)}" ${extra}>`;
 const minp=(name,val='',extra='')=>`<div class="money-in"><span>$</span><input class="input num" id="f-${name}" name="${name}" type="text" inputmode="numeric" autocomplete="off" data-money value="${val===''||val==null?'':grp(val)}" ${extra}></div>`;
 const sel=(name,opts,val,extra='')=>`<select class="input" id="f-${name}" name="${name}" ${extra}>${opts.map(o=>{const[v,l]=Array.isArray(o)?o:[o,o];return`<option value="${esc(v)}" ${String(v)===String(val)?'selected':''}>${esc(l)}</option>`}).join('')}</select>`;
-const pillDue=t=>{const d=daysUntil(t.due);if(t.status!=='activo')return`<span class="pill bad">${ic('lock',12)} Suspendido</span>`;if(d<0)return`<span class="pill bad">Vencido hace ${-d} d</span>`;if(d<=5)return`<span class="pill warn">Vence en ${d} d</span>`;return`<span class="pill good">Al día</span>`};
+const pillDue=t=>{const d=daysUntil(t.due);if(t.status!=='activo')return`<span class="pill bad">${ic('lock',12)} Suspendido</span>`;if(overdueLocked(t))return`<span class="pill bad">${ic('lock',12)} Bloqueado por vencimiento</span>`;if(d<0){const left=Math.max(0,daysUntil(lockDate(t)));return`<span class="pill bad">Vencido · se bloquea ${left?`en ${left} d`:'hoy'}</span>`}if(d<=5)return`<span class="pill warn">Vence en ${d} d</span>`;return`<span class="pill good">Al día</span>`};
 
 /* ---------- descargas (capacidad del visor) ---------- */
 let DL=null;
@@ -880,7 +884,7 @@ function viewLock(){
  return `<div class="lock-screen"><div class="lock-card">
   <div class="ic">${ic('lock',30)}</div>
   <h1>El acceso a Natara está suspendido</h1>
-  <p class="muted">La cuota de <b>${esc(t.name)}</b> venció el ${fdate(t.due)}. Tus datos están guardados. Comunícate con Samanat para reactivar el servicio.</p>
+  <p class="muted">${t.status!=='activo'?`Samanat suspendió el acceso de <b>${esc(t.name)}</b>.`:`La cuota de <b>${esc(t.name)}</b> venció el ${fdate(t.due)} y pasaron los ${GRACE_DAYS} días de gracia.`} Tus datos están guardados y vuelves a entrar apenas se registre el pago. Comunícate con Samanat para reactivar el servicio.</p>
   <div class="hint" style="width:100%">${esc(S.config.contact)}</div>
   <button class="btn" data-a="logout-ask">${ic('logout')} Cerrar sesión</button>
  </div></div>`;
@@ -900,7 +904,8 @@ function viewInicio(){
  const delta=ytot?Math.round((tot-ytot)/ytot*100):0;
  const myToday=tdy.filter(s=>s.seller===u.id);
  const banners=[];
- if(u.role==='dueno'&&dd<=5)banners.push(`<div class="banner">${ic('alert')}<div class="grow"><b>Tu cuota de Natara vence ${dd<=0?'hoy':`en ${dd} día${dd===1?'':'s'}`}</b> (${fdate(t.due)}). Paga a tiempo para no perder el acceso.</div><button class="btn sm" data-a="go" data-v="plan">Ver mi plan</button></div>`);
+ if(u.role==='dueno'&&dd<0)banners.push(`<div class="banner bad">${ic('alert')}<div class="grow"><b>Tu cuota de Natara venció el ${fdate(t.due)}.</b> Si no se registra el pago, el acceso se bloquea automáticamente el ${fdate(lockDate(t))}. Tus datos no se pierden.</div><button class="btn sm" data-a="go" data-v="plan">Ver mi plan</button></div>`);
+ else if(u.role==='dueno'&&dd<=5)banners.push(`<div class="banner">${ic('alert')}<div class="grow"><b>Tu cuota de Natara vence ${dd===0?'hoy':`en ${dd} día${dd===1?'':'s'}`}</b> (${fdate(t.due)}). Paga a tiempo para no perder el acceso.</div><button class="btn sm" data-a="go" data-v="plan">Ver mi plan</button></div>`);
  if(u.role==='dueno'&&unread)banners.push(`<div class="banner info">${ic('bell')}<div class="grow">Tienes <b>${unread} mensaje${unread>1?'s':''} nuevo${unread>1?'s':''}</b> de Samanat.</div><button class="btn sm" data-a="go" data-v="mensajes">Leer</button></div>`);
  if(has('caja')&&!openSession())banners.push(`<div class="banner">${ic('register')}<div class="grow">La caja está cerrada. Ábrela con la base del día para empezar a vender.</div><button class="btn sm primary" data-a="go" data-v="cierre">Abrir caja</button></div>`);
  const recent=tdy.slice(-6).reverse();
@@ -1387,8 +1392,8 @@ function adminNav(){const pend=S.requests.filter(r=>r.status==='pendiente').leng
 function adminView(){liveRefresh();if(!ANAV.find(a=>a[0]===sess.view)){sess.view='resumen';saveSess()}return({actividad:aActividad,resumen:aResumen,clientes:aClientes,solicitudes:aSolicitudes,mensajes:aMensajes,planes:aPlanes})[sess.view]()}
 function aResumen(){
  const act=S.tenants.filter(t=>t.status==='activo');const mrr=sum(act,fee);
- const soon=S.tenants.filter(t=>t.status==='activo'&&daysUntil(t.due)<=7).sort((a,b)=>a.due-b.due);
- const susp=S.tenants.filter(t=>t.status!=='activo');
+ const soon=S.tenants.filter(t=>!tenantLocked(t)&&daysUntil(t.due)<=7).sort((a,b)=>a.due-b.due);
+ const susp=S.tenants.filter(t=>tenantLocked(t));
  const m0=new Date();m0.setDate(1);const paidMonth=sum(S.payments.filter(p=>p.at>=sod(m0)),p=>p.amount);
  const modCount=MODS.map(m=>({m,n:S.tenants.filter(t=>t.mods.includes(m.id)).length}));
  // ingresos de los últimos 6 meses
@@ -1418,7 +1423,7 @@ function aActividad(){
  const risk=rows.filter(r=>r.x.idle>=7&&r.t.status==='activo');
  const viewName=v=>NAV.find(n=>n.v===v)?.label||v;
  const agg={};rows.forEach(r=>r.x.views.forEach(([v,n])=>agg[v]=(agg[v]||0)+n));const aggL=Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,8);const maxA=Math.max(1,...aggL.map(a=>a[1]));
- const status=r=>r.x.online.length?`<span class="pill good"><span class="live on"></span> En línea · ${r.x.online.map(u=>esc(u.name.split(' ')[0])).join(', ')}</span>`:r.t.status!=='activo'?`<span class="pill bad">${ic('lock',12)} Suspendido</span>`:r.x.idle>=7?`<span class="pill bad">Sin uso ${r.x.idle} días · riesgo</span>`:r.x.idle>=3?`<span class="pill warn">Poco uso</span>`:`<span class="pill">Activo</span>`;
+ const status=r=>r.x.online.length?`<span class="pill good"><span class="live on"></span> En línea · ${r.x.online.map(u=>esc(u.name.split(' ')[0])).join(', ')}</span>`:tenantLocked(r.t)?pillDue(r.t):r.x.idle>=7?`<span class="pill bad">Sin uso ${r.x.idle} días · riesgo</span>`:r.x.idle>=3?`<span class="pill warn">Poco uso</span>`:`<span class="pill">Activo</span>`;
  const feedIcon={login:'logout',venta:'cart',compra:'truck',caja:'register',inventario:'box'};
  const feed=L0.feed.slice(-25).reverse();
  return `<div class="page-head"><div><h1>Actividad en vivo</h1><p>Quién está usando Natara ahora y qué módulos usa cada negocio. Se actualiza solo.</p></div></div>
@@ -1892,6 +1897,7 @@ function rLive(u,type,text,v,amount){
 function rBeat(u,force){if(!RB.profileReady)return;if(!force&&Date.now()-RB.lastBeat<150000)return;RB.lastBeat=Date.now();FB.setDoc(FB.doc(FB.db,'presence',u.id),{tid:u.tid,at:Date.now()}).catch(e=>console.warn('presence',e.code))}
 if(REAL){const go=()=>fbBoot();if(window.FB)go();else window.addEventListener('fb-ready',go,{once:true})}
 
+setInterval(()=>{const u=me();if(u&&u.tid&&isLocked()&&!document.querySelector('.lock-card'))render()},60000);
 render();
 </script>
 

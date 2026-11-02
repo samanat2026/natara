@@ -19,7 +19,11 @@ service cloud.firestore {
     function active() { return hasProfile() && profile().active == true && profile().get('archived', false) != true; }
     function inTenant(tid) { return active() && profile().tid == tid; }
     function isOwnerOf(tid) { return inTenant(tid) && profile().role == 'dueno'; }
-    function tenantActive(tid) { return get(/databases/$(database)/documents/tenants/$(tid)).data.status == 'activo'; }
+    // Activo = no suspendido y sin pasar 3 días de gracia después del vencimiento (259200000 ms)
+    function tenantActive(tid) {
+      let t = get(/databases/$(database)/documents/tenants/$(tid)).data;
+      return t.status == 'activo' && t.due + 259200000 > request.time.toMillis();
+    }
     function hasPerm(p) { return p in profile().get('perms', []); }
     function canWrite(tid, coll) {
       return isOwnerOf(tid)
