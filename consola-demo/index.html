@@ -920,7 +920,8 @@ function viewForceChange(){
 /* ---------- correo de bienvenida ---------- */
 const APP_URL=MODE==='real'?REAL_URL:DEMO_URL;
 function genTemp(){const U='ABCDEFGHJKLMNPQRSTUVWXYZ',L='abcdefghijkmnpqrstuvwxyz',D='23456789',X='!*#$';const pk=a=>a[Math.floor(Math.random()*a.length)];return pk(U)+pk(L)+pk(L)+pk(L)+'-'+pk(D)+pk(D)+pk(D)+pk(D)+pk(X)}
-function welcomeParams(t,u,pass){return {to_email:u.email,to_name:u.name.split(' ')[0],business:t.name,login_email:u.email,temp_password:pass,app_url:APP_URL,from_name:'Samanat'}}
+const REUSE_PASS='Te enviamos otro correo con el enlace para crear tu contraseña (revisa también spam)';
+function welcomeParams(t,u,pass){return {to_email:u.email,to_name:u.name.split(' ')[0],business:t.name,login_email:u.email,temp_password:pass||REUSE_PASS,app_url:APP_URL,from_name:'Samanat'}}
 function welcomeText(p,emp){if(emp)return `Asunto: Tus datos para entrar a Natara\n\nHola ${p.to_name},\n\n${p.by} te dio acceso a Natara en ${p.business}, para registrar ventas y manejar la caja.\n\nEntra aquí: ${p.app_url}\nUsuario: ${p.login_email}\nContraseña temporal: ${p.temp_password}\n\nAl entrar te pediremos crear tu propia contraseña. Guárdala: nadie más la conocerá.`;return `Asunto: Bienvenido a Natara: tus datos de acceso\n\nHola ${p.to_name},\n\n${p.business} ya tiene Natara, el sistema para manejar tu inventario, tu caja y tus cuentas.\n\nEntra aquí: ${p.app_url}\nUsuario: ${p.login_email}\nContraseña temporal: ${p.temp_password}\n\nLa primera vez que entres te pediremos crear tu propia contraseña.\n\nCualquier duda, respóndenos este correo.\nEquipo Samanat`}
 const DEFAULT_EMAILJS={service:'service_3bmy9mk',template:'template_vysb1ut',key:'JKLQXaLvFb22L5iDo'};
 const ejs=()=>{const c=S.config.emailjs||{};return c.service&&c.template&&c.key?c:(REAL||DEMO_ADMIN?DEFAULT_EMAILJS:{})};
@@ -929,7 +930,7 @@ async function sendWelcome(t,u,pass,emp){
  const p=welcomeParams(t,u,pass);p.by=me()?.name||'El dueño';p.intro=emp?`${p.by} te dio acceso a Natara en ${t.name}, para registrar ventas y manejar la caja.`:`${t.name} ya tiene Natara, el sistema para manejar tu inventario, tu caja y tus cuentas.`;const txt=welcomeText(p,emp);
  const box=s=>{const el=$('#mail-status');if(el)el.innerHTML=s};
  openModal(emp?'Acceso del empleado':'Acceso del cliente',`<div class="banner info">${ic('check')}<div class="grow"><b>${esc(emp?u.name:t.name)}</b> ${emp?'ya puede entrar a Natara':'quedó creado'}. Estos son sus datos de acceso:</div></div>
-  <div class="receipt"><div class="ln"><span>Entrar en</span><span>${esc(APP_URL)}</span></div><div class="ln"><span>Usuario</span><b>${esc(u.email)}</b></div><div class="ln"><span>Contraseña temporal</span><b>${esc(pass)}</b></div></div>
+  <div class="receipt"><div class="ln"><span>Entrar en</span><span>${esc(APP_URL)}</span></div><div class="ln"><span>Usuario</span><b>${esc(u.email)}</b></div><div class="ln"><span>Contraseña${pass?' temporal':''}</span><b>${esc(pass||'Ya tenía cuenta: le enviamos un enlace para crear una nueva')}</b></div></div>
   <div id="mail-status"></div>`,`<button class="btn" data-a="copy-welcome">${ic('copy',16)} Copiar mensaje</button><button class="btn primary" data-a="close-modal">Listo</button>`);
  window._welcome=txt;
  if(!emailReady()){const admin=me()?.role==='superadmin';box(`<div class="banner">${ic('mail')}<div class="grow">${admin?`<b>El envío automático de correos no está configurado.</b> Copia el mensaje y envíalo tú, o configúralo en <button class="linkish" data-a="go" data-v="planes">Planes y precios → Envío de correos</button>.`:`<b>Compártele estos datos a ${esc(u.name.split(' ')[0])}.</b> Copia el mensaje y envíaselo por WhatsApp o correo.${MODE==='demo'?' <span class="muted">(En la demo no se envían correos.)</span>':''}`}<div class="wa" style="margin-top:8px">${esc(txt)}</div></div></div>`);return}
@@ -1931,9 +1932,10 @@ document.addEventListener('click',e=>{
     S.payments.push({id:uid(),tid:t.id,amount:o.amount,at:Date.now(),method:'Bre-B',concept:o.months===12?'Anualidad':'Mensualidad',ref:o.ref});
     S.messages.push({id:uid(),to:t.id,kind:'vencimiento',title:'Recibimos tu pago',body:`Confirmamos tu pago de ${money(o.amount)} (ref. ${o.ref}). Tu cuenta queda activa hasta el ${fdate(t.due)}. ¡Gracias!`,at:Date.now(),readBy:[]});
     S.orders=S.orders.filter(x=>x.id!==o.id);S.orders.push({...o,id:'h'+uid(),status:'aprobada',doneAt:Date.now()});save();render();return toast(`Pago aprobado. ${t.name} queda activo hasta el ${fdate(t.due)}`)}
-   const email=o.email.toLowerCase();if(S.users.some(x=>x.email.toLowerCase()===email))return toast('Ya existe un usuario con ese correo. Revisa el pedido.','bad');
+   const email=o.email.toLowerCase();const er=m=>openModal('No se pudo crear el negocio',`<p style="margin:0">${m}</p>`,`<button class="btn primary" data-a="close-modal">Entendido</button>`);
+   if(emailTaken(email))return er(`El correo <b>${esc(email)}</b> ya pertenece a un usuario activo en otro negocio. Escríbele al comprador para que use otro correo.`);
    const d={name:o.business,type:o.btype||'Negocio',city:o.city||'',phone:o.phone,plan:o.plan,owner:o.owner,setup:o.setup,months:o.months,extra:o.mods||[],amount:o.amount,concept:`Compra desde la demo (${o.months===12?'anual':'mensual'})`,ref:o.ref,orderId:o.id};
-   if(REAL)return rTenantNew(d,email,m=>toast(m,'bad'));
+   if(REAL)return rTenantNew(d,email,er);
    toast('En la demo, los clientes nuevos se aprueban desde la app real','bad')},
   'ord-no':()=>{const o=S.orders.find(x=>x.id===id);openModal('Rechazar pago',`<p style="margin:0">¿No encontraste el pago de <b>${money(o.amount)}</b> con la referencia <b class="mono">${esc(o.ref)}</b>? ${o.type!=='nuevo'?'Al cliente le llega un mensaje para que lo revise.':'El pedido queda rechazado.'}</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="ord-no-do" data-id="${id}">Rechazar</button>`)},
   'ord-no-do':()=>{const o=S.orders.find(x=>x.id===id);if(o.type!=='nuevo'){S.messages.push({id:uid(),to:o.tid,kind:'vencimiento',title:'No pudimos confirmar tu pago',body:`No encontramos el pago de ${money(o.amount)} con la referencia ${o.ref}. Revisa que hayas enviado el valor exacto a la llave ${payInfo().llave}, o escríbenos.`,at:Date.now(),readBy:[]});S.orders=S.orders.filter(x=>x.id!==o.id);S.orders.push({...o,id:'h'+uid(),status:'rechazada',doneAt:Date.now()})}else{o.status='rechazada';o.doneAt=Date.now()}save();closeModal();render();toast('Pago rechazado')},
@@ -2041,14 +2043,14 @@ document.addEventListener('submit',e=>{
    if(!d.tname.trim()||!d.oname.trim())return er('El nombre del negocio y el del dueño no pueden quedar vacíos.');
    if(!phoneOk(d.tphone))return er('Revisa el celular: debe tener 10 dígitos, por ejemplo 300 123 4567.');
    if(!EMAIL_RE.test(email))return er('Revisa el correo: debe tener la forma nombre@dominio.com.');
-   if(S.users.some(x=>x.id!==o?.id&&x.email.toLowerCase()===email))return er('Ese correo ya lo usa otro usuario.');
+   if(S.users.some(x=>x.id!==o?.id&&!x.archived&&x.email.toLowerCase()===email))return er('Ese correo ya lo usa otro usuario.');
    const changed=o&&o.email.toLowerCase()!==email;
    if(REAL&&changed)return rTenantSave(d,f,tt,o,email,er);
    tt.name=d.tname.trim();tt.type=d.ttype.trim();tt.city=d.tcity.trim();tt.phone=fmtPhone(d.tphone);
    if(o){o.name=d.oname.trim();o.email=email}
    tt.plan=d.plan;tt.mods=[...f.querySelectorAll('input[name=mod]:checked')].map(c=>c.value);tt.due=new Date(d.due+'T12:00:00').getTime();save();render();
    if(changed&&d.resend){const pass=genTemp();o.pass=pass;o.mustChange=true;save();sendWelcome(tt,o,pass)}else{closeModal();toast(changed?`Datos guardados. ${o.name.split(' ')[0]} ahora entra con ${email}`:'Cambios aplicados. El cliente los ve al instante')}},
-  'tenant-new':()=>{const email=(d.email||'').trim().toLowerCase();const er=m=>{$('#tn-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};if(!phoneOk(d.phone))return er('Revisa el celular: debe tener 10 dígitos, por ejemplo 300 123 4567.');if(!EMAIL_RE.test(email))return er('Revisa el correo del dueño: debe tener la forma nombre@dominio.com.');if(S.users.some(x=>x.email.toLowerCase()===email))return er('Ya existe un usuario con ese correo.');
+  'tenant-new':()=>{const email=(d.email||'').trim().toLowerCase();const er=m=>{$('#tn-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};if(!phoneOk(d.phone))return er('Revisa el celular: debe tener 10 dígitos, por ejemplo 300 123 4567.');if(!EMAIL_RE.test(email))return er('Revisa el correo del dueño: debe tener la forma nombre@dominio.com.');if(emailTaken(email))return er('Ya existe un usuario con ese correo.');
    if(REAL)return rTenantNew(d,email,er);
    const id='t'+uid();const p=planById(d.plan);const due=new Date();due.setMonth(due.getMonth()+(Number(d.months)||1));const t={id,name:d.name.trim(),type:d.type,city:d.city,phone:fmtPhone(d.phone),plan:p.id,mods:[...p.mods,...(d.extra||[]).filter(m=>!p.mods.includes(m))],status:'activo',due:sod(due),since:sod(Date.now())};S.tenants.push(t);
    const pass=genTemp();const u={id:uid(),tid:id,name:d.owner.trim(),role:'dueno',email,pass,mustChange:true,perms:[],active:true};S.users.push(u);
@@ -2056,7 +2058,7 @@ document.addEventListener('submit',e=>{
   'tenant-del':()=>{const t=S.tenants.find(x=>x.id===d.id);if(norm(d.confirm)!==norm(t.name)){$('#del-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">El nombre no coincide. Escríbelo tal como aparece arriba.</div></div>`;return}
    const ids=new Set(S.users.filter(x=>x.tid===t.id).map(x=>x.id));if(REAL)rPurge(t.id,[...ids]);
    ['products','sales','moves','customers','ledger','suppliers','sessions','kardex','requests','purchases'].forEach(k=>S[k]=(S[k]||[]).filter(x=>x.tid!==t.id));
-   S.users=S.users.filter(x=>x.tid!==t.id);S.messages=S.messages.filter(m=>m.to!==t.id).map(m=>({...m,readBy:m.readBy.filter(r=>r!==t.id)}));
+   S.users=REAL?S.users.map(x=>x.tid===t.id?{id:x.id,email:x.email,name:x.name,role:x.role,tid:null,perms:[],active:false,archived:true}:x):S.users.filter(x=>x.tid!==t.id);S.messages=S.messages.filter(m=>m.to!==t.id).map(m=>({...m,readBy:m.readBy.filter(r=>r!==t.id)}));
    S.payments.forEach(x=>{if(x.tid===t.id){x.formerName=t.name}});S.tenants=S.tenants.filter(x=>x.id!==t.id);
    liveRefresh();L0.feed=L0.feed.filter(e=>e.tid!==t.id);delete L0.views[t.id];ids.forEach(i=>delete L0.presence[i]);liveSave();
    save();closeModal();render();toast(`${t.name} fue eliminado por completo`)},
@@ -2245,6 +2247,15 @@ async function rForceChange(np){
  try{await FB.updatePassword(FB.auth.currentUser,np);const u=me();delete u.mustChange;save();lg.err={};render();toast('Contraseña creada. ¡Bienvenido a Natara!')}
  catch(e){if(e.code==='auth/requires-recent-login'){lg.banner=['bad','Por seguridad, vuelve a iniciar sesión con la contraseña temporal y crea la nueva.'];rLogout()}else{lg.err={np:authErr(e)};render()}}
 }
+// Firebase no deja borrar cuentas de Authentication desde la app. Por eso, al eliminar un cliente,
+// sus usuarios quedan "archivados" (sin negocio) y si vuelve con el mismo correo reutilizamos su cuenta.
+const emailTaken=email=>S.users.some(x=>x.email.toLowerCase()===email&&!x.archived);
+const DUP_AUTH='Ese correo ya tiene una cuenta en Firebase (de un cliente que borraste antes de esta actualización). Bórrala en <b>Firebase → Authentication → Usuarios</b>: busca el correo, toca los tres puntos y <b>Eliminar cuenta</b>. Luego vuelve a intentarlo.';
+async function authFor(email,pass){
+ const g=S.users.find(x=>x.archived&&x.email.toLowerCase()===email);
+ if(g){S.users=S.users.filter(x=>x!==g);return {id:g.id,reused:true}}
+ try{return {id:await createAuthUser(email,pass),reused:false}}catch(e){if(e.code==='auth/email-already-in-use')e.dup=true;throw e}
+}
 async function createAuthUser(email,pass){
  const sec=FB.initializeApp(window.NATARA_FB_CONFIG,'sec-'+Date.now());
  try{const a=FB.getAuth(sec);const c=await FB.createUserWithEmailAndPassword(a,email,pass);const id=c.user.uid;await FB.signOut(a);return id}finally{FB.deleteApp(sec).catch(()=>{})}
@@ -2256,20 +2267,23 @@ async function rEmpNew(d,t,email,err){
  const nu={id,tid:t.id,name:d.name.trim(),email,role:'cajero',active:true,perms:[],mustChange:true};S.users.push(nu);save();render();sendWelcome(t,nu,d.pass,true);
 }
 async function rTenantNew(d,email,er){
- busy('tn-form','Creando…');const pass=genTemp();let uidA;try{uidA=await createAuthUser(email,pass)}catch(e){busy('tn-form');return er(authErr(e))}
+ busy('tn-form','Creando…');let pass=genTemp();let uidA,reused;try{({id:uidA,reused}=await authFor(email,pass))}catch(e){busy('tn-form');return er(e.dup?DUP_AUTH:authErr(e))}
+ if(reused)pass=null;
  const id='t'+uid();const p=planById(d.plan);const due=new Date();due.setMonth(due.getMonth()+(Number(d.months)||1));
  const t={id,name:d.name.trim(),type:d.type,city:d.city,phone:fmtPhone(d.phone),plan:p.id,mods:[...p.mods,...(d.extra||[]).filter(m=>!p.mods.includes(m))],status:'activo',due:sod(due),since:sod(Date.now())};S.tenants.push(t);
- const u={id:uidA,tid:id,name:d.owner.trim(),role:'dueno',email,mustChange:true,perms:[],active:true};S.users.push(u);
+ const u={id:uidA,tid:id,name:d.owner.trim(),role:'dueno',email,mustChange:!reused,perms:[],active:true};S.users.push(u);
  if(d.amount){S.payments.push({id:uid(),tid:id,amount:d.amount,at:Date.now(),method:'Bre-B',concept:d.concept||'Compra desde la demo',ref:d.ref||''});if(d.setup)t.setupPaid=true}else{S.payments.push({id:uid(),tid:id,amount:p.price,at:Date.now(),method:'Transferencia',concept:'Mensualidad'});if(d.setup){t.setupPaid=true;S.payments.push({id:uid(),tid:id,amount:SETUP.price,at:Date.now(),method:'Transferencia',concept:'Implementación asistida'})}}
  S.messages.push({id:uid(),to:id,kind:'aviso',title:`Bienvenido a Natara, ${u.name.split(' ')[0]}`,body:'Tu cuenta está lista. Empieza cargando tu inventario desde Excel o creando tus productos.',at:Date.now(),readBy:[]});
  if(d.orderId){const o=S.orders.find(x=>x.id===d.orderId);if(o){o.status='aprobada';o.tid=id;o.doneAt=Date.now()}}
- save();render();sendWelcome(t,u,pass);
+ save();render();
+ if(reused)FB.sendPasswordResetEmail(FB.auth,email,{url:REAL_URL}).catch(e=>console.warn('reset',e));
+ sendWelcome(t,u,pass);
 }
 async function rTenantSave(d,f,tt,o,email,er){
- busy('tenant-form','Guardando…');const pass=genTemp();let nid;try{nid=await createAuthUser(email,pass)}catch(e){busy('tenant-form');return er(authErr(e))}
+ busy('tenant-form','Guardando…');let pass=genTemp();let nid,reused;try{({id:nid,reused}=await authFor(email,pass))}catch(e){busy('tenant-form');return er(e.dup?DUP_AUTH:authErr(e))}if(reused)pass=null;
  tt.name=d.tname.trim();tt.type=d.ttype.trim();tt.city=d.tcity.trim();tt.phone=fmtPhone(d.tphone);tt.plan=d.plan;tt.mods=[...f.querySelectorAll('input[name=mod]:checked')].map(c=>c.value);tt.due=new Date(d.due+'T12:00:00').getTime();
- const nu={...JSON.parse(JSON.stringify(o)),id:nid,name:d.oname.trim(),email,mustChange:true,active:true};delete nu.pass;delete nu.archived;
- o.archived=true;o.active=false;S.users.push(nu);save();render();sendWelcome(tt,nu,pass);
+ const nu={...JSON.parse(JSON.stringify(o)),id:nid,name:d.oname.trim(),email,mustChange:!reused,active:true};delete nu.pass;delete nu.archived;
+ o.archived=true;o.active=false;S.users.push(nu);save();render();if(reused)FB.sendPasswordResetEmail(FB.auth,email,{url:REAL_URL}).catch(()=>{});sendWelcome(tt,nu,pass);
 }
 async function rResend(tid){const u=S.users.find(x=>x.tid===tid&&x.role==='dueno'&&!x.archived);if(!u)return;try{await FB.sendPasswordResetEmail(FB.auth,u.email,{url:REAL_URL});closeModal();toast(`Le enviamos a ${u.email} un enlace para crear una contraseña nueva`)}catch(e){toast(authErr(e),'bad')}}
 async function rPurge(tid,uids){
