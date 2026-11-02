@@ -230,6 +230,27 @@ tbody tr.click:hover{background:var(--surface-2)}
 @media (max-width:560px){.cta-login{grid-template-columns:auto minmax(0,1fr)}.cta-go{grid-column:1/-1;justify-content:center}}
 .cta-buy{display:flex;flex-direction:column;gap:4px;padding:16px 18px;border-radius:14px;border:1px dashed var(--accent);background:var(--accent-soft)}
 .cta-buy b{font-size:16px}.cta-buy span{font-size:14px;color:var(--ink-2)}.cta-buy .mono{color:var(--accent);font-weight:600;user-select:all}
+.rcp-how{display:flex;align-items:center;gap:12px;padding:16px;border-radius:14px;background:var(--accent-soft);flex-wrap:wrap}
+.rcp-how > div{flex:1;min-width:170px;display:flex;flex-direction:column;gap:2px}
+.rcp-how > svg{color:var(--accent);flex:none}
+.rcp-how b{font-size:15px}.rcp-how span{font-size:13px;color:var(--ink-2)}
+.rcp-n{display:inline-grid!important;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink)!important;font-weight:700;font-size:13px!important;margin-bottom:4px}
+@media (max-width:700px){.rcp-how > svg{transform:rotate(90deg)}}
+.rcp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.rcp{display:flex;flex-direction:column;gap:12px}
+.rcp-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.rcp-top h3{font-size:17px;margin-top:6px;line-height:1.25}
+.rcp-price{display:flex;flex-direction:column;align-items:flex-end;text-align:right;flex:none}
+.rcp-price b{font-size:20px;font-variant-numeric:tabular-nums}
+.rcp-eq{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.rcp-ing{padding:5px 10px;border-radius:8px;background:var(--surface-2);font-size:13px}
+.rcp-ing.lim{background:var(--warn-soft);color:var(--warn)}
+.rcp-plus{color:var(--ink-3);font-weight:700}
+.rcp-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:10px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.rcp-stats div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rcp-stats span{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);font-weight:600}
+.rcp-stats b{font-size:15px;font-variant-numeric:tabular-nums}
+.rcp-warn{margin:0;font-size:13px;color:var(--warn);display:flex;gap:6px;align-items:center}.rcp-warn.bad{color:var(--bad)}
 .rc{display:flex;flex-direction:column;gap:8px;padding:12px;border:1px dashed var(--line);border-radius:10px;grid-column:1/-1}
 .rc-row{display:flex;gap:8px;align-items:center}.rc-row select{flex:1;min-width:0}
 .seller-line{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:14px}
@@ -358,7 +379,7 @@ details.hint summary{cursor:pointer}
    ========================================================= */
 const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';const DEMO_ADMIN=MODE==='demo'&&window.NATARA_DEMO_ADMIN===true;const ADMIN_EMAIL='samanat2026@gmail.com';
 const REAL_URL='https://samanat2026.github.io/natara/',DEMO_URL='https://samanat2026.github.io/natara/demo/';
-const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v8';
+const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v9';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 
@@ -420,6 +441,8 @@ const IC={
  send:'M22 2 11 13M22 2l-7 20-4-9-9-4z',
  refresh:'M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7',
  info:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-5M12 8h.01',
+ chef:'M6 13.9V20h12v-6.1A4 4 0 0 0 17 6a5 5 0 0 0-10 0 4 4 0 0 0-1 7.9zM6 17h12',
+ arrow:'M5 12h14M13 6l6 6-6 6',
 };
 const ic=(n,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n]||''}"/></svg>`;
 const LOGO='data:image/webp;base64,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';
@@ -434,6 +457,7 @@ const MODS=[
  {id:'empleados',name:'Empleados',icon:'users',price:19900,desc:'Un usuario por empleado, con permisos que eliges tú. Cada venta queda a nombre de quien la hizo.'},
  {id:'fiados',name:'Fiados y clientes',icon:'heart',price:22900,desc:'Ventas a crédito, saldo por cliente y registro de abonos.'},
  {id:'proveedores',name:'Proveedores',icon:'truck',price:19900,desc:'Directorio de proveedores y registro de compras que suben el inventario y quedan como egreso.'},
+ {id:'recetas',name:'Recetas y combos',icon:'chef',price:10000,addon:true,desc:'Arma productos con lo que tienes en inventario: una arepa con chorizo y queso, un desayuno, un combo. Al venderlos, cada ingrediente se descuenta solo, y ves cuánto te cuesta y cuánto ganas en cada uno.'},
  {id:'lector',name:'Lector de código de barras',icon:'barcode',price:14900,addon:true,desc:'Vende y busca productos escaneando el código con un lector USB o Bluetooth. Ideal si el negocio vende productos empacados.'},
 ];
 const PLANS=[
@@ -465,7 +489,7 @@ function seed(){
  const S={v:1,config:{contact:'WhatsApp +57 300 000 0000',brand:'Samanat'},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[]};
  if(MODE==='real'){S.config.contact='Escríbenos a samanat2026@gmail.com';S.users=[{id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'samanat2026@gmail.com',pass:'',mustChange:true,perms:[],active:true}];return S}
  S.tenants=[
-  {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:PLANS[2].mods.slice(),status:'activo',due:today+18*DAY,since:today-140*DAY},
+  {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:[...PLANS[2].mods,'recetas'],status:'activo',due:today+18*DAY,since:today-140*DAY},
   {id:'t2',name:'Droguería Vida Sana',type:'Farmacia',city:'Envigado',phone:'311 208 9934',plan:'pro',mods:PLANS[1].mods.slice(),status:'activo',due:today+3*DAY,since:today-75*DAY},
   {id:'t3',name:'Minimercado Don Pacho',type:'Minimercado',city:'Bello',phone:'320 744 1180',plan:'basico',mods:PLANS[0].mods.slice(),status:'activo',due:today+12*DAY,since:today-64*DAY},
   {id:'t4',name:'Papelería Arcoíris',type:'Papelería',city:'Itagüí',phone:'315 630 2257',plan:'pro',mods:PLANS[1].mods.slice(),status:'suspendido',due:today-4*DAY,since:today-50*DAY},
@@ -481,7 +505,7 @@ function seed(){
   {id:'u7',tid:'t4',name:'Andrea Vélez',role:'dueno',email:'andrea@arcoiris.co',pin:'7777',active:true},
   {id:'u8',tid:'t1',name:'Pedro Gil',role:'cajero',email:'pedro@laespiga.co',pin:'8888',active:false},
  ];
- S.users.forEach(u=>{u.pass='Natara2026*';u.perms=[]});S.users.find(u=>u.id==='u2').perms=['ver_inventario','inv_edit','ver_costos','proveedores','fiados'];S.users.find(u=>u.id==='u5').perms=['ver_inventario'];
+ S.users.forEach(u=>{u.pass='Natara2026*';u.perms=[]});S.users.find(u=>u.id==='u2').perms=['ver_inventario','inv_edit','ver_costos','recetas','proveedores','fiados'];S.users.find(u=>u.id==='u5').perms=['ver_inventario'];
  const prods={
   t1:[['7709990000011','Pan francés','Panes',350,700,180,40],['7709990000028','Pan de bono','Panes',700,1500,95,30],['7709990000035','Almojábana','Panes',650,1500,70,25],['7709990000042','Buñuelo','Panes',500,1200,60,25],['7709990000059','Croissant de mantequilla','Hojaldres',1400,3500,28,12],['7709990000066','Pastel de pollo','Hojaldres',1600,4000,22,10],['7709990000073','Torta de chocolate (porción)','Repostería',2200,6000,16,8],['7709990000080','Torta tres leches (porción)','Repostería',2500,6500,6,8],['7709990000097','Pan tajado integral 600 g','Empacados',4200,7500,14,6],['7709990000103','Leche entera 1 L','Lácteos',3300,4600,24,12],['7709990000110','Yogur de fresa 200 g','Lácteos',1700,2800,4,10],['7709990000127','Queso campesino 250 g','Lácteos',5200,8500,11,5],['7709990000134','Gaseosa 400 ml','Bebidas',1900,3200,40,15],['7709990000141','Jugo de naranja 300 ml','Bebidas',2100,4000,18,8],['7709990000158','Café tinto','Bebidas',400,1500,500,0],['7709990000165','Chocolate caliente','Bebidas',900,3000,300,0],['7709990000172','Huevos AA x 30','Abarrotes',13500,17900,9,4]],
   t2:[['7702001000017','Acetaminofén 500 mg x 10 tab','Analgésicos',1200,2800,85,30],['7702001000024','Ibuprofeno 400 mg x 10 tab','Analgésicos',1800,4200,60,25],['7702001000031','Loratadina 10 mg x 10 tab','Antialérgicos',1500,3900,40,15],['7702001000048','Suero oral sabor fresa 500 ml','Hidratación',2600,5200,30,12],['7702001000055','Alcohol antiséptico 350 ml','Primeros auxilios',3800,7200,18,10],['7702001000062','Curitas x 20','Primeros auxilios',2500,5500,25,10],['7702001000079','Vitamina C 500 mg x 30','Vitaminas',8500,16900,12,6],['7702001000086','Tapabocas x 10','Cuidado personal',3000,6500,7,10],['7702001000093','Crema dental 100 ml','Cuidado personal',3900,7400,22,10],['7702001000109','Pañitos húmedos x 50','Bebé',4500,8900,15,6],['7702001000116','Gel antibacterial 250 ml','Cuidado personal',4200,8500,3,8],['7702001000123','Termómetro digital','Equipos',9800,22000,5,3]],
@@ -593,6 +617,7 @@ const PERMS=[
  {id:'ver_inventario',label:'Consultar el inventario',short:'consultar inventario',desc:'Ver los productos y cuánto hay, sin costos.',mod:'inventario'},
  {id:'inv_edit',label:'Agregar y editar inventario',short:'editar inventario',desc:'Crear productos e insumos, ajustar stock y cargar desde Excel.',mod:'inventario'},
  {id:'ver_costos',label:'Ver costos y márgenes',short:'costos',desc:'Muestra cuánto cuesta cada producto.',mod:'inventario'},
+ {id:'recetas',label:'Crear y editar recetas y combos',short:'recetas',desc:'Armar productos con ingredientes del inventario y cambiar su precio.',mod:'recetas'},
  {id:'fiados',label:'Vender fiado y registrar abonos',short:'fiados',desc:'Crear clientes de fiado, venderles a crédito en la caja y recibir abonos.',mod:'fiados'},
  {id:'ver_todas',label:'Ver las ventas de todos',short:'ventas de todos',desc:'Si está apagado, solo ve sus propias ventas.',mod:'caja'},
  {id:'anular',label:'Anular ventas',short:'anular ventas',desc:'Devuelve el stock y saca la venta de los reportes.',mod:'caja'},
@@ -722,6 +747,7 @@ const NAV=[
  {v:'cierre',label:'Apertura y cierre',icon:'register',mod:'caja',roles:['dueno','cajero']},
  {v:'ventas',label:'Ventas',icon:'receipt',mod:'caja',roles:['dueno','cajero']},
  {v:'inventario',label:'Inventario',icon:'box',mod:'inventario',roles:['dueno'],perm:['ver_inventario','inv_edit']},
+ {v:'recetas',label:'Recetas y combos',icon:'chef',mod:'recetas',roles:['dueno'],perm:'recetas'},
  {v:'fiados',label:'Fiados',icon:'heart',mod:'fiados',roles:['dueno'],perm:'fiados'},
  {v:'finanzas',label:'Ingresos y egresos',icon:'wallet',mod:'finanzas',roles:['dueno'],perm:'finanzas',sec:'Gestión'},
  {v:'estadisticas',label:'Estadísticas',icon:'chart',mod:'estadisticas',roles:['dueno'],perm:'estadisticas'},
@@ -748,7 +774,7 @@ function tenantView(){
  if(!n||!navAllowed(n,u)){v=sess.view=u.role==='cajero'&&t.mods.includes('caja')?'caja':'inicio';saveSess()}
  const nn=NAV.find(x=>x.v===v);
  if(nn.mod&&!t.mods.includes(nn.mod))return viewUpsell(nn.mod);
- return ({inicio:viewInicio,caja:viewCaja,cierre:viewCierre,ventas:viewVentas,inventario:viewInventario,fiados:viewFiados,finanzas:viewFinanzas,estadisticas:viewStats,proveedores:viewProveedores,empleados:viewEmpleados,plan:viewPlan,mensajes:viewMensajes})[v]();
+ return ({inicio:viewInicio,caja:viewCaja,cierre:viewCierre,ventas:viewVentas,inventario:viewInventario,recetas:viewRecetas,fiados:viewFiados,finanzas:viewFinanzas,estadisticas:viewStats,proveedores:viewProveedores,empleados:viewEmpleados,plan:viewPlan,mensajes:viewMensajes})[v]();
 }
 function afterRender(){
  if(sess.view==='caja'&&!$('#modal-root').innerHTML){const q=$('#pos-q');if(q)q.focus()}
@@ -1129,13 +1155,13 @@ let pfRecipe=[],pfSelf='';
 function recipeBox(){
  const opts=T('products').filter(x=>x.id!==pfSelf&&!recipeOf(x)).sort((a,b)=>(a.kind==='insumo'?0:1)-(b.kind==='insumo'?0:1)||a.name.localeCompare(b.name));
  const rows=pfRecipe.map((r,ix)=>{const c=S.products.find(x=>x.id===r.pid);return `<div class="rc-row"><select class="input" data-c="rc-pid" data-ix="${ix}" aria-label="Ingrediente">${opts.map(o=>`<option value="${o.id}" ${o.id===r.pid?'selected':''}>${esc(o.name)}${o.kind==='insumo'?' · insumo':''}</option>`).join('')}</select><input class="input num" type="number" min="0" step="any" inputmode="decimal" value="${r.qty}" data-c="rc-qty" data-ix="${ix}" aria-label="Cantidad" style="width:84px"><span class="muted small" style="min-width:56px">${esc(c?.unit||'und')}</span><button type="button" class="icon-btn" data-a="rc-rm" data-ix="${ix}" aria-label="Quitar ingrediente" style="color:var(--ink-3)">${ic('trash',15)}</button></div>`}).join('');
- return `<div class="spread"><b class="small">Receta: qué lleva cada unidad</b>${pfRecipe.length?`<span class="small muted">Costo calculado: <b>${money(recipeCost(pfRecipe))}</b></span>`:''}</div>
-  ${rows||`<p class="muted small" style="margin:0">Opcional. Si este producto se arma con otros (por ejemplo, arepa + chorizo + queso), agrégalos aquí: al venderlo se descuentan solos del inventario.</p>`}
+ return `<div class="spread"><b class="small">Ingredientes: qué lleva cada unidad</b></div>
+  ${rows||`<p class="muted small" style="margin:0">Agrega cada ingrediente y cuánto lleva. Por ejemplo: 1 arepa, 1 chorizo y 0,08 kg de queso.</p>`}
   <button type="button" class="btn sm" data-a="rc-add" style="align-self:flex-start">${ic('plus',14)} Agregar ingrediente</button>`;
 }
-function rcRefresh(){const b=$('#rc-box');if(b)b.innerHTML=recipeBox();const has_=pfRecipe.length>0;const sw=$('#pf-stock-wrap');if(sw)sw.hidden=has_;const cw=$('#pf-cost-wrap');if(cw)cw.hidden=has_;const n=$('#pf-made-note');if(n)n.hidden=!has_}
+function rcRefresh(){const b=$('#rc-box');if(b)b.innerHTML=recipeBox();const sm=$('#rc-sum');if(sm)sm.innerHTML=rcSummary();const has_=pfRecipe.length>0;const sw=$('#pf-stock-wrap');if(sw)sw.hidden=has_;const cw=$('#pf-cost-wrap');if(cw)cw.hidden=has_;const n=$('#pf-made-note');if(n)n.hidden=!has_}
 function productForm(p,kind){
- if(!p||!p._keep){pfRecipe=(p?.recipe||[]).map(x=>({...x}));pfSelf=p?.id||''}
+ pfRecipe=[];pfSelf=p?.id||'';
  kind=p?.kind||kind||'venta';const ins=kind==='insumo';const edit=!!p?.id;
  const sup=has('proveedores')?T('suppliers'):[];const L=has('lector');
  const codeField=L&&!ins?field('Código de barras',inp('code',p?.code||'','text','required placeholder="Escanea o escribe" autocomplete="off"')):field('Código interno (opcional)',inp('code',p?.code||'','text','placeholder="Se crea solo si lo dejas vacío" autocomplete="off"'));
@@ -1148,12 +1174,63 @@ function productForm(p,kind){
   ${ins?field('Unidad de medida',sel('unit',UNITS,p?.unit||'kg')):''}
   <div id="pf-cost-wrap" ${!ins&&pfRecipe.length?'hidden':''}>${field(ins?'Costo por unidad':'Costo',minp('cost',p?.cost??'',''))}</div>
   ${ins?'':field('Precio de venta',minp('price',p?.price??'','required'))}
-  ${ins?'':`<div class="rc full" id="rc-box">${recipeBox()}</div><p class="muted small full" id="pf-made-note" style="margin:0" ${pfRecipe.length?'':'hidden'}>Este producto no lleva inventario propio: se arma al momento de venderlo, y su costo sale de la receta.</p>`}
+  ${!ins&&has('recetas')?`<p class="muted small full" style="margin:0">${ic('chef',13)} ¿Este producto se arma con otros? Créalo en <button type="button" class="linkish" data-a="go" data-v="recetas">Recetas y combos</button>.</p>`:''}
   <div class="form-grid full" id="pf-stock-wrap" style="grid-column:1/-1" ${!ins&&pfRecipe.length?'hidden':''}>
   ${field(edit?'Stock actual':'Stock inicial',inp('stock',p?.stock??0,'number','step="any"'+(edit?' readonly':'')))}
   ${field('Stock mínimo (alerta)',inp('min',p?.min??0,'number','min="0" step="any"'))}</div>
   ${sup.length?field('Proveedor',sel('supplier',[['','Sin proveedor'],...sup.map(x=>[x.id,x.name])],p?.supplier||''),'full'):''}
  </div>${edit?`<p class="muted small">Para cambiar el stock usa “${ins?'Registrar consumo':'Ajustar'}”, así queda registrado en el kardex.</p>`:''}</form>`;
+}
+/* =========================================================
+   RECETAS Y COMBOS (complemento)
+   ========================================================= */
+function limitingOf(p){let best=null;(p.recipe||[]).forEach(c=>{const x=S.products.find(y=>y.id===c.pid);const n=x&&c.qty>0?Math.floor((x.stock+1e-9)/c.qty):0;if(!best||n<best.n)best={pid:c.pid,name:x?.name||'(ingrediente eliminado)',n}});return best}
+function viewRecetas(){
+ const can=canDo('recetas');const R=T('products').filter(p=>recipeOf(p)).sort((a,b)=>a.name.localeCompare(b.name));
+ const sold=id=>salesCount(id);const top=R.slice().sort((a,b)=>sold(b.id)-sold(a.id))[0];
+ const avgM=R.length?Math.round(sum(R,p=>p.price?(p.price-effCost(p))/p.price:0)/R.length*100):0;
+ const low=R.filter(p=>availOf(p)<=10).length;
+ const card=p=>{const cost=effCost(p);const gan=p.price-cost;const mg=p.price?Math.round(gan/p.price*100):0;const av=availOf(p);const lim=limitingOf(p);
+  return `<article class="card rcp">
+   <div class="rcp-top"><div style="min-width:0"><span class="pill ${p.cat==='Combos'?'ac':''}">${esc(p.cat)}</span><h3>${esc(p.name)}</h3></div><div class="rcp-price"><b>${money(p.price)}</b><span class="muted small">precio de venta</span></div></div>
+   <div class="rcp-eq">${p.recipe.map((c,ix)=>{const x=S.products.find(y=>y.id===c.pid);const isLim=lim&&lim.pid===c.pid&&av<=10;return`${ix?'<span class="rcp-plus">+</span>':''}<span class="rcp-ing ${isLim?'lim':''}" title="Hay ${num(x?.stock||0)} ${esc(x?.unit||'')}"><b>${num(c.qty)} ${esc(x?.unit||'und')}</b> ${esc(x?.name||'(eliminado)')}</span>`}).join('')}</div>
+   <div class="rcp-stats"><div><span>Te cuesta</span><b>${money(cost)}</b></div><div><span>Ganas</span><b style="color:var(${gan>=0?'--good':'--bad'})">${money(gan)}</b></div><div><span>Margen</span><b>${mg}%</b></div><div><span>Alcanza para</span><b style="color:var(${av<=0?'--bad':av<=10?'--warn':'--ink'})">${num(av)}</b></div></div>
+   ${av<=10&&lim?`<p class="rcp-warn">${ic('alert',14)} ${av<=0?'No alcanza para ninguna:':'Se acaba pronto:'} falta <b>${esc(lim.name)}</b>.</p>`:''}
+   ${gan<0?`<p class="rcp-warn bad">${ic('alert',14)} La estás vendiendo por debajo de lo que te cuesta.</p>`:''}
+   <div class="row" style="margin-top:auto">${sold(p.id)?`<span class="muted small">${num(sold(p.id))} vendidas</span>`:'<span class="muted small">Aún sin ventas</span>'}${can?`<span style="margin-left:auto" class="row"><button class="btn sm" data-a="rc-edit" data-id="${p.id}">${ic('edit',14)} Editar</button><button class="icon-btn" data-a="rc-del-ask" data-id="${p.id}" aria-label="Eliminar ${esc(p.name)}" style="color:var(--bad)">${ic('trash',16)}</button></span>`:''}</div>
+  </article>`};
+ return `<div class="page-head"><div><h1>Recetas y combos</h1><p>Productos que armas con lo que tienes en inventario. Al venderlos, cada ingrediente se descuenta solo.</p></div>${can?`<div class="actions"><button class="btn primary" data-a="rc-new">${ic('plus',16)} Nueva receta o combo</button></div>`:''}</div>
+  <div class="rcp-how">
+   <div><span class="rcp-n">1</span><b>Tus ingredientes</b><span>Están en Inventario: la arepa, el chorizo, el queso.</span></div>
+   ${ic('arrow',20)}
+   <div><span class="rcp-n">2</span><b>Tu receta</b><span>Dices qué lleva cada unidad y a cuánto la vendes.</span></div>
+   ${ic('arrow',20)}
+   <div><span class="rcp-n">3</span><b>Vendes en la caja</b><span>Cada ingrediente se descuenta solo del inventario.</span></div>
+  </div>
+  ${R.length?`<div class="grid g3">
+   <div class="card kpi"><span class="lbl">Recetas y combos</span><span class="val">${R.length}</span><span class="foot">${low?`<span style="color:var(--warn)">${low} con ingredientes por acabarse</span>`:'Todas con ingredientes suficientes'}</span></div>
+   <div class="card kpi"><span class="lbl">Margen promedio</span><span class="val">${avgM}%</span><span class="foot">lo que te queda de cada venta</span></div>
+   <div class="card kpi"><span class="lbl">La más vendida</span><span class="val" style="font-size:18px">${top&&sold(top.id)?esc(top.name):'—'}</span><span class="foot">${top&&sold(top.id)?`${num(sold(top.id))} vendidas`:'todavía sin ventas'}</span></div>
+  </div>
+  <div class="rcp-grid">${R.map(card).join('')}</div>`:`<div class="card empty" style="padding:36px 16px">${ic('chef',34)}<b style="color:var(--ink)">Todavía no tienes recetas ni combos</b><span>Ejemplo: <b>Arepa con chorizo y queso</b> = 1 arepa + 1 chorizo + 80 g de queso.</span>${can?`<button class="btn primary" data-a="rc-new">${ic('plus',16)} Crear la primera</button>`:''}</div>`}`;
+}
+function rcSummary(){
+ const price=parseMoney($('#f-rprice')?.value);const cost=recipeCost(pfRecipe);const gan=price-cost;
+ const fake={recipe:pfRecipe.filter(r=>r.pid&&r.qty>0)};const av=fake.recipe.length?availOf(fake):0;const lim=fake.recipe.length?limitingOf(fake):null;
+ return `<div class="rcp-stats"><div><span>Te cuesta</span><b>${money(cost)}</b></div><div><span>Ganas</span><b style="color:var(${gan>=0?'--good':'--bad'})">${price?money(gan):'—'}</b></div><div><span>Margen</span><b>${price?Math.round(gan/price*100)+'%':'—'}</b></div><div><span>Alcanza para</span><b>${fake.recipe.length?num(av):'—'}</b></div></div>${lim&&av<=10?`<p class="rcp-warn">${ic('alert',14)} Con lo que hay, se acaba primero <b>${esc(lim.name)}</b>.</p>`:''}${price&&gan<0?`<p class="rcp-warn bad">${ic('alert',14)} El precio es menor que lo que te cuesta.</p>`:''}`;
+}
+function recipeModal(p){
+ pfRecipe=(p?.recipe||[]).map(x=>({...x}));pfSelf=p?.id||'';
+ const cats=[...new Set(['Recetas','Combos',...T('products').filter(x=>recipeOf(x)).map(x=>x.cat)])];
+ openModal(p?'Editar receta o combo':'Nueva receta o combo',`<form class="stack" data-f="recipe-save" id="recipe-form" novalidate><div class="form-grid">
+   ${field('Nombre',inp('rname',p?.name||'','text','required placeholder="Ej: Arepa con chorizo y queso"'),'full')}
+   ${field('Tipo',sel('rcat',cats,p?.cat||'Recetas'))}
+   ${field('Precio de venta',minp('rprice',p?.price??'','required data-i="rc-price"'))}
+  </div>
+  <div class="rc" id="rc-box">${recipeBox()}</div>
+  <div id="rc-sum">${rcSummary()}</div>
+  <p class="muted small" style="margin:0">Los ingredientes salen de tu inventario (productos e insumos). Usa la misma unidad con la que los guardaste: si el queso está en kg, 80 g son 0,08.</p><div id="rc-err"></div></form>`,
+  `<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="recipe-form">${p?'Guardar cambios':'Crear'}</button>`,true);
 }
 /* ---------- importación Excel ---------- */
 let importRows=[];
@@ -1544,6 +1621,10 @@ document.addEventListener('click',e=>{
   'void-do':()=>{const s=S.sales.find(x=>x.id===id);s.status='anulada';s.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,1,`Anulación venta #${s.num}`,Date.now(),s.tid)});S.ledger=S.ledger.filter(l=>l.sid!==s.id);save();_sc=null;closeModal();render();toast('Venta anulada')},
   'export-sales':()=>saveFile(`ventas-${dkey(Date.now())}.xlsx`,T('sales').map(s=>({Numero:s.num,Fecha:new Date(s.at).toLocaleString('es-CO'),Productos:s.items.map(i=>i.qty+'x '+i.name).join(', '),Vendedor:userName(s.seller),Pago:s.method,Banco:s.bank,Referencia:s.ref,Confirmada:s.confirmed?'Sí':'No',Estado:s.status,Total:s.total})),'Ventas'),
   // inventario
+  'rc-new':()=>recipeModal(null),
+  'rc-edit':()=>recipeModal(S.products.find(x=>x.id===id)),
+  'rc-del-ask':()=>{const p=S.products.find(x=>x.id===id);openModal('Eliminar receta',`<p style="margin:0">¿Eliminar <b>${esc(p.name)}</b>? Deja de aparecer en la caja. Los ingredientes siguen en tu inventario y las ventas que ya hiciste se conservan.</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="rc-del" data-id="${id}">${ic('trash',16)} Eliminar</button>`)},
+  'rc-del':()=>{const p=S.products.find(x=>x.id===id);S.products=S.products.filter(x=>x.id!==id);save();closeModal();render();toast(`${p.name} eliminado`)},
   'rc-add':()=>{const used=new Set(pfRecipe.map(r=>r.pid));const o=T('products').filter(x=>x.id!==pfSelf&&!recipeOf(x)).sort((a,b)=>(a.kind==='insumo'?0:1)-(b.kind==='insumo'?0:1)).find(x=>!used.has(x.id));if(!o)return toast('No hay más productos o insumos para agregar','bad');pfRecipe.push({pid:o.id,qty:1});rcRefresh()},
   'rc-rm':()=>{pfRecipe.splice(+el.dataset.ix,1);rcRefresh()},
   'inv-kind':()=>{inv.kind=v;inv.cat='';inv.q='';render()},
@@ -1552,7 +1633,7 @@ document.addEventListener('click',e=>{
   'pur-create':()=>{const name=pur.q.trim();if(!name)return;const t=tenant();const np={id:uid(),tid:t.id,code:autoCode(null,'INS'),name:name.charAt(0).toUpperCase()+name.slice(1),cat:'Insumos',cost:0,price:0,stock:0,min:0,unit:$('#f-pur-new-unit')?.value||'kg',kind:'insumo',supplier:pur.sid};S.products.push(np);save();purAdd(np);toast(`${np.name} creado como insumo`)},
   'pur-save':purSave,
   'prod-new':()=>openModal(inv.kind==='insumo'?'Nuevo insumo':'Nuevo producto',productForm(null,inv.kind),`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="prod-form">Guardar producto</button>`),
-  'prod-edit':()=>{const p=S.products.find(x=>x.id===id);openModal('Editar producto',productForm(p),`<button class="btn danger" data-a="prod-del" data-id="${id}">Eliminar</button><button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="prod-form">Guardar</button>`)},
+  'prod-edit':()=>{const p=S.products.find(x=>x.id===id);if(recipeOf(p))return recipeModal(p);openModal('Editar producto',productForm(p),`<button class="btn danger" data-a="prod-del" data-id="${id}">Eliminar</button><button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="prod-form">Guardar</button>`)},
   'prod-del':()=>{S.products=S.products.filter(p=>p.id!==id);save();closeModal();render();toast('Producto eliminado')},
   'stock-adj':()=>{const p=S.products.find(x=>x.id===id);const K=S.kardex.filter(k=>k.pid===id).sort((a,b)=>b.at-a.at).slice(0,6);const ins=p.kind==='insumo';const OPTS=ins?[['salida','Consumo en producción'],['entrada','Entrada'],['ajuste','Conteo físico (dejar en)']]:[['entrada','Entrada (llegó mercancía)'],['salida','Salida (daño, vencido, consumo)'],['ajuste','Conteo físico (dejar en)']];openModal(`${ins?'Registrar consumo':'Ajustar stock'} · ${p.name}`,`<p>Hay: <b>${num(p.stock)} ${esc(p.unit||'und')}</b></p><form class="stack" data-f="stock-adj" id="adj-form"><input type="hidden" name="id" value="${id}"><div class="form-grid">${field('Movimiento',sel('type',OPTS,OPTS[0][0]))}${field(`Cantidad (${esc(p.unit||'und')})`,inp('qty','','number','min="0" step="any" required'))}${field('Nota',inp('note','','text',`placeholder="${ins?'Ej: producción de la mañana':'Ej: se vencieron 3'}"`),'full')}</div></form>${K.length?`<div><b class="small">Últimos movimientos (kardex)</b><div class="tbl-wrap"><table><tbody>${K.map(k=>`<tr><td class="small">${fdt(k.at)}</td><td class="small">${esc(k.note)}</td><td class="r num">${k.type==='salida'?'−':k.type==='ajuste'?'=':'+'}${num(k.qty)}</td></tr>`).join('')}</tbody></table></div></div>`:''}`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="adj-form">Guardar ajuste</button>`)},
   import:importModal,
@@ -1619,6 +1700,7 @@ document.addEventListener('input',e=>{
  if(k==='pos-q'){pos.q=el.value;$('#pos-results').innerHTML=posResults()}
  else if(k==='pos-rec'){pos.received=el.value;const c=$('#pos-change');if(c)c.textContent=money(Math.max(0,parseMoney(el.value)-cartTotal()))}
  else if(k==='pos-ref')pos.ref=el.value;
+ else if(k==='rc-price'){const sm=$('#rc-sum');if(sm)sm.innerHTML=rcSummary()}
  else if(k==='tm-email'){}
  else if(k==='lg-new'){const r=$('#lg-rules');if(r)[...r.children].forEach((li,i)=>li.classList.toggle('ok',PASS_RULES[i][1](el.value)))}
  else if(k==='pur-q'){pur.q=el.value;purRefresh('results')}
@@ -1665,6 +1747,12 @@ document.addEventListener('submit',e=>{
  const F={
   'open-cash':()=>{liveEvent('caja','Abrió la caja');S.sessions.push({id:uid(),tid:t.id,openedAt:Date.now(),openedBy:u.id,base:parseMoney(d.base),closedAt:null});save();render();toast('Caja abierta')},
   'close-cash':()=>{liveEvent('caja','Cerró la caja');const s=openSession();const x=sessionTotals(s);const counted=parseMoney(d.counted);Object.assign(s,{closedAt:Date.now(),closedBy:u.id,counted,expected:x.expected,diff:counted-x.expected});save();render();toast(s.diff===0?'Caja cerrada. ¡Cuadró perfecto!':`Caja cerrada con diferencia de ${money(s.diff)}`)},
+  'recipe-save':()=>{const er=m=>{$('#rc-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};
+   const recipe=pfRecipe.filter(r=>r.pid&&Number(r.qty)>0).map(r=>({pid:r.pid,qty:Number(r.qty)}));const name=(d.rname||'').trim();const price=parseMoney(d.rprice);
+   if(!name)return er('Escribe el nombre.');if(!price)return er('Escribe el precio de venta.');if(!recipe.length)return er('Agrega al menos un ingrediente con su cantidad.');
+   const data={name,cat:d.rcat||'Recetas',price,cost:Math.round(recipeCost(recipe)),recipe,kind:'venta',unit:'und',min:0,supplier:''};
+   if(pfSelf){Object.assign(S.products.find(x=>x.id===pfSelf),data)}else{S.products.push({id:uid(),tid:t.id,code:autoCode(null,'R'),stock:0,...data})}
+   save();closeModal();render();toast(pfSelf?'Receta actualizada':`${name} listo para vender en la caja`)},
   'prod-save':()=>{const kind=d.kind||'venta';const code=d.code.trim()||autoCode(null,kind==='insumo'?'INS':'P');const dup=S.products.find(p=>p.tid===t.id&&p.code===code&&p.id!==d.id);if(dup){toast(`El código ${code} ya es de “${dup.name}”`,'bad');return}
    const recipe=kind==='insumo'?[]:pfRecipe.filter(r=>r.pid&&Number(r.qty)>0).map(r=>({pid:r.pid,qty:Number(r.qty)}));
    if(!recipe.length&&!parseMoney(d.cost)&&d.cost!=='0'){toast('Escribe el costo del producto','bad');return}

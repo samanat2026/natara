@@ -17,8 +17,8 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 
 | Correo | Rol | Qué ve |
 |---|---|---|
-| marta@laespiga.co | Dueña · Panadería La Espiga | Todos los módulos del plan Total |
-| juan@laespiga.co | Cajero · Panadería La Espiga | Caja + permisos: consultar y editar inventario, costos, proveedores y fiados |
+| marta@laespiga.co | Dueña · Panadería La Espiga | Plan Total + Recetas y combos |
+| juan@laespiga.co | Cajero · Panadería La Espiga | Caja + permisos: inventario, costos, recetas, proveedores y fiados |
 | laura@laespiga.co | Cajera · Panadería La Espiga | Sin permisos extra: solo vende y ve sus propias ventas |
 | pedro@laespiga.co | Cajero desactivado | Prueba el mensaje de usuario desactivado |
 | carlos@vidasana.co | Dueño · Droguería Vida Sana | Plan Pro |
@@ -44,7 +44,8 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 | Empleados (con permisos) | $19.900 |
 | Fiados y clientes | $22.900 |
 | Proveedores | $19.900 |
-| Lector de código de barras (complemento) | $14.900 |
+| Recetas y combos (complemento) | $10.000 |
+| Lector de código de barras (complemento, no se promociona) | $14.900 |
 
 Implementación opcional: $180.000 una sola vez (carga de inventario, configuración y capacitación).
 

@@ -25,6 +25,10 @@ service cloud.firestore {
       return t.status == 'activo' && t.due + 259200000 > request.time.toMillis();
     }
     function hasPerm(p) { return p in profile().get('perms', []); }
+    // Recetas y combos: un cajero con el permiso 'recetas' solo toca productos que tienen receta
+    function isRecipe(coll, data) {
+      return coll == 'products' && hasPerm('recetas') && data.get('recipe', []).size() > 0;
+    }
     function canWrite(tid, coll) {
       return isOwnerOf(tid)
         || coll in ['sales', 'sessions', 'kardex']
@@ -64,7 +68,8 @@ service cloud.firestore {
       match /{coll}/{id} {
         allow read: if isAdmin() || inTenant(tid);
         allow create: if isAdmin()
-          || (inTenant(tid) && tenantActive(tid) && request.resource.data.tid == tid && canWrite(tid, coll)
+          || (inTenant(tid) && tenantActive(tid) && request.resource.data.tid == tid
+              && (canWrite(tid, coll) || isRecipe(coll, request.resource.data))
               // una venta siempre queda a nombre de quien la registra
               && (coll != 'sales' || request.resource.data.seller == request.auth.uid));
         allow update: if isAdmin()
@@ -72,8 +77,9 @@ service cloud.firestore {
               // nadie puede cambiar quién hizo una venta
               && (coll != 'sales' || request.resource.data.seller == resource.data.seller)
               && (canWrite(tid, coll)
+                  || (isRecipe(coll, request.resource.data) && isRecipe(coll, resource.data))
                   || (coll == 'products' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']))));
-        allow delete: if isAdmin() || (inTenant(tid) && tenantActive(tid) && canWrite(tid, coll));
+        allow delete: if isAdmin() || (inTenant(tid) && tenantActive(tid) && (canWrite(tid, coll) || isRecipe(coll, resource.data)));
       }
     }
 
