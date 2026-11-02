@@ -230,6 +230,7 @@ tbody tr.click:hover{background:var(--surface-2)}
 @media (max-width:560px){.cta-login{grid-template-columns:auto minmax(0,1fr)}.cta-go{grid-column:1/-1;justify-content:center}}
 .cta-buy{display:flex;flex-direction:column;gap:4px;padding:16px 18px;border-radius:14px;border:1px dashed var(--accent);background:var(--accent-soft)}
 .cta-buy b{font-size:16px}.cta-buy span{font-size:14px;color:var(--ink-2)}.cta-buy .mono{color:var(--accent);font-weight:600;user-select:all}
+.seller-line{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:14px}
 .acc-group > span{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);font-weight:600}
 .acc{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;text-align:left;width:100%}
 .acc:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
@@ -919,7 +920,7 @@ const payPill=s=>s.status==='anulada'?`<span class="pill bad">Anulada</span>`:s.
    ========================================================= */
 let cart=[];let pos={q:'',method:'efectivo',received:'',bank:'Nequi',ref:'',verified:false,seller:null,customer:''};
 function viewCaja(){
- const u=me();if(!pos.seller||!S.users.find(x=>x.id===pos.seller&&x.tid===u.tid))pos.seller=u.id;
+ const u=me();
  const sess0=openSession();
  return `<div class="page-head"><div><h1>Caja</h1><p>${sess0?`Caja abierta desde las ${ftime(sess0.openedAt)} por ${esc(userName(sess0.openedBy))}`:'La caja está cerrada'}</p></div>
   <div class="actions">${has('lector')?`<span class="pill good">${ic('barcode',14)} Lector listo</span>`:false?`<button class="btn sm" data-a="go" data-v="plan">${ic('barcode',15)} ¿Tienes lector de barras?</button>`:''}</div></div>
@@ -964,7 +965,7 @@ function cartPanel(){
   :`<div class="empty">${ic(has('lector')?'barcode':'cart',30)}${has('lector')?'Escanea un producto o tócalo en la lista para agregarlo.':'Busca un producto o tócalo en la lista para agregarlo.'}</div>`}
   <div class="total-row"><span class="muted">Total</span><span class="big">${money(total)}</span></div>
   <div class="stack" style="margin-top:14px">
-   ${field('Vende',sel('pos-seller',emps.map(e=>[e.id,e.name]),pos.seller,'data-c="pos-seller"'))}
+   <div class="seller-line"><div class="avatar" style="width:28px;height:28px;font-size:11px">${initials(u.name)}</div><span>Vende <b>${esc(u.name)}</b></span><span class="muted small" style="margin-left:auto">${ic('lock',13)} queda a tu nombre</span></div>
    <div class="seg" role="tablist">${methods.map(([k,l])=>`<button class="${pos.method===k?'on':''}" data-a="pay" data-v="${k}">${l}</button>`).join('')}</div>
    ${payBox}
    <button class="btn primary big" data-a="checkout" ${cart.length?'':'disabled'}>Cobrar ${money(total)}</button>
@@ -985,7 +986,7 @@ function checkout(){
  if(pos.method==='efectivo'&&pos.received!==''&&parseMoney(pos.received)<total){toast('El dinero recibido no alcanza para el total','bad');return}
  if(pos.method==='fiado'&&!pos.customer){toast('Selecciona el cliente que se lleva fiado','bad');return}
  const t=tenant();const last=Math.max(1000,...T('sales').map(s=>s.num));
- const sale={id:uid(),tid:t.id,at:Date.now(),items:cart.map(i=>({...i})),total,method:pos.method,bank:pos.method==='transferencia'?pos.bank:'',ref:pos.method==='transferencia'?pos.ref:'',confirmed:pos.method!=='transferencia'||pos.verified,received:pos.method==='efectivo'?(parseMoney(pos.received)||total):0,seller:pos.seller,customer:pos.method==='fiado'?pos.customer:'',status:'ok',num:last+1};
+ const sale={id:uid(),tid:t.id,at:Date.now(),items:cart.map(i=>({...i})),total,method:pos.method,bank:pos.method==='transferencia'?pos.bank:'',ref:pos.method==='transferencia'?pos.ref:'',confirmed:pos.method!=='transferencia'||pos.verified,received:pos.method==='efectivo'?(parseMoney(pos.received)||total):0,seller:me().id,customer:pos.method==='fiado'?pos.customer:'',status:'ok',num:last+1};
  S.sales.push(sale);liveEvent('venta',`Venta #${sale.num} por ${money(total)}`,null,total);
  sale.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p){p.stock-=i.qty;S.kardex.push({id:uid(),tid:t.id,pid:p.id,type:'salida',qty:i.qty,at:sale.at,note:`Venta #${sale.num}`})}});
  if(sale.method==='fiado')S.ledger.push({id:uid(),tid:t.id,cid:sale.customer,type:'cargo',amount:total,at:sale.at,note:`Venta fiada #${sale.num}`,sid:sale.id});
@@ -1595,7 +1596,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',e=>{
  const el=e.target,k=el.dataset.c;if(!k)return;
  const M={
-  'pos-seller':()=>pos.seller=el.value,'pos-bank':()=>pos.bank=el.value,'pos-ver':()=>pos.verified=el.checked,'pos-cust':()=>pos.customer=el.value,
+'pos-bank':()=>pos.bank=el.value,'pos-ver':()=>pos.verified=el.checked,'pos-cust':()=>pos.customer=el.value,
   'qty-set':()=>{cart[+el.dataset.ix].qty=Math.max(1,Number(el.value)||1);refreshPOS()},
   'vf-range':()=>{vf.range=el.value;render()},'vf-method':()=>{vf.method=el.value;render()},'vf-seller':()=>{vf.seller=el.value;render()},
   'inv-cat':()=>{inv.cat=el.value;render()},'inv-low':()=>{inv.low=el.checked;render()},

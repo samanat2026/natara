@@ -60,9 +60,13 @@ service cloud.firestore {
       match /{coll}/{id} {
         allow read: if isAdmin() || inTenant(tid);
         allow create: if isAdmin()
-          || (inTenant(tid) && tenantActive(tid) && request.resource.data.tid == tid && canWrite(tid, coll));
+          || (inTenant(tid) && tenantActive(tid) && request.resource.data.tid == tid && canWrite(tid, coll)
+              // una venta siempre queda a nombre de quien la registra
+              && (coll != 'sales' || request.resource.data.seller == request.auth.uid));
         allow update: if isAdmin()
           || (inTenant(tid) && tenantActive(tid) && request.resource.data.tid == tid
+              // nadie puede cambiar quién hizo una venta
+              && (coll != 'sales' || request.resource.data.seller == resource.data.seller)
               && (canWrite(tid, coll)
                   || (coll == 'products' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']))));
         allow delete: if isAdmin() || (inTenant(tid) && tenantActive(tid) && canWrite(tid, coll));
