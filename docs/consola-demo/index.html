@@ -2180,7 +2180,7 @@ function subscribe(p){
   return;
  }
  const tid=p.tid;
- RB.unsubs.push(onSnapshot(doc(db,'tenants',tid),d=>{const was=isLocked();applyDoc('tenants',d);if(!was&&isLocked())toast('Samanat suspendió el acceso de este negocio','bad')},warn('tenant')));
+ RB.unsubs.push(onSnapshot(doc(db,'tenants',tid),d=>{const was=isLocked();applyDoc('tenants',d);if(!RB.tenantReady){RB.tenantReady=true;scheduleRender()}if(!was&&isLocked())toast('Samanat suspendió el acceso de este negocio','bad')},warn('tenant')));
  on(query(collection(db,'users'),where('tid','==',tid)),'users');
  TCOLLS.forEach(c=>{const col=collection(db,'tenants',tid,c);on(c==='sales'?query(col,where('at','>=',Date.now()-120*DAY)):c==='kardex'?query(col,where('at','>=',Date.now()-60*DAY)):col,c)});
  on(query(collection(db,'orders'),where('tid','==',tid)),'orders');on(query(collection(db,'messages'),where('to','==',tid)),'messages');on(query(collection(db,'messages'),where('to','==','all')),'messages');
@@ -2198,13 +2198,14 @@ async function fbAfterAuth(u){
   if(prof.active===false||prof.archived){lg.banner=['bad','Tu usuario está desactivado. Habla con el dueño del negocio para que lo active.'];await FB.signOut(FB.auth);return}
   S.users=[prof];RB.synced['users/'+u.uid]=stable(prof);sess={uid:u.uid,view:sess.uid===u.uid?sess.view:null};saveSess();
   subscribe(prof);RB.authReady=true;RB.profileReady=true;lg.banner=null;lg.err={};
-  if(prof.tid)liveEvent('login','Entró a Natara');render();
+  if(prof.tid)liveEvent('login','Entró a Natara');
+  try{render()}catch(e){console.error('render',e)}
  }catch(e){console.error(e);RB.authReady=true;lg.banner=['bad',e.code==='permission-denied'?(u.email===ADMIN_EMAIL?'Firestore rechazó el acceso: falta pegar las reglas de seguridad (Firebase → Firestore → Reglas → Publicar). Revísalo en samanat2026.github.io/natara/diagnostico/':'Tu cuenta no tiene permisos. Habla con Samanat.'):/does not exist|not.?found/i.test(e.message||'')?'La base de datos de Firestore todavía no está creada. Revísalo en samanat2026.github.io/natara/diagnostico/':'No pudimos cargar tu cuenta. Revisa tu conexión e intenta de nuevo.'];try{await FB.signOut(FB.auth)}catch(_){}render()}
 }
 function fbBoot(){
  FB.onAuthStateChanged(FB.auth,u=>{
   RB.unsubs.forEach(f=>{try{f()}catch(_){}});RB.unsubs=[];RB.synced={};S=emptyState();L0={presence:{},views:{},feed:[]};
-  RB.user=u;RB.profileReady=false;RB.noProfile=false;RB.needVerify=false;
+  RB.user=u;RB.profileReady=false;RB.tenantReady=false;RB.noProfile=false;RB.needVerify=false;
   if(!u){sess={uid:null,view:null};saveSess();RB.authReady=true;cart=[];render();return}
   RB.authReady=false;render();fbAfterAuth(u);
  });
@@ -2217,6 +2218,8 @@ function realGate(){
  if(RB.user&&!RB.profileReady)return box('Cargando tu cuenta…','<p class="muted">Un momento, por favor.</p>');
  const u=me();
  if(RB.user&&!u){RB.noProfile=true;return realGate()}
+ // Espera a que llegue el negocio antes de pintar la app (si no, la pantalla de inicio falla)
+ if(RB.user&&u&&u.tid&&!S.tenants.some(t=>t.id===u.tid)){if(RB.tenantReady){RB.noProfile=true;return realGate()}return box('Cargando tu negocio…','<p class="muted">Un momento, por favor.</p>')}
  if(RB.user&&u&&(u.active===false||u.archived)){lg.banner=['bad','Tu usuario fue desactivado. Habla con el dueño del negocio.'];rLogout();return box('Cerrando sesión…','')}
  return null;
 }
