@@ -230,6 +230,17 @@ tbody tr.click:hover{background:var(--surface-2)}
 @media (max-width:560px){.cta-login{grid-template-columns:auto minmax(0,1fr)}.cta-go{grid-column:1/-1;justify-content:center}}
 .cta-buy{display:flex;flex-direction:column;gap:4px;padding:16px 18px;border-radius:14px;border:1px dashed var(--accent);background:var(--accent-soft)}
 .cta-buy b{font-size:16px}.cta-buy span{font-size:14px;color:var(--ink-2)}.cta-buy .mono{color:var(--accent);font-weight:600;user-select:all}
+.guide-toc{display:flex;flex-wrap:wrap;gap:8px}
+.guide-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:var(--surface);border:1px solid var(--line);color:var(--ink);text-decoration:none;font-size:13.5px;font-weight:600}
+.guide-chip span{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:11px}
+.guide-chip:hover{border-color:var(--accent)}
+details.guide{display:flex;flex-direction:column;gap:12px}
+details.guide summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;font-size:16px}
+details.guide summary::-webkit-details-marker{display:none}
+details.guide[open] summary{margin-bottom:10px}
+.guide-ic{width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.guide-steps{margin:0 0 12px;padding-left:22px;display:flex;flex-direction:column;gap:9px;line-height:1.55}
+.guide-steps li::marker{color:var(--accent);font-weight:700}
 .rcp-how{display:flex;align-items:center;gap:12px;padding:16px;border-radius:14px;background:var(--accent-soft);flex-wrap:wrap}
 .rcp-how > div{flex:1;min-width:170px;display:flex;flex-direction:column;gap:2px}
 .rcp-how > svg{color:var(--accent);flex:none}
@@ -755,6 +766,7 @@ const NAV=[
  {v:'empleados',label:'Empleados',icon:'users',mod:'empleados',roles:['dueno']},
  {v:'plan',label:'Mi plan',icon:'star',mod:null,roles:['dueno'],sec:'Cuenta'},
  {v:'mensajes',label:'Mensajes',icon:'bell',mod:null,roles:['dueno']},
+ {v:'guia',label:'Guía de uso',icon:'info',mod:null,roles:['dueno','cajero'],sec:'Ayuda'},
 ];
 function tenantNav(){
  const u=me(),t=tenant();let out='',sec='',printed='';
@@ -774,7 +786,7 @@ function tenantView(){
  if(!n||!navAllowed(n,u)){v=sess.view=u.role==='cajero'&&t.mods.includes('caja')?'caja':'inicio';saveSess()}
  const nn=NAV.find(x=>x.v===v);
  if(nn.mod&&!t.mods.includes(nn.mod))return viewUpsell(nn.mod);
- return ({inicio:viewInicio,caja:viewCaja,cierre:viewCierre,ventas:viewVentas,inventario:viewInventario,recetas:viewRecetas,fiados:viewFiados,finanzas:viewFinanzas,estadisticas:viewStats,proveedores:viewProveedores,empleados:viewEmpleados,plan:viewPlan,mensajes:viewMensajes})[v]();
+ return ({inicio:viewInicio,caja:viewCaja,cierre:viewCierre,ventas:viewVentas,inventario:viewInventario,recetas:viewRecetas,guia:viewGuia,fiados:viewFiados,finanzas:viewFinanzas,estadisticas:viewStats,proveedores:viewProveedores,empleados:viewEmpleados,plan:viewPlan,mensajes:viewMensajes})[v]();
 }
 function afterRender(){
  if(sess.view==='caja'&&!$('#modal-root').innerHTML){const q=$('#pos-q');if(q)q.focus()}
@@ -936,7 +948,7 @@ function viewInicio(){
  if(has('caja')&&!openSession())banners.push(`<div class="banner">${ic('register')}<div class="grow">La caja está cerrada. Ábrela con la base del día para empezar a vender.</div><button class="btn sm primary" data-a="go" data-v="cierre">Abrir caja</button></div>`);
  const recent=tdy.slice(-6).reverse();
  return `<div class="page-head"><div><h1>Hola, ${esc(u.name.split(' ')[0])}</h1><p>${new Date().toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'})} · ${esc(t.name)}</p></div>
-  <div class="actions">${has('caja')?`<button class="btn primary" data-a="go" data-v="caja">${ic('cart')} Nueva venta</button>`:''}</div></div>
+  <div class="actions"><button class="btn" data-a="go" data-v="guia">${ic('info',16)} ¿Cómo se usa?</button>${has('caja')?`<button class="btn primary" data-a="go" data-v="caja">${ic('cart')} Nueva venta</button>`:''}</div></div>
   ${banners.join('')}
   <div class="grid g4">
    <div class="card kpi"><span class="lbl">${allV?'Ventas de hoy':'Mis ventas de hoy'}</span><span class="val">${money(tot)}</span><span class="foot">${tdy.length} ventas ${ytot?`· <span style="color:var(${delta>=0?'--good':'--bad'})">${delta>=0?'+':''}${delta}% vs ayer</span>`:''}</span></div>
@@ -1180,6 +1192,92 @@ function productForm(p,kind){
   ${field('Stock mínimo (alerta)',inp('min',p?.min??0,'number','min="0" step="any"'))}</div>
   ${sup.length?field('Proveedor',sel('supplier',[['','Sin proveedor'],...sup.map(x=>[x.id,x.name])],p?.supplier||''),'full'):''}
  </div>${edit?`<p class="muted small">Para cambiar el stock usa “${ins?'Registrar consumo':'Ajustar'}”, así queda registrado en el kardex.</p>`:''}</form>`;
+}
+/* =========================================================
+   GUÍA DE USO (según plan contratado y permisos)
+   ========================================================= */
+function guideSections(){
+ const u=me(),t=tenant(),own=u.role==='dueno';const m=x=>t.mods.includes(x);const allV=canDo('ver_todas');
+ const S_=[];
+ S_.push({id:'inicio',icon:'home',title:'Primeros pasos',go:'inicio',steps:[
+  'Entra en <b>'+esc(REAL?REAL_URL:APP_URL)+'</b> con tu correo y tu contraseña. La primera vez te pedimos crear tu propia contraseña.',
+  'A la izquierda está el menú (en el celular, toca <b>☰</b> arriba). Solo ves lo que '+(own?'tu negocio tiene contratado':'el dueño te permite usar')+'.',
+  '<b>Inicio</b> te muestra cómo va el día: '+(allV?'ventas, efectivo y transferencias':'tus ventas del día')+(m('inventario')&&(own||canDo('ver_inventario')||canDo('inv_edit'))?' y los productos que se están acabando':'')+'.',
+  'Para salir, toca <b>Cerrar sesión</b> al final del menú y confirma.']});
+ if(m('caja')){
+  S_.push({id:'cierre',icon:'register',title:'Abrir y cerrar la caja',go:'cierre',steps:[
+   'Al empezar el turno entra a <b>Apertura y cierre</b>, escribe la <b>base</b> (el dinero que dejas para dar cambio) y toca <b>Abrir caja</b>.',
+   'Durante el día, esa pantalla te dice cuánto efectivo <b>debe haber en el cajón</b>: base + ventas en efectivo + ingresos − gastos pagados de la caja.',
+   'Al terminar, cuenta los billetes, escribe el total en <b>¿Cuánto efectivo contaste?</b> y toca <b>Cerrar caja</b>. Te muestra si cuadró, sobra o falta.']});
+  S_.push({id:'caja',icon:'cart',title:'Vender en la caja',go:'caja',steps:[
+   'Entra a <b>Caja</b>. Arriba escribe el nombre del producto (o toca uno de los más vendidos).',
+   'Cada toque agrega una unidad. Cambia la cantidad con <b>−</b> y <b>+</b>, o escríbela.',
+   'Elige cómo te pagan: <b>Efectivo</b> (escribe lo que recibiste y te dice el cambio)'+',<b> Transferencia</b> (elige Nequi, Daviplata, Bancolombia o Bre-B y marca <i>Verifiqué que el dinero llegó</i>)'+(m('fiados')&&canDo('fiados')?' o <b>Fiado</b> (elige el cliente)':'')+'.',
+   'Toca <b>Cobrar</b>. La venta queda a tu nombre, el inventario se descuenta solo y ves el recibo.',
+   ...(m('recetas')?['Las <b>recetas y combos</b> también se venden aquí: muestran “alcanza N” y al venderlos se descuenta cada ingrediente.']:[])]});
+  S_.push({id:'ventas',icon:'receipt',title:allV?'Revisar las ventas':'Revisar tus ventas',go:'ventas',steps:[
+   allV?'En <b>Ventas</b> ves todas las ventas del negocio. Filtra por fecha, forma de pago o vendedor.':'En <b>Mis ventas</b> ves solo las ventas que hiciste tú. Filtra por fecha o forma de pago.',
+   'Toca una venta para ver el recibo.',
+   'Las transferencias sin verificar salen como <b>por confirmar</b>. Ábrela y toca <b>Confirmar transferencia</b> cuando veas el dinero en el banco.',
+   ...(canDo('anular')?['Si una venta quedó mal, ábrela y toca <b>Anular venta</b>: los productos vuelven al inventario.']:[]),
+   ...(allV?['Con <b>Exportar a Excel</b> descargas el listado.']:[])]});
+ }
+ if(m('inventario')&&(own||canDo('ver_inventario')||canDo('inv_edit'))){
+  const ed=own||canDo('inv_edit');
+  S_.push({id:'inventario',icon:'box',title:ed?'Manejar el inventario':'Consultar el inventario',go:'inventario',steps:ed?[
+   'En <b>Inventario</b> toca <b>Nuevo producto</b>. Escribe nombre, categoría, costo, precio de venta, cuánto tienes y el <b>stock mínimo</b> (cuando baje de ahí te avisamos).',
+   'Si compras cosas para producir (harina, queso, chorizo), créalas como <b>Insumo</b>: no salen en la caja pero sí se descuentan.',
+   '¿Tienes muchos productos? Toca <b>Cargar desde Excel</b>, descarga la plantilla, llénala y súbela.',
+   'Si se daña o se vence algo, toca <b>Ajustar</b> en el producto. En los insumos, <b>Registrar consumo</b> descuenta lo que gastaste produciendo.',
+   'Con <b>Solo stock bajo</b> ves rápido qué toca comprar.']:[
+   'En <b>Inventario</b> ves los productos, su precio y cuánto hay.',
+   'Usa el buscador o el filtro de categoría. <b>Solo stock bajo</b> te muestra lo que se está acabando, para avisarle al dueño.']});
+ }
+ if(m('recetas')&&canDo('recetas'))S_.push({id:'recetas',icon:'chef',title:'Recetas y combos',go:'recetas',steps:[
+  'Primero crea los ingredientes en <b>Inventario</b> (por ejemplo: arepa, chorizo y queso).',
+  'En <b>Recetas y combos</b> toca <b>Nueva receta o combo</b>. Ponle nombre y precio.',
+  'Toca <b>Agregar ingrediente</b> por cada cosa que lleva y escribe cuánto: 1 arepa, 1 chorizo, 0,08 kg de queso.',
+  'Mientras la armas ves cuánto te cuesta, cuánto ganas y para cuántas alcanza. Guarda.',
+  'Ya aparece en la caja. Cada vez que la vendes, se descuentan solos los ingredientes.']});
+ if(m('fiados')&&canDo('fiados'))S_.push({id:'fiados',icon:'heart',title:'Fiados',go:'fiados',steps:[
+  'En <b>Fiados</b> toca <b>Nuevo cliente</b> y escribe su nombre y celular.',
+  'Para venderle fiado: en la <b>Caja</b>, al cobrar elige <b>Fiado</b> y el cliente.',
+  'Cuando te pague, en <b>Fiados</b> toca <b>Registrar abono</b> y escribe cuánto. El saldo se actualiza solo.',
+  'Toca el nombre del cliente para ver todo lo que ha comprado y abonado.']});
+ if(m('finanzas')&&canDo('finanzas'))S_.push({id:'finanzas',icon:'wallet',title:'Ingresos y egresos',go:'finanzas',steps:[
+  'Las ventas entran solas. Aquí registras lo demás.',
+  'Toca <b>Egreso</b> para un gasto (arriendo, servicios, nómina) o <b>Ingreso</b> para dinero que no viene de una venta (un pedido especial).',
+  'Elige si salió del efectivo de la caja o por transferencia: así el cierre de caja cuadra.',
+  'Arriba cambia entre <b>Hoy, 7 días o Este mes</b> para ver tu balance y en qué se va el dinero.']});
+ if(m('estadisticas')&&canDo('estadisticas'))S_.push({id:'estadisticas',icon:'chart',title:'Estadísticas',go:'estadisticas',steps:[
+  'Elige 7, 14 o 30 días.',
+  'Mira tus ventas por día, tus <b>productos estrella</b>, las <b>horas</b> en que más vendes y cuánto vende cada empleado.',
+  'Úsalo para decidir qué comprar más y en qué horas necesitas más gente.']});
+ if(m('proveedores')&&canDo('proveedores'))S_.push({id:'proveedores',icon:'truck',title:'Proveedores y compras',go:'proveedores',steps:[
+  'En <b>Proveedores</b> toca <b>Nuevo proveedor</b> con su nombre, qué te vende y su teléfono.',
+  'Cuando llegue un pedido, toca <b>Registrar compra</b>, busca cada producto o insumo y escribe cantidad y costo.',
+  'Al registrar, el inventario sube solo y el total queda como gasto.']});
+ if(own&&m('empleados'))S_.push({id:'empleados',icon:'users',title:'Empleados y permisos',go:'empleados',steps:[
+  'En <b>Empleados</b> toca <b>Nuevo empleado</b>: nombre, correo y una contraseña inicial. Le llega un correo con sus datos.',
+  'Toca <b>Permisos</b> para decidir qué puede hacer además de vender: inventario, fiados, recetas, ver todas las ventas…',
+  'Si olvidó su contraseña, toca <b>Contraseña</b>. Para bloquearlo un tiempo, apaga <b>Activo</b>; si ya no trabaja contigo, <b>elimínalo</b>.',
+  'Cada venta queda a nombre de quien la hizo: nadie puede cambiarlo.']});
+ if(own)S_.push({id:'plan',icon:'star',title:'Tu plan y mensajes',go:'plan',steps:[
+  'En <b>Mi plan</b> ves tu cuota, la fecha de pago y los módulos que tienes.',
+  '¿Quieres algo más? Toca <b>Solicitar</b> en el módulo y Samanat te lo activa.',
+  'En <b>Mensajes</b> te llegan los avisos de Samanat: pagos, novedades y cambios de precio.',
+  'Si la cuota se vence, tienes '+GRACE_DAYS+' días de gracia antes de que se bloquee el acceso. Tus datos nunca se pierden.']});
+ return S_;
+}
+function viewGuia(){
+ const u=me(),t=tenant(),own=u.role==='dueno';const G=guideSections();const p=planById(t.plan);
+ const extras=t.mods.filter(x=>!p.mods.includes(x)&&x!=='lector').map(x=>modById(x).name);
+ return `<div class="page-head"><div><h1>Guía de uso</h1><p>${own?`Paso a paso de lo que tiene <b>${esc(t.name)}</b>: plan ${p.name}${extras.length?' + '+extras.join(', '):''}.`:`Paso a paso de lo que <b>tu usuario</b> puede hacer en ${esc(t.name)}.`}</p></div></div>
+  <div class="guide-toc">${G.map((g,i)=>`<a href="#g-${g.id}" class="guide-chip"><span>${i+1}</span>${g.title}</a>`).join('')}</div>
+  <div class="stack">${G.map((g,i)=>`<details class="card guide" id="g-${g.id}" ${i===0?'open':''}><summary><span class="guide-ic">${ic(g.icon,18)}</span><b>${i+1}. ${g.title}</b><span class="muted small" style="margin-left:auto">${g.steps.length} pasos</span></summary>
+   <ol class="guide-steps">${g.steps.map(st=>`<li>${st}</li>`).join('')}</ol>
+   <button class="btn sm primary" data-a="go" data-v="${g.go}" style="align-self:flex-start">Ir a ${NAV.find(n=>n.v===g.go)?.label||g.title} ${ic('arrow',14)}</button></details>`).join('')}</div>
+  ${!own?`<div class="hint">${ic('info',15)} ¿Necesitas hacer algo que no aparece aquí? Pídele al dueño que te active el permiso.</div>`:''}`;
 }
 /* =========================================================
    RECETAS Y COMBOS (complemento)
