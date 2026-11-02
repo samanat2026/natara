@@ -56,7 +56,8 @@ Implementación opcional: $180.000 una sola vez (carga de inventario, configurac
 - **Módulos e implementación:** en *Mi plan* cada módulo tiene *Contratar*: el dueño paga el primer mes (o los $180.000 de la implementación) con la llave y toca *Ya pagué*. Al aprobarlo se activa al instante y se suma a la cuota. En la demo se puede agregar cualquier módulo suelto al plan.
 - **Aprobación:** en la consola, *Pagos y solicitudes → Aprobar*. Una renovación extiende la fecha de vencimiento; una compra nueva crea el negocio y el usuario y envía el correo de bienvenida.
 - **Aviso a Samanat:** cada pago reportado (cuota o negocio nuevo) envía un correo a samanat2026@gmail.com con una segunda plantilla de EmailJS (`{{to_email}}`, `{{subject}}`, `{{message}}`). Es el único correo que sale desde la demo.
-- La llave, el titular y la plantilla del aviso se cambian en *Planes y precios → Cobros con llave Bre-B*.
+- **QR:** la consola permite subir el QR oficial de la llave (generado en la app del banco); se muestra junto al valor y la referencia.
+- La llave, el titular, el QR y la plantilla del aviso se cambian en *Planes y precios → Cobros con llave Bre-B*.
 
 ## Correo de bienvenida
 
