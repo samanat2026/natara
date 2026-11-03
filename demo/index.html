@@ -415,6 +415,8 @@ const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v10';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 const WA_NUM='573146619135',WA_TXT='314 661 9135';
+// El WhatsApp ya sale como botón: del texto de contacto se quita la parte de WhatsApp para no repetirla
+const contactNoWa=c=>String(c||'').split('·').map(x=>x.trim()).filter(x=>x&&!/whats ?app|wpp/i.test(x)).join(' · ');
 const waLink=(msg='')=>'https://wa.me/'+WA_NUM+(msg?'?text='+encodeURIComponent(msg):'');
 const waBtn=(msg,label='Escríbenos por WhatsApp',cls='btn')=>`<a class="${cls}" href="${waLink(msg)}" target="_blank" rel="noopener" style="text-decoration:none">${ic('chat',16)} ${label}</a>`;
 
@@ -632,7 +634,7 @@ function save(){if(REAL)return syncDiff();try{localStorage.setItem(KEY,JSON.stri
 let sess={uid:null,view:null};
 try{const r=sessionStorage.getItem(SESS);if(r)sess=JSON.parse(r)}catch(e){}
 function saveSess(){try{sessionStorage.setItem(SESS,JSON.stringify(sess))}catch(e){}}
-load();S.orders=S.orders||[];['members','pmoves','settings'].forEach(k=>S[k]=S[k]||[]);
+load();S.orders=S.orders||[];if(/300 000 0000/.test(S.config?.contact||'')){S.config.contact='WhatsApp 314 661 9135 · samanat2026@gmail.com';save()}['members','pmoves','settings'].forEach(k=>S[k]=S[k]||[]);
 if(DEMO_ADMIN&&!S.users.some(u=>u.role==='superadmin')){S.users.unshift({id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'natalia@samanat.co',pin:'0000',active:true,pass:'Natara2026*',perms:[]});save()}
 window.addEventListener('storage',e=>{
  if(REAL||e.key!==KEY)return;
@@ -955,8 +957,8 @@ function viewLock(){
   <div class="ic">${ic('lock',30)}</div>
   <h1>El acceso a Natara está suspendido</h1>
   <p class="muted">${t.status!=='activo'?`Samanat suspendió el acceso de <b>${esc(t.name)}</b>.`:`La cuota de <b>${esc(t.name)}</b> venció el ${fdate(t.due)} y pasaron los ${GRACE_DAYS} días de gracia.`} Tus datos están guardados y vuelves a entrar apenas se registre el pago. Comunícate con Samanat para reactivar el servicio.</p>
-  <div class="hint" style="width:100%">${esc(S.config.contact)}</div>
-  ${waBtn(`Hola, soy de ${t.name}. Quiero reactivar mi acceso a Natara.`,'Escribir a Samanat por WhatsApp','btn primary')}
+  ${contactNoWa(S.config.contact)?`<div class="hint" style="width:100%">${esc(contactNoWa(S.config.contact))}</div>`:''}
+  ${waBtn(`Hola, soy de ${t.name}. Quiero reactivar mi acceso a Natara.`,`Escribir por WhatsApp al ${WA_TXT}`,'btn primary')}
   <button class="btn" data-a="logout-ask">${ic('logout')} Cerrar sesión</button>
  </div></div>`;
 }
