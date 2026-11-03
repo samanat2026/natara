@@ -36,7 +36,11 @@ service cloud.firestore {
       return coll == 'products' && hasPerm('recetas') && data.get('recipe', []).size() > 0;
     }
     // Puntos y fidelización: cualquier usuario del negocio afilia y suma puntos en la caja, si el negocio tiene el módulo
-    function hasMod(tid, m) { return m in get(/databases/$(database)/documents/tenants/$(tid)).data.get('mods', []); }
+    // El plan Total incluye todos los módulos
+    function hasMod(tid, m) {
+      let t = get(/databases/$(database)/documents/tenants/$(tid)).data;
+      return m in t.get('mods', []) || t.get('plan', '') == 'total';
+    }
     function canWrite(tid, coll) {
       return isOwnerOf(tid)
         || coll in ['sales', 'sessions', 'kardex']

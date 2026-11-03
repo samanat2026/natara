@@ -505,8 +505,10 @@ const MODS=[
 const PLANS=[
  {id:'basico',name:'Básico',price:59900,mods:['inventario','caja'],pitch:'Para empezar a controlar el inventario y la caja.'},
  {id:'pro',name:'Pro',price:109900,mods:['inventario','caja','finanzas','estadisticas','empleados'],pitch:'Para el negocio con empleados que quiere ver sus números.'},
- {id:'total',name:'Total',price:159900,mods:MODS.filter(m=>!m.addon).map(m=>m.id),pitch:'Todos los módulos, incluidos fiados y proveedores.'},
+ {id:'total',name:'Total',price:159900,mods:MODS.map(m=>m.id),pitch:'Todo Natara: todos los módulos, incluidos recetas y combos, puntos y fidelización y lector de código de barras.'},
 ];
+// El plan Total siempre tiene todos los módulos, también los que se agreguen después
+function normTenant(t){if(t&&t.plan==='total'){const all=PLANS[2].mods;if(all.some(m=>!(t.mods||[]).includes(m)))t.mods=[...new Set([...(t.mods||[]),...all])]}return t}
 const modById=id=>MODS.find(m=>m.id===id);
 const planById=id=>PLANS.find(p=>p.id===id)||PLANS[0];
 let _BP=null;const BASE_PRICE=()=>_BP||(_BP={plan:Object.fromEntries(PLANS.map(p=>[p.id,p.price])),mod:Object.fromEntries(MODS.map(m=>[m.id,m.price])),setup:{implementacion:SETUP.price}});
@@ -531,7 +533,7 @@ function seed(){
  const S={v:1,config:{contact:'WhatsApp 314 661 9135 · samanat2026@gmail.com',brand:'Samanat'},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[],members:[],pmoves:[],settings:[]};
  if(MODE==='real'){S.config.contact='WhatsApp 314 661 9135 · samanat2026@gmail.com';S.users=[{id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'samanat2026@gmail.com',pass:'',mustChange:true,perms:[],active:true}];return S}
  S.tenants=[
-  {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:[...PLANS[2].mods,'recetas','fidelizacion'],status:'activo',due:today+18*DAY,since:today-140*DAY},
+  {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:PLANS[2].mods.slice(),status:'activo',due:today+18*DAY,since:today-140*DAY},
   {id:'t2',name:'Droguería Vida Sana',type:'Farmacia',city:'Envigado',phone:'311 208 9934',plan:'pro',mods:PLANS[1].mods.slice(),status:'activo',due:today+3*DAY,since:today-75*DAY},
   {id:'t3',name:'Minimercado Don Pacho',type:'Minimercado',city:'Bello',phone:'320 744 1180',plan:'basico',mods:PLANS[0].mods.slice(),status:'activo',due:today+12*DAY,since:today-64*DAY},
   {id:'t4',name:'Papelería Arcoíris',type:'Papelería',city:'Itagüí',phone:'315 630 2257',plan:'pro',mods:PLANS[1].mods.slice(),status:'suspendido',due:today-4*DAY,since:today-50*DAY},
@@ -632,16 +634,17 @@ function seed(){
 /* ---------- estado ---------- */
 let S;
 function load(){if(REAL){S=emptyState();return}try{const r=localStorage.getItem(KEY);if(r){S=JSON.parse(r);return}}catch(e){}S=seed();save()}
-function save(){if(REAL)return syncDiff();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function save(){(S.tenants||[]).forEach(normTenant);if(REAL)return syncDiff();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 let sess={uid:null,view:null};
 try{const r=sessionStorage.getItem(SESS);if(r)sess=JSON.parse(r)}catch(e){}
 function saveSess(){try{sessionStorage.setItem(SESS,JSON.stringify(sess))}catch(e){}}
-load();S.orders=S.orders||[];if(/300 000 0000/.test(S.config?.contact||'')){S.config.contact='WhatsApp 314 661 9135 · samanat2026@gmail.com';save()}['members','pmoves','settings'].forEach(k=>S[k]=S[k]||[]);
+load();S.orders=S.orders||[];(S.tenants||[]).forEach(normTenant);if(/300 000 0000/.test(S.config?.contact||'')){S.config.contact='WhatsApp 314 661 9135 · samanat2026@gmail.com';save()}['members','pmoves','settings'].forEach(k=>S[k]=S[k]||[]);
 if(DEMO_ADMIN&&!S.users.some(u=>u.role==='superadmin')){S.users.unshift({id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'natalia@samanat.co',pin:'0000',active:true,pass:'Natara2026*',perms:[]});save()}
 window.addEventListener('storage',e=>{
  if(REAL||e.key!==KEY)return;
  const prevLocked=isLocked();
  try{S=e.newValue?JSON.parse(e.newValue):seed()}catch(_){return}
+ (S.tenants||[]).forEach(normTenant);
  if(!S.users.find(u=>u.id===sess.uid)){sess.uid=null}
  render();
  if(!prevLocked&&isLocked()) toast('Samanat suspendió el acceso de este negocio','bad');
@@ -842,7 +845,7 @@ function viewLogin(){
  if(MODE==='real'||lg.mode!=='pick')return viewLoginReal();
  const acc=u=>{const t=S.tenants.find(x=>x.id===u.tid);return`<button class="acc" data-a="login" data-id="${u.id}"><div class="avatar">${initials(u.name)}</div><div class="who"><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin · Samanat':u.role==='dueno'?'Dueño(a) · ve todo el negocio':(()=>{const ps=(u.perms||[]).map(id=>PERMS.find(p=>p.id===id)).filter(p=>p&&t&&t.mods.includes(p.mod));return ps.length?'Cajero(a) · vende y además puede: '+ps.map(p=>p.short).join(', '):'Cajero(a) sin permisos extra · solo vende y ve sus ventas'})()}</span></div>${t?pillDue(t):`<span class="pill ac">Admin</span>`}</button>`};
  const rank={basico:0,pro:1,total:2};
- const ideal={basico:'Para empezar: controla tu inventario y tu caja.',pro:'Para el negocio con empleados que quiere ver sus números.',total:'Todo incluido: también fiados y proveedores.'};
+ const ideal={basico:'Para empezar: controla tu inventario y tu caja.',pro:'Para el negocio con empleados que quiere ver sus números.',total:'Todo incluido: fiados, proveedores, recetas, puntos y lector de código.'};
  const byT=S.tenants.slice().sort((a,b)=>(a.status!=='activo')-(b.status!=='activo')||rank[a.plan]-rank[b.plan]).map(t=>{const p=planById(t.plan);const extras=t.mods.filter(m=>!p.mods.includes(m));const susp=t.status!=='activo';
   return `<div class="plan-demo ${susp?'susp':''}"><div class="pd-head">${susp?`<div><span class="pd-kicker">Así se ve una cuenta suspendida</span><strong>${esc(t.name)}</strong><span class="muted small">${esc(t.type)} · plan ${p.name} sin pagar</span></div><span class="pill bad">${ic('lock',12)} Suspendida</span>`:`<div><span class="pd-kicker">Ejemplo: ${esc(t.name)} · ${esc(t.type)}</span><strong>Plan ${p.name}</strong><span class="muted small">${ideal[t.plan]}</span></div><div class="pd-price"><b>${money(fee(t))}</b><span class="muted small">al mes${extras.length?` · plan ${money(p.price)} + ${extras.map(m=>modById(m).name.toLowerCase()).join(', ')}`:''}</span></div>`}</div>
   ${susp?'':`<div class="chips">${t.mods.map(m=>`<span class="pill ${p.mods.includes(m)?'':'ac'}">${modById(m).name}</span>`).join('')}</div>`}
@@ -2016,7 +2019,7 @@ document.addEventListener('click',e=>{
   'tenant-toggle':()=>{const t=S.tenants.find(x=>x.id===id);t.status=t.status==='activo'?'suspendido':'activo';
    S.messages.push({id:uid(),to:t.id,kind:'suspension',title:t.status==='activo'?'Tu acceso fue reactivado':'Tu acceso fue suspendido',body:t.status==='activo'?'Gracias por tu pago. Ya puedes seguir usando Natara con normalidad.':'Suspendimos el acceso por falta de pago. Tus datos siguen guardados.',at:Date.now(),readBy:[]});
    save();if(el.dataset.close)closeModal();render();toast(t.status==='activo'?`${t.name} reactivado`:`${t.name} suspendido al instante`)},
-  'lector-toggle':()=>{const t=S.tenants.find(x=>x.id===id);const on=t.mods.includes('lector');t.mods=on?t.mods.filter(m=>m!=='lector'):[...t.mods,'lector'];if(!on)S.messages.push({id:uid(),to:t.id,kind:'promo',title:'Activamos el lector de código de barras',body:`Ya puedes escanear productos en la caja y el inventario. Tu cuota mensual queda en ${money(fee(t))}.`,at:Date.now(),readBy:[]});save();render();toast(on?`Lector desactivado para ${t.name}`:`Lector activado para ${t.name} (+${money(modById('lector').price)}/mes)`)},
+  'lector-toggle':()=>{const t=S.tenants.find(x=>x.id===id);if(t.plan==='total'){toast('El plan Total ya incluye el lector de código de barras');return}const on=t.mods.includes('lector');t.mods=on?t.mods.filter(m=>m!=='lector'):[...t.mods,'lector'];if(!on)S.messages.push({id:uid(),to:t.id,kind:'promo',title:'Activamos el lector de código de barras',body:`Ya puedes escanear productos en la caja y el inventario. Tu cuota mensual queda en ${money(fee(t))}.`,at:Date.now(),readBy:[]});save();render();toast(on?`Lector desactivado para ${t.name}`:`Lector activado para ${t.name} (+${money(modById('lector').price)}/mes)`)},
   tenant:()=>tenantModal(S.tenants.find(t=>t.id===id)),
   'tenant-new':()=>openModal('Nuevo cliente',`<form class="stack" data-f="tenant-new" id="tn-form" novalidate><div class="form-grid">${field('Nombre del negocio',inp('name','','text','required'),'full')}${field('Tipo de negocio',inp('type','','text','required list="types" placeholder="Panadería, farmacia…"'))}<datalist id="types">${['Panadería','Farmacia','Minimercado','Papelería','Ferretería','Tienda de ropa','Licorera','Salón de uñas'].map(x=>`<option value="${x}">`).join('')}</datalist>${field('Ciudad',inp('city','','text','required'))}${field('Celular',inp('phone','','tel','required inputmode="tel" placeholder="300 123 4567"'))}${field('Plan',sel('plan',PLANS.map(p=>[p.id,`${p.name} · ${money(p.price)}`]),'basico'))}<label class="check full" style="grid-column:1/-1"><input type="checkbox" name="setup" value="1"><span>Cobrar implementación asistida (${money(SETUP.price)}, pago único)<small>Carga del inventario, configuración de empleados y 1 hora de capacitación.</small></span></label>${field('Nombre del dueño(a)',inp('owner','','text','required'))}${field('Correo del dueño(a)',inp('email','','email','required'))}</div><p class="muted small">El primer mes queda pagado desde hoy. Al crearlo, le enviamos un correo al dueño con su usuario y una contraseña temporal.</p><div id="tn-err"></div></form>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="tn-form">Crear cliente</button>`),
   'resend':()=>{if(REAL)return rResend(id);const t=S.tenants.find(x=>x.id===id);const u=S.users.find(x=>x.tid===id&&x.role==='dueno');const pass=genTemp();u.pass=pass;u.mustChange=true;save();sendWelcome(t,u,pass)},
@@ -2300,7 +2303,7 @@ function scheduleRender(adminOnly){
  clearTimeout(RB.renderT);RB.renderT=setTimeout(()=>{const a=document.activeElement;const u0=me();const urgent=!u0||u0.active===false||u0.archived||isLocked()||(u0.tid&&!tenant());if(!urgent&&a&&a.closest&&a.closest('#app')&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){RB.pendingRender=true;return}const m=$('#main');const y=m?m.scrollTop:0;render();const m2=$('#main');if(m2)m2.scrollTop=y},60);
 }
 document.addEventListener('focusout',()=>{if(RB.pendingRender){RB.pendingRender=false;setTimeout(()=>scheduleRender(),150)}});
-function upsert(coll,id,data,k){const rec={...data,id};const j=stable(rec);const arr=S[coll];const i=arr.findIndex(x=>x.id===id);if(RB.synced[k]===j&&i>=0)return false;RB.synced[k]=j;if(i>=0)arr[i]=rec;else arr.push(rec);return true}
+function upsert(coll,id,data,k){const rec={...data,id};if(coll==='tenants')normTenant(rec);const j=stable(rec);const arr=S[coll];const i=arr.findIndex(x=>x.id===id);if(RB.synced[k]===j&&i>=0)return false;RB.synced[k]=j;if(i>=0)arr[i]=rec;else arr.push(rec);return true}
 function applySnap(coll,snap){let ch=false;snap.docChanges().forEach(c=>{const k=c.doc.ref.path;if(c.type==='removed'){const arr=S[coll];const i=arr.findIndex(x=>x.id===c.doc.id);if(i>=0){arr.splice(i,1);ch=true}delete RB.synced[k];return}if(upsert(coll,c.doc.id,c.doc.data(),k))ch=true});if(ch)scheduleRender()}
 function applyDoc(coll,d){const k=d.ref.path;if(!d.exists()){const arr=S[coll];const i=arr.findIndex(x=>x.id===d.id);if(i>=0){arr.splice(i,1);delete RB.synced[k];scheduleRender()}return}if(upsert(coll,d.id,d.data(),k))scheduleRender()}
 function subscribe(p){

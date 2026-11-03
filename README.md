@@ -17,7 +17,7 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 
 | Correo | Rol | Qué ve |
 |---|---|---|
-| marta@laespiga.co | Dueña · Panadería La Espiga | Plan Total + Recetas y combos + Puntos |
+| marta@laespiga.co | Dueña · Panadería La Espiga | Plan Total (todos los módulos) |
 | juan@laespiga.co | Cajero · Panadería La Espiga | Caja + permisos: inventario, costos, recetas, proveedores y fiados |
 | laura@laespiga.co | Cajera · Panadería La Espiga | Sin permisos extra: solo vende y ve sus propias ventas |
 | pedro@laespiga.co | Cajero desactivado | Prueba el mensaje de usuario desactivado |
@@ -31,9 +31,11 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 |---|---|---|---|
 | Básico | $59.900 | $599.000 | Inventario, Caja y ventas |
 | Pro | $109.900 | $1.099.000 | + Ingresos y egresos, Estadísticas, Empleados |
-| Total | $159.900 | $1.599.000 | + Fiados y clientes, Proveedores |
+| Total | $159.900 | $1.599.000 | **Todo:** + Fiados y clientes, Proveedores, Recetas y combos, Puntos y fidelización y Lector de código de barras |
 
 ### Módulos sueltos y complementos
+
+Los complementos se suman a Básico o Pro; el plan Total ya los incluye todos (también los módulos que se agreguen después).
 
 | Módulo | Precio mensual |
 |---|---|
@@ -52,7 +54,7 @@ Implementación opcional: $180.000 una sola vez (carga de inventario, configurac
 
 ## Puntos y fidelización
 
-Complemento de $5.000/mes que paga el dueño del negocio; solo aparece si lo tiene activo. Para el cliente final afiliarse es gratis.
+Complemento de $5.000/mes que paga el dueño del negocio (incluido en el plan Total); solo aparece si lo tiene activo. Para el cliente final afiliarse es gratis.
 
 - **Afiliación:** en la caja se escribe la cédula; si no está afiliado, *Afiliarlo ahora* pide nombre, celular y la autorización de datos (Ley 1581 de 2012).
 - **Acumular:** cada venta suma `floor(total pagado / monto por punto)` puntos. Las ventas fiadas no suman.
