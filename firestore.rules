@@ -5,6 +5,7 @@ rules_version = '2';
 // - Cada usuario solo ve los datos de su negocio.
 // - Un negocio suspendido puede ver sus datos, pero no puede modificarlos.
 // - Los cajeros solo escriben lo que sus permisos permiten.
+// - Los meseros son empleados (role 'cajero') con puesto 'mesero': la app solo les muestra las mesas.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -45,6 +46,9 @@ service cloud.firestore {
       return isOwnerOf(tid)
         || coll in ['sales', 'sessions', 'kardex']
         || (coll in ['members', 'pmoves'] && hasMod(tid, 'fidelizacion'))
+        // Mesas y meseros: cualquier usuario del negocio abre mesas, agrega productos y cobra lo pendiente
+        // (las mesas en sí, colección 'tables', solo las crea y renombra el dueño)
+        || (coll in ['tabs', 'tablines'] && hasMod(tid, 'mesas'))
         || (coll in ['customers', 'ledger'] && (hasPerm('fiados') || hasPerm('anular')))
         || (coll == 'products' && hasPerm('inv_edit'))
         // Caja por categorías: quien edita el inventario también crea y ordena las categorías
@@ -115,7 +119,7 @@ service cloud.firestore {
       return isOwnerOf(d.tid) && d.status == 'pendiente'
         && ((d.type == 'renovacion' && id == 'pend_' + d.tid)
             || (d.type == 'modulo' && id == 'mod_' + d.tid + '_' + d.mod
-                && d.mod in ['inventario','caja','finanzas','estadisticas','empleados','fiados','proveedores','recetas','lector','fidelizacion','implementacion']));
+                && d.mod in ['inventario','caja','finanzas','estadisticas','empleados','fiados','proveedores','mesas','recetas','lector','fidelizacion','implementacion']));
     }
 
     // Pagos con llave Bre-B: renovaciones (pend_<negocio>) y compras desde la demo

@@ -1,13 +1,13 @@
 # Natara · by Samanat
 
-Software de gestión para pequeños negocios (panaderías, farmacias, minimercados, papelerías): inventario, caja, ingresos y egresos, estadísticas y una consola de administración para Samanat.
+Software de gestión para pequeños negocios (panaderías, farmacias, minimercados, papelerías, restaurantes): inventario, caja, ingresos y egresos, estadísticas y una consola de administración para Samanat.
 
 ## Demo
 
 - **App real (clientes):** https://samanat2026.github.io/natara/
 - **Demo para mostrar:** https://samanat2026.github.io/natara/demo/
 
-`index.html` es la app real y `demo/index.html` la demo, generadas desde el mismo código (`window.NATARA_MODE`). La demo trae datos de ejemplo y cuentas de prueba; la app real arranca vacía, solo con la cuenta de Samanat.
+`index.html` es la app real y `demo/index.html` la demo, generadas desde el mismo código (`window.NATARA_MODE`). Solo se edita `index.html`; después `python3 tools/build.py` genera `demo/`, `consola-demo/` y la copia en `docs/`. La demo trae datos de ejemplo y cuentas de prueba; la app real arranca vacía, solo con la cuenta de Samanat.
 
 Los datos de la demo se guardan en el navegador (`localStorage`). La app real usa **Firebase** (proyecto `natara-96555`): Authentication con correo y contraseña, y Firestore en `southamerica-east1`. Las reglas de seguridad están en [`firestore.rules`](firestore.rules) y se pegan en Firebase → Firestore → Reglas.
 
@@ -24,6 +24,10 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 | carlos@vidasana.co | Dueño · Droguería Vida Sana | Plan Pro |
 | pacho@minimercado.co | Dueño · Minimercado Don Pacho | Plan Básico |
 | andrea@arcoiris.co | Dueña · Papelería Arcoíris | Cuenta suspendida (pantalla de bloqueo) |
+| diana@elfogon.co | Dueña · Restaurante El Fogón Paisa | Plan Total, con 12 mesas y 4 ocupadas |
+| andres@elfogon.co | Cajero · El Fogón | Entra a las mesas y cobra por persona |
+| camila@elfogon.co | Mesera · El Fogón | Solo ve las mesas: abre, agrega productos y pide la cuenta |
+| sebastian@elfogon.co | Mesero · El Fogón | Igual que Camila |
 
 ## Planes (COP, IVA no incluido)
 
@@ -31,7 +35,7 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 |---|---|---|---|
 | Básico | $59.900 | $599.000 | Inventario, Caja y ventas |
 | Pro | $109.900 | $1.099.000 | + Ingresos y egresos, Estadísticas, Empleados |
-| Total | $159.900 | $1.599.000 | **Todo:** + Fiados y clientes, Proveedores, Recetas y combos, Puntos y fidelización y Lector de código de barras |
+| Total | $159.900 | $1.599.000 | **Todo:** + Fiados y clientes, Proveedores, Mesas y meseros, Recetas y combos, Puntos y fidelización y Lector de código de barras |
 
 ### Módulos sueltos y complementos
 
@@ -46,6 +50,7 @@ Los complementos se suman a Básico o Pro; el plan Total ya los incluye todos (t
 | Empleados (con permisos) | $19.900 |
 | Fiados y clientes | $22.900 |
 | Proveedores | $19.900 |
+| Mesas y meseros (restaurantes y cafeterías) | $29.900 |
 | Recetas y combos (complemento) | $10.000 |
 | Lector de código de barras (complemento, no se promociona) | $14.900 |
 | Puntos y fidelización (complemento) | $5.000 |
@@ -63,6 +68,19 @@ Complemento de $5.000/mes que paga el dueño del negocio (incluido en el plan To
 - **Anular una venta** quita los puntos ganados y devuelve los usados.
 - **Configuración (dueño → Puntos → Configurar):** por defecto 1 punto por cada $1.000, cada punto vale $7, mínimo 100 para usarlos, vencen a los 12 meses, 0 de bienvenida.
 - Datos en Firestore: `tenants/{tid}/members` (afiliados con sus lotes), `tenants/{tid}/pmoves` (historial) y `tenants/{tid}/settings/fid_{tid}` (configuración).
+
+## Mesas y meseros
+
+Módulo de $29.900/mes para restaurantes, cafeterías y panaderías con mesas (incluido en el plan Total). Solo se ofrece en *Mi plan* a negocios de comida; a los demás no les aparece.
+
+- **Mesas:** el dueño escribe cuántas mesas tiene y se crean como Mesa 1, Mesa 2…; en *Configurar mesas* las renombra (Terraza 1, Barra…), agrega o elimina (las ocupadas no se eliminan).
+- **Mapa de mesas:** libres (punteadas), ocupadas (verde) y las que pidieron la cuenta (amarillo), con el tiempo abierta, lo que falta por cobrar, las personas y quién la atiende.
+- **Atender:** se abre la mesa (personas opcional) y se tocan los productos para agregarlos; con − y + se corrigen las cantidades. Se puede *Cambiar de mesa* y *Pedir la cuenta*. En el celular, la barra *Ver cuenta* muestra el total.
+- **Cobro por persona:** *Cobrar* muestra lo pendiente; se marca lo que paga esa persona o grupo (o *Seleccionar todo*) y se cobra con el mismo panel de la caja (efectivo, transferencia, datáfono, fiado y puntos). Lo no pagado sigue en la mesa; cuando se paga todo, la mesa se libera sola. El recibo dice la mesa.
+- **Meseros:** son empleados con puesto *Mesero(a)* (se elige al crearlos o en *Permisos*). Solo ven *Mesas* y la guía y no cobran. Los cajeros del restaurante entran directo a *Mesas*.
+- **Inventario y reportes:** el stock se descuenta al cobrar (no al pedir), y cada pago parcial es una venta normal con el campo `mesa`. Anular una de esas ventas devuelve lo pagado a la mesa.
+- **Datos en Firestore:** `tenants/{tid}/tables` (mesas), `tenants/{tid}/tabs` (cuenta de una mesa: `table`, `openedBy`, `guests`, `bill`, `open`) y `tenants/{tid}/tablines` (un documento por producto pedido: `tab`, `qty`, `paid`, `by`). Cada producto es un documento aparte para que el mesero agregue mientras la caja cobra sin pisarse. La app solo escucha las cuentas abiertas (`open == true`).
+- **Reglas:** `tabs` y `tablines` las escribe cualquier usuario del negocio que tenga el módulo; `tables`, solo el dueño. El mesero sigue siendo `role: 'cajero'` (con `puesto: 'mesero'`), así que no cambian las reglas de usuarios. Hay que volver a pegar `firestore.rules` en Firebase.
 
 ## Caja por categorías
 
@@ -93,6 +111,7 @@ Al crear un cliente se genera una contraseña temporal y se envía por correo co
 ## Próximos pasos
 
 - Versión de producción en Angular + Firebase (Auth, Firestore, Hosting): cuentas reales entre dispositivos y actividad en vivo de todos los clientes.
-- Facturación electrónica DIAN.
+- Facturación electrónica DIAN (cada pago parcial de una mesa debe salir con su propia factura).
+- Mesas: comandas a cocina, unir mesas y dividir en partes iguales.
 - Módulo de producción y recetas para panaderías.
 - Producto 2: agendamiento de citas para salones de uñas por WhatsApp.
