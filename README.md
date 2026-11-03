@@ -26,8 +26,8 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 | andrea@arcoiris.co | Dueña · Papelería Arcoíris | Cuenta suspendida (pantalla de bloqueo) |
 | diana@elfogon.co | Dueña · Restaurante El Fogón Paisa | Plan Total, con 12 mesas y 4 ocupadas |
 | andres@elfogon.co | Cajero · El Fogón | Entra a las mesas y cobra por persona |
-| camila@elfogon.co | Mesera · El Fogón | Solo ve las mesas: abre, agrega productos y pide la cuenta |
-| sebastian@elfogon.co | Mesero · El Fogón | Igual que Camila |
+| camila@elfogon.co | Mesera · El Fogón | Solo ve las mesas: abre, agrega productos y pide la cuenta. No cobra |
+| sebastian@elfogon.co | Mesero · El Fogón | Igual que Camila, pero con el permiso *Cobrar las mesas* |
 
 ## Planes (COP, IVA no incluido)
 
@@ -77,7 +77,8 @@ Módulo de $29.900/mes para restaurantes, cafeterías y panaderías con mesas (i
 - **Mapa de mesas:** libres (punteadas), ocupadas (verde) y las que pidieron la cuenta (amarillo), con el tiempo abierta, lo que falta por cobrar, las personas y quién la atiende.
 - **Atender:** se abre la mesa (personas opcional) y se tocan los productos para agregarlos; con − y + se corrigen las cantidades. Se puede *Cambiar de mesa* y *Pedir la cuenta*. En el celular, la barra *Ver cuenta* muestra el total.
 - **Cobro por persona:** *Cobrar* muestra lo pendiente; se marca lo que paga esa persona o grupo (o *Seleccionar todo*) y se cobra con el mismo panel de la caja (efectivo, transferencia, datáfono, fiado y puntos). Lo no pagado sigue en la mesa; cuando se paga todo, la mesa se libera sola. El recibo dice la mesa.
-- **Meseros:** son empleados con puesto *Mesero(a)* (se elige al crearlos o en *Permisos*). Solo ven *Mesas* y la guía y no cobran. Los cajeros del restaurante entran directo a *Mesas*.
+- **Meseros:** son empleados con puesto *Mesero(a)* (se elige al crearlos o en *Permisos*). Solo ven *Mesas* y la guía. Por defecto **no cobran**: el cobro lo hace la caja. Los cajeros del restaurante entran directo a *Mesas*.
+- **Permiso *Cobrar las mesas* (solo meseros):** el dueño lo activa por mesero al crearlo o en *Permisos*. Con el permiso, el mesero cobra desde la mesa, la venta queda a su nombre, ve sus cobros en *Ventas* y entrega el dinero en la caja. No puede abrir ni cerrar la caja: si está cerrada, la app le dice que se la pida al cajero. Se guarda como `mesa_cobrar` en `perms`.
 - **Inventario y reportes:** el stock se descuenta al cobrar (no al pedir), y cada pago parcial es una venta normal con el campo `mesa`. Anular una de esas ventas devuelve lo pagado a la mesa.
 - **Datos en Firestore:** `tenants/{tid}/tables` (mesas), `tenants/{tid}/tabs` (cuenta de una mesa: `table`, `openedBy`, `guests`, `bill`, `open`) y `tenants/{tid}/tablines` (un documento por producto pedido: `tab`, `qty`, `paid`, `by`). Cada producto es un documento aparte para que el mesero agregue mientras la caja cobra sin pisarse. La app solo escucha las cuentas abiertas (`open == true`).
 - **Reglas:** `tabs` y `tablines` las escribe cualquier usuario del negocio que tenga el módulo; `tables`, solo el dueño. El mesero sigue siendo `role: 'cajero'` (con `puesto: 'mesero'`), así que no cambian las reglas de usuarios. Hay que volver a pegar `firestore.rules` en Firebase.
