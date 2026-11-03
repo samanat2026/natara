@@ -310,6 +310,19 @@ details.guide[open] summary{margin-bottom:10px}
 .tile .price{margin-top:auto;font-weight:700;font-variant-numeric:tabular-nums}
 .tile .st{font-size:12px;color:var(--ink-3)}
 .tile.out{opacity:.55}
+/* caja por categorías */
+.cat-bar{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;margin:0 0 6px;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.cat-chip{flex:none;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:9px 15px;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap}
+.cat-chip:hover{border-color:var(--accent)}
+.cat-chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.cat-chip .n{font-size:12px;opacity:.75;font-variant-numeric:tabular-nums}
+.cat-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.cat-row:last-child{border-bottom:0}
+.cat-ord{display:flex;flex-direction:column}.cat-ord .icon-btn{padding:1px 4px}.cat-ord .icon-btn:disabled{opacity:.25;cursor:default}
+@media (max-width:520px){.cat-row{grid-template-columns:auto minmax(0,1fr) auto;}.cat-row .cat-n{grid-column:2}}
+.cat-picks{max-height:46vh;overflow-y:auto;padding:2px}
+.pos>*{min-width:0}
+.cat-add{display:flex;gap:8px;flex-wrap:nowrap}.cat-add .input{flex:1;min-width:0}
 .cart{position:sticky;top:16px}
 .cart-items{display:flex;flex-direction:column;max-height:340px;overflow-y:auto;margin:0 -6px;padding:0 6px}
 .fid{border:1px dashed var(--line);border-radius:10px;padding:10px 12px}
@@ -443,6 +456,9 @@ const sum=(a,f)=>a.reduce((s,x)=>s+(f?f(x):x),0);
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
 const IC={
+ tag:'M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8zM7.5 7.5h.01',
+ up:'M6 15l6-6 6 6',
+ down:'M6 9l6 6 6-6',
  home:'M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z',
  cart:'M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 8H6.2M9 20.5h.01M18 20.5h.01',
  box:'M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8',
@@ -528,10 +544,10 @@ const INC_CATS=['Pedido especial','Abono de fiado','Préstamo','Otros'];
 function seed(){
  const r=mulberry32(20261101), rnd=()=>r(), pick=a=>a[Math.floor(rnd()*a.length)], ri=(a,b)=>a+Math.floor(rnd()*(b-a+1));
  const now=Date.now(), today=sod(now);
- const S={v:1,config:{contact:'WhatsApp 314 661 9135 · samanat2026@gmail.com',brand:'Samanat'},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[],members:[],pmoves:[],settings:[]};
+ const S={v:1,config:{contact:'WhatsApp 314 661 9135 · samanat2026@gmail.com',brand:'Samanat'},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[],members:[],pmoves:[],settings:[],cats:[]};
  if(MODE==='real'){S.config.contact='WhatsApp 314 661 9135 · samanat2026@gmail.com';S.users=[{id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'samanat2026@gmail.com',pass:'',mustChange:true,perms:[],active:true}];return S}
  S.tenants=[
-  {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:PLANS[2].mods.slice(),status:'activo',due:today+18*DAY,since:today-140*DAY},
+  {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:PLANS[2].mods.slice(),status:'activo',due:today+18*DAY,since:today-140*DAY,catPos:true},
   {id:'t2',name:'Droguería Vida Sana',type:'Farmacia',city:'Envigado',phone:'311 208 9934',plan:'pro',mods:PLANS[1].mods.slice(),status:'activo',due:today+3*DAY,since:today-75*DAY},
   {id:'t3',name:'Minimercado Don Pacho',type:'Minimercado',city:'Bello',phone:'320 744 1180',plan:'basico',mods:PLANS[0].mods.slice(),status:'activo',due:today+12*DAY,since:today-64*DAY},
   {id:'t4',name:'Papelería Arcoíris',type:'Papelería',city:'Itagüí',phone:'315 630 2257',plan:'pro',mods:PLANS[1].mods.slice(),status:'suspendido',due:today-4*DAY,since:today-50*DAY},
@@ -613,6 +629,8 @@ function seed(){
  const mkCombo=(code,name,price,parts)=>{const recipe=parts.map(([n,q])=>({pid:byName(n).id,qty:q}));S.products.push({id:uid(),tid:'t1',code,name,cat:'Combos',cost:Math.round(sum(recipe,c=>S.products.find(x=>x.id===c.pid).cost*c.qty)),price,stock:0,min:0,supplier:'',kind:'venta',unit:'und',recipe})};
  mkCombo('COMBO1','Desayuno: chocolate con pan y queso',7500,[['Chocolate caliente',1],['Pan francés',2],['Queso costeño para pandebono',0.05]]);
  mkCombo('COMBO2','Tinto con pandebono',2800,[['Café tinto',1],['Pan de bono',1]]);
+ // caja por categorías: categorías creadas por la dueña de La Espiga
+ [...new Set(S.products.filter(p=>p.tid==='t1'&&p.kind!=='insumo').map(p=>p.cat))].forEach((name,i)=>S.cats.push({id:uid(),tid:'t1',name,order:i}));
  // clientes afiliados a puntos (La Espiga): [puntos, hace cuántos días los ganó]
  [['1036654321','Luisa Fernanda Restrepo','300 455 1290',[[420,40],[180,200]]],['71789456','Jorge Iván Cardona','312 778 4410',[[95,10],[60,350]]],['1017223344','Valentina Zapata','318 902 3366',[[35,5]]]].forEach(([doc,name,phone,ls])=>{const id=uid();S.members.push({id,tid:'t1',doc,name,phone,consent:true,since:today-210*DAY,last:today-DAY,lotes:ls.map(([p,d])=>({p,v:today+(365-d)*DAY})).sort((a,b)=>a.v-b.v)});ls.forEach(([p,d])=>S.pmoves.push({id:uid(),tid:'t1',mid:id,type:'acumula',pts:p,note:'Compras',sid:'',at:today-d*DAY+11*3600e3,by:'u2'}))});
  // caja abierta hoy
@@ -636,7 +654,7 @@ function save(){(S.tenants||[]).forEach(normTenant);if(REAL)return syncDiff();tr
 let sess={uid:null,view:null};
 try{const r=sessionStorage.getItem(SESS);if(r)sess=JSON.parse(r)}catch(e){}
 function saveSess(){try{sessionStorage.setItem(SESS,JSON.stringify(sess))}catch(e){}}
-load();S.orders=S.orders||[];(S.tenants||[]).forEach(normTenant);if(/300 000 0000/.test(S.config?.contact||'')){S.config.contact='WhatsApp 314 661 9135 · samanat2026@gmail.com';save()}['members','pmoves','settings'].forEach(k=>S[k]=S[k]||[]);
+load();S.orders=S.orders||[];(S.tenants||[]).forEach(normTenant);if(/300 000 0000/.test(S.config?.contact||'')){S.config.contact='WhatsApp 314 661 9135 · samanat2026@gmail.com';save()}['members','pmoves','settings','cats'].forEach(k=>S[k]=S[k]||[]);
 if(DEMO_ADMIN&&!S.users.some(u=>u.role==='superadmin')){S.users.unshift({id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'natalia@samanat.co',pin:'0000',active:true,pass:'Natara2026*',perms:[]});save()}
 window.addEventListener('storage',e=>{
  if(REAL||e.key!==KEY)return;
@@ -659,6 +677,12 @@ const tenantLocked=t=>!!t&&(t.status!=='activo'||overdueLocked(t));
 const isLocked=()=>tenantLocked(tenant());
 const has=m=>{const t=tenant();return !!(t&&t.mods.includes(m))};
 const isOwner=()=>me()?.role==='dueno';
+// Caja por categorías: Samanat la activa por negocio, solo si el cliente la pide (tenant.catPos)
+const catMode=()=>!!tenant()?.catPos;
+const catKey=n=>norm(n);
+const catsOf=(tid=tenant()?.id)=>(S.cats||[]).filter(c=>c.tid===tid).sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name));
+const catOfProd=(p,cs=catsOf())=>{const k=catKey(p?.cat);return k?cs.find(c=>catKey(c.name)===k)||null:null};
+function ensureCat(name){const t=tenant();const cs=catsOf();const ex=cs.find(c=>catKey(c.name)===catKey(name));if(ex)return ex.name;S.cats.push({id:uid(),tid:t.id,name:name.trim(),order:cs.length});return name.trim()}
 const PERMS=[
  {id:'ver_inventario',label:'Consultar el inventario',short:'consultar inventario',desc:'Ver los productos y cuánto hay, sin costos.',mod:'inventario'},
  {id:'inv_edit',label:'Agregar y editar inventario',short:'editar inventario',desc:'Crear productos e insumos, ajustar stock y cargar desde Excel.',mod:'inventario'},
@@ -1004,7 +1028,7 @@ const payPill=s=>s.status==='anulada'?`<span class="pill bad">Anulada</span>`:s.
 /* =========================================================
    CAJA / POS
    ========================================================= */
-let cart=[];let pos={q:'',method:'efectivo',received:'',bank:'Nequi',ref:'',verified:false,seller:null,customer:'',fdoc:'',mid:'',useP:false,fmiss:false};
+let cart=[];let pos={q:'',cat:'',method:'efectivo',received:'',bank:'Nequi',ref:'',verified:false,seller:null,customer:'',fdoc:'',mid:'',useP:false,fmiss:false};
 function viewCaja(){
  const u=me();
  const sess0=openSession();
@@ -1021,15 +1045,28 @@ function viewCaja(){
 }
 function posMatches(){
  const q=norm(pos.q);const P=T('products').filter(p=>p.kind!=='insumo');
- if(!q)return P.slice().sort((a,b)=>salesCount(b.id)-salesCount(a.id)).slice(0,12);
+ if(!q){
+  if(catMode()&&pos.cat){const cs=catsOf();const inCat=pos.cat==='__none'?p=>!catOfProd(p,cs):p=>catOfProd(p,cs)?.id===pos.cat;return P.filter(inCat).sort((a,b)=>a.name.localeCompare(b.name))}
+  return P.slice().sort((a,b)=>salesCount(b.id)-salesCount(a.id)).slice(0,12);
+ }
  const L=has('lector');return P.filter(p=>norm(p.name).includes(q)||(L&&p.code.includes(q))||norm(p.cat).includes(q)).slice(0,24);
 }
 let _sc=null;
 function salesCount(pid){if(!_sc){_sc={};okSales().forEach(s=>s.items.forEach(i=>_sc[i.pid]=(_sc[i.pid]||0)+i.qty))}return _sc[pid]||0}
+function posCatBar(){
+ const cs=catsOf();
+ if(!cs.length)return canDo('inv_edit')?`<div class="hint" style="margin-bottom:10px">${ic('tag',15)} <b>Tu caja se puede organizar por categorías.</b> Crea tus categorías (Panes, Bebidas, Lácteos…) y asígnales los productos. <button class="btn sm" data-a="cats" style="margin-left:6px">Crear categorías</button></div>`:'';
+ const cnt={};let none=0;T('products').filter(p=>p.kind!=='insumo').forEach(p=>{const c=catOfProd(p,cs);if(c)cnt[c.id]=(cnt[c.id]||0)+1;else none++});
+ if(pos.cat&&(pos.cat==='__none'?!none:!cnt[pos.cat]))pos.cat='';
+ const chip=(v,label,n)=>`<button class="cat-chip ${pos.cat===v&&!pos.q?'on':''}" data-a="pos-cat" data-v="${v}" aria-pressed="${pos.cat===v&&!pos.q}">${esc(label)}${n!=null?`<span class="n">${n}</span>`:''}</button>`;
+ return `<div class="cat-bar" role="toolbar" aria-label="Categorías">${chip('','Más vendidos')}${cs.filter(c=>cnt[c.id]).map(c=>chip(c.id,c.name,cnt[c.id])).join('')}${none?chip('__none','Sin categoría',none):''}</div>`;
+}
 function posResults(){
+ const bar=catMode()?posCatBar():'';
  const P=posMatches();
- if(!P.length)return `<div class="card empty">${ic('search',26)}No hay productos que coincidan con “${esc(pos.q)}”.</div>`;
- return `<div class="muted small" style="margin-bottom:8px">${pos.q?`${P.length} resultado${P.length>1?'s':''}`:'Más vendidos'}</div><div class="tiles">${P.map(p=>`<button class="tile ${availOf(p)<=0?'out':''}" data-a="add" data-id="${p.id}"><strong>${esc(p.name)}</strong>${has('lector')?`<span class="st mono">${esc(p.code)}</span>`:`<span class="st">${esc(p.cat)}</span>`}<span class="spread"><span class="price">${money(p.price)}</span><span class="st">${recipeOf(p)?`alcanza ${num(availOf(p))}`:`${num(p.stock)} disp.`}</span></span></button>`).join('')}</div>`;
+ if(!P.length)return bar+`<div class="card empty">${ic('search',26)}${pos.q?`No hay productos que coincidan con “${esc(pos.q)}”.`:'Aún no hay productos para vender.'}</div>`;
+ const title=pos.q?`${P.length} resultado${P.length>1?'s':''}`:catMode()&&pos.cat?(pos.cat==='__none'?'Sin categoría':catsOf().find(c=>c.id===pos.cat)?.name||'')+` · ${P.length} producto${P.length>1?'s':''}`:'Más vendidos';
+ return bar+`<div class="muted small" style="margin-bottom:8px">${esc(title)}</div><div class="tiles">${P.map(p=>`<button class="tile ${availOf(p)<=0?'out':''}" data-a="add" data-id="${p.id}"><strong>${esc(p.name)}</strong>${has('lector')?`<span class="st mono">${esc(p.code)}</span>`:`<span class="st">${esc(p.cat)}</span>`}<span class="spread"><span class="price">${money(p.price)}</span><span class="st">${recipeOf(p)?`alcanza ${num(availOf(p))}`:`${num(p.stock)} disp.`}</span></span></button>`).join('')}</div>`;
 }
 function cartTotal(){return sum(cart,i=>i.price*i.qty)}
 const payTotal=()=>{const s=cartTotal();return s-fidDisc(s)};
@@ -1260,19 +1297,20 @@ function viewInventario(){
  const own=canDo('inv_edit');const costs=own||canDo('ver_costos');const L=has('lector');
  const all=T('products');const ventas=all.filter(p=>p.kind!=='insumo'),insumos=all.filter(p=>p.kind==='insumo');
  if(!own)inv.kind='venta';const isIns=inv.kind==='insumo';
- let P=isIns?insumos:ventas;const cats=[...new Set(P.map(p=>p.cat))].sort();
+ let P=isIns?insumos:ventas;const CM=catMode()&&!isIns;const CS=CM?catsOf():[];const cats=CM?[...CS.map(c=>c.name),['__none','Sin categoría']]:[...new Set(P.map(p=>p.cat))].sort();
  const value=sum(all,p=>Math.max(0,p.stock)*p.cost);const lowN=all.filter(p=>p.min>0&&p.stock<=p.min).length;
  if(inv.q){const q=norm(inv.q);P=P.filter(p=>norm(p.name).includes(q)||p.code.toLowerCase().includes(q))}
- if(inv.cat&&cats.includes(inv.cat))P=P.filter(p=>p.cat===inv.cat);if(inv.low)P=P.filter(p=>p.min>0&&p.stock<=p.min);
+ if(CM&&inv.cat){P=inv.cat==='__none'?P.filter(p=>!catOfProd(p,CS)):P.filter(p=>catOfProd(p,CS)?.name===inv.cat)}else if(inv.cat&&cats.includes(inv.cat))P=P.filter(p=>p.cat===inv.cat);if(inv.low)P=P.filter(p=>p.min>0&&p.stock<=p.min);
  P=P.slice().sort((a,b)=>a.name.localeCompare(b.name));
  const lowPill=p=>{const low=p.min>0&&p.stock<=p.min;return`<span class="pill ${p.stock<=0?'bad':low?'warn':''}">${num(p.stock)}${isIns?' '+esc(p.unit||'und'):''}</span>`};
- const rowsVenta=P.map(p=>`<tr>${L?`<td class="mono">${esc(p.code)}</td>`:''}<td><b>${esc(p.name)}</b>${L?'':`<div class="muted small mono">${esc(p.code)}</div>`}</td><td class="muted">${esc(p.cat)}</td>${costs?`<td class="r num">${money(effCost(p))}</td>`:''}<td class="r num">${money(p.price)}</td>${costs?`<td class="r num">${p.price?Math.round((p.price-effCost(p))/p.price*100):0}%</td>`:''}<td class="r">${recipeOf(p)?`<span class="pill ac" title="${esc(p.recipe.map(c=>`${num(c.qty)} ${S.products.find(x=>x.id===c.pid)?.name||''}`).join(' + '))}">Receta · alcanza ${num(availOf(p))}</span>`:lowPill(p)}</td>${own?`<td class="r" style="white-space:nowrap">${recipeOf(p)?'':`<button class="btn sm" data-a="stock-adj" data-id="${p.id}">Ajustar</button>`} <button class="icon-btn" data-a="prod-edit" data-id="${p.id}" aria-label="Editar">${ic('edit',16)}</button></td>`:''}</tr>`).join('');
+ const rowsVenta=P.map(p=>`<tr>${L?`<td class="mono">${esc(p.code)}</td>`:''}<td><b>${esc(p.name)}</b>${L?'':`<div class="muted small mono">${esc(p.code)}</div>`}</td><td class="muted">${CM&&!catOfProd(p,CS)?`<span class="pill warn" title="${esc(p.cat||'')}">Sin categoría</span>`:esc(CM?catOfProd(p,CS).name:p.cat)}</td>${costs?`<td class="r num">${money(effCost(p))}</td>`:''}<td class="r num">${money(p.price)}</td>${costs?`<td class="r num">${p.price?Math.round((p.price-effCost(p))/p.price*100):0}%</td>`:''}<td class="r">${recipeOf(p)?`<span class="pill ac" title="${esc(p.recipe.map(c=>`${num(c.qty)} ${S.products.find(x=>x.id===c.pid)?.name||''}`).join(' + '))}">Receta · alcanza ${num(availOf(p))}</span>`:lowPill(p)}</td>${own?`<td class="r" style="white-space:nowrap">${recipeOf(p)?'':`<button class="btn sm" data-a="stock-adj" data-id="${p.id}">Ajustar</button>`} <button class="icon-btn" data-a="prod-edit" data-id="${p.id}" aria-label="Editar">${ic('edit',16)}</button></td>`:''}</tr>`).join('');
  const supName=id=>S.suppliers.find(x=>x.id===id)?.name||'—';
  const rowsIns=P.map(p=>`<tr><td><b>${esc(p.name)}</b><div class="muted small">${esc(p.cat)}</div></td><td>${esc(supName(p.supplier))}</td><td class="r num">${money(p.cost)} <span class="muted small">/ ${esc(p.unit)}</span></td><td class="r">${lowPill(p)}</td><td class="r num">${money(Math.max(0,p.stock)*p.cost)}</td><td class="r" style="white-space:nowrap"><button class="btn sm" data-a="stock-adj" data-id="${p.id}">Registrar consumo</button> <button class="icon-btn" data-a="prod-edit" data-id="${p.id}" aria-label="Editar">${ic('edit',16)}</button></td></tr>`).join('');
  return `<div class="page-head"><div><h1>Inventario</h1><p>${ventas.length} productos para vender${insumos.length?` · ${insumos.length} insumos`:''}</p></div>
-  ${own?`<div class="actions"><button class="btn needs-dl" data-a="export-inv">${ic('download',16)} Exportar</button><button class="btn" data-a="import">${ic('upload',16)} Cargar desde Excel</button><button class="btn primary" data-a="prod-new">${ic('plus',16)} ${isIns?'Nuevo insumo':'Nuevo producto'}</button></div>`:''}</div>
+  ${own?`<div class="actions">${catMode()?`<button class="btn" data-a="cats">${ic('tag',16)} Categorías</button>`:''}<button class="btn needs-dl" data-a="export-inv">${ic('download',16)} Exportar</button><button class="btn" data-a="import">${ic('upload',16)} Cargar desde Excel</button><button class="btn primary" data-a="prod-new">${ic('plus',16)} ${isIns?'Nuevo insumo':'Nuevo producto'}</button></div>`:''}</div>
   ${own?`<div class="grid g3"><div class="card kpi"><span class="lbl">Valor del inventario</span><span class="val">${money(value)}</span><span class="foot">productos e insumos a precio de costo</span></div><div class="card kpi"><span class="lbl">Stock bajo</span><span class="val" style="color:var(${lowN?'--warn':'--good'})">${lowN}</span><span class="foot">en el mínimo o debajo</span></div><div class="card kpi"><span class="lbl">Margen promedio</span><span class="val">${Math.round(sum(ventas,p=>p.price?(p.price-p.cost)/p.price:0)/Math.max(1,ventas.length)*100)}%</span><span class="foot">de los productos para vender</span></div></div>`:''}
   ${own?`<div class="seg" style="max-width:520px"><button class="${!isIns?'on':''}" data-a="inv-kind" data-v="venta">Productos para vender (${ventas.length})</button><button class="${isIns?'on':''}" data-a="inv-kind" data-v="insumo">Insumos y materia prima (${insumos.length})</button></div>`:''}
+  ${CM&&own&&!CS.length?`<div class="banner info">${ic('tag')}<div class="grow"><b>Tu caja ahora se organiza por categorías.</b> Crea tus categorías y asígnales los productos para que salgan agrupados al vender.</div><button class="btn sm primary" data-a="cats">Crear categorías</button></div>`:''}
   ${isIns?`<div class="hint">${ic('info',15)} <b>Los insumos no salen en la caja.</b> Son lo que compras para producir: harina, azúcar, mantequilla. Suben cuando registras una compra en Proveedores. Bajan cuando registras lo que usaste: por ejemplo, si esta mañana gastaste 20 kg de harina haciendo pan, tocas <b>Registrar consumo</b> en la harina y descuentas 20 kg.</div>`:''}
   <div class="card"><div class="toolbar" style="margin-bottom:12px">
    <div class="search">${ic('search',16)}<input class="input" id="inv-q" placeholder="${isIns?'Buscar insumo':L?'Buscar por nombre o escanear código':'Buscar por nombre o código'}" value="${esc(inv.q)}" data-i="inv-q"></div>
@@ -1285,6 +1323,37 @@ function viewInventario(){
   </div>
   ${false?`<div class="hint">${ic('barcode',15)} <b>¿Tienes lector de código de barras?</b> Con el complemento de lector vendes más rápido: escaneas el producto y entra solo a la venta. <button class="btn sm" data-a="go" data-v="plan" style="margin-left:6px">Ver en Mi plan</button></div>`:''}
   ${own&&!isIns&&L?`<div class="hint">${ic('barcode',15)} <b>¿Cómo funciona el código de barras?</b> Casi todos los productos traen un código impreso (EAN-13). Un lector USB o Bluetooth funciona como un teclado: haz clic en el campo “Código”, dispara el lector y el número se escribe solo. Para productos que tú haces (pan, tortas) inventa un código corto como PAN01 o imprime etiquetas.</div>`:''}`;
+}
+/* ---------- categorías de la caja (las crea el dueño) ---------- */
+let catUI={del:null,pick:null};
+function catsModal(){catUI={del:null,pick:null};openModal('Categorías de la caja',`<div id="cats-box" class="stack">${catsBody()}</div>`,`<button class="btn" data-a="close-modal">Listo</button>`)}
+function catsRefresh(full=true){const b=$('#cats-box');if(b)b.innerHTML=catsBody();if(full)render()}
+function catsBody(){
+ const cs=catsOf();const P=T('products').filter(p=>p.kind!=='insumo');
+ if(catUI.pick){
+  const c=cs.find(x=>x.id===catUI.pick);if(!c){catUI.pick=null;return catsBody()}
+  const k=catKey(c.name);const L=P.slice().sort((a,b)=>(catKey(b.cat)===k)-(catKey(a.cat)===k)||a.name.localeCompare(b.name));
+  return `<div class="spread"><b>Productos en “${esc(c.name)}”</b><button class="btn sm" data-a="cat-back">Volver</button></div>
+   <p class="muted small" style="margin:0">Marca los productos que van en esta categoría. Si un producto estaba en otra, se pasa a esta.</p>
+   <div class="search">${ic('search',16)}<input class="input" id="cat-pq" placeholder="Buscar producto" data-i="cat-pq" autocomplete="off"></div>
+   <div class="cat-picks"><div class="check-list" id="cat-picks">${L.map(p=>{const cur=catOfProd(p,cs);const mine=catKey(p.cat)===k;return`<label class="check" data-n="${esc(norm(p.name))}"><input type="checkbox" name="cp" value="${p.id}" ${mine?'checked':''}><span>${esc(p.name)}<small>${mine?'':cur?`Ahora en ${esc(cur.name)}`:'Sin categoría'}</small></span></label>`}).join('')||'<p class="muted small">Aún no tienes productos para vender.</p>'}</div></div>
+   <div class="row" style="justify-content:flex-end;gap:8px"><button class="btn" data-a="cat-back">Cancelar</button><button class="btn primary" data-a="cat-pick-save">Guardar</button></div>`;
+ }
+ const cnt=c=>P.filter(p=>catKey(p.cat)===catKey(c.name)).length;
+ const loose=[...new Map(P.filter(p=>p.cat&&!catOfProd(p,cs)).map(p=>[catKey(p.cat),p.cat.trim()])).values()];
+ const none=P.filter(p=>!catOfProd(p,cs)).length;
+ return `<p class="muted small" style="margin:0">Así se agrupan los productos en la caja. Con las flechas cambias el orden en que aparecen.</p>
+  <form class="cat-add" data-f="cat-add"><input class="input" name="name" id="cat-new" placeholder="Nueva categoría, ej: Panes" maxlength="40" required autocomplete="off"><button class="btn primary">${ic('plus',15)} Agregar</button></form>
+  ${loose.length?`<div class="banner info">${ic('info')}<div class="grow">Tus productos ya traen ${loose.length===1?'una categoría que no está':`${loose.length} categorías que no están`} en la lista: <b>${loose.slice(0,6).map(esc).join(', ')}${loose.length>6?'…':''}</b></div><button class="btn sm" data-a="cats-import">Agregar${loose.length>1?'las':'la'}</button></div>`:''}
+  ${cs.length?`<div>${cs.map((c,i)=>{const n=cnt(c);return`<div class="cat-row">
+    <div class="cat-ord"><button class="icon-btn" data-a="cat-mv" data-id="${c.id}" data-v="-1" ${i?'':'disabled'} aria-label="Subir ${esc(c.name)}">${ic('up',15)}</button><button class="icon-btn" data-a="cat-mv" data-id="${c.id}" data-v="1" ${i<cs.length-1?'':'disabled'} aria-label="Bajar ${esc(c.name)}">${ic('down',15)}</button></div>
+    <input class="input" value="${esc(c.name)}" data-c="cat-ren" data-id="${c.id}" maxlength="40" aria-label="Nombre de la categoría">
+    ${catUI.del===c.id?`<button class="btn sm danger" data-a="cat-del" data-id="${c.id}">¿Eliminar?</button>`:`<button class="icon-btn" data-a="cat-del-ask" data-id="${c.id}" aria-label="Eliminar ${esc(c.name)}" style="color:var(--ink-3)">${ic('trash',16)}</button>`}
+    <span class="muted small cat-n" style="white-space:nowrap">${n} producto${n===1?'':'s'}</span>
+    <button class="btn sm" data-a="cat-pick" data-id="${c.id}">Elegir productos</button>
+   </div>`}).join('')}</div>`:`<div class="empty">${ic('tag',26)}Aún no tienes categorías. Escribe la primera arriba.</div>`}
+  ${catUI.del?`<p class="muted small" style="margin:0">Si la eliminas, sus productos quedan como “Sin categoría”. Los productos no se borran.</p>`:''}
+  ${cs.length&&none?`<p class="small" style="margin:0;color:var(--warn)">${ic('alert',13)} ${none} producto${none>1?'s':''} sin categoría: en la caja salen en “Sin categoría”.</p>`:''}`;
 }
 /* ---------- recetas: productos que se arman con otros ---------- */
 const recipeOf=p=>p&&Array.isArray(p.recipe)&&p.recipe.length?p.recipe:null;
@@ -1313,7 +1382,9 @@ function productForm(p,kind){
  return `<form class="stack" data-f="prod-save" id="prod-form"><input type="hidden" name="id" value="${edit?p.id:''}"><div class="form-grid">
   ${field('Tipo',sel('kind',[['venta','Producto para vender (sale en la caja)'],['insumo','Insumo o materia prima (no sale en la caja)']],kind,'data-c="pf-kind"'+(edit?' disabled':'')),'full')}${edit?`<input type="hidden" name="kind" value="${kind}">`:''}
   ${field(ins?'Nombre del insumo':'Nombre del producto',inp('name',p?.name||'','text','required placeholder="'+(ins?'Ej: Harina de trigo':'Ej: Pan francés')+'"'),'full')}
-  ${field('Categoría',inp('cat',p?.cat||'','text','required list="cat-list"'))}
+  ${!ins&&catMode()?(()=>{const cs=catsOf();const cur=catOfProd(p,cs);const loose=p?.cat&&!cur?p.cat:'';const val=cur?cur.name:loose||'';
+    return field('Categoría',sel('cat',[['','Sin categoría'],...cs.map(c=>c.name),...(loose?[[loose,loose+' (no está en tus categorías)']]:[]),['__new','+ Nueva categoría…']],val,'data-c="pf-cat"'))+`<div class="field" id="pf-newcat" hidden><label>Nombre de la nueva categoría</label>${inp('newcat','','text','maxlength="40" placeholder="Ej: Panes" autocomplete="off"')}</div>`})()
+  :field('Categoría',inp('cat',p?.cat||'','text','required list="cat-list"'))}
   <datalist id="cat-list">${[...new Set(T('products').filter(x=>(x.kind||'venta')===kind).map(x=>x.cat))].map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
   ${codeField}
   ${ins?field('Unidad de medida',sel('unit',UNITS,p?.unit||'kg')):''}
@@ -1553,10 +1624,11 @@ function rcSummary(){
 }
 function recipeModal(p){
  pfRecipe=(p?.recipe||[]).map(x=>({...x}));pfSelf=p?.id||'';
- const cats=[...new Set(['Recetas','Combos',...T('products').filter(x=>recipeOf(x)).map(x=>x.cat)])];
+ const CM=catMode();const cs=CM?catsOf():[];const curC=CM?catOfProd(p,cs):null;const loose=CM&&p?.cat&&!curC?p.cat:'';
+ const cats=CM?[['','Sin categoría'],...cs.map(c=>c.name),...(loose?[loose]:[])]:[...new Set(['Recetas','Combos',...T('products').filter(x=>recipeOf(x)).map(x=>x.cat)])];
  openModal(p?'Editar receta o combo':'Nueva receta o combo',`<form class="stack" data-f="recipe-save" id="recipe-form" novalidate><div class="form-grid">
    ${field('Nombre',inp('rname',p?.name||'','text','required placeholder="Ej: Arepa con chorizo y queso"'),'full')}
-   ${field('Tipo',sel('rcat',cats,p?.cat||'Recetas'))}
+   ${field(CM?'Categoría':'Tipo',sel('rcat',cats,CM?(curC?curC.name:loose):(p?.cat||'Recetas')))}
    ${field('Precio de venta',minp('rprice',p?.price??'','required data-i="rc-price"'))}
   </div>
   <div class="rc" id="rc-box">${recipeBox()}</div>
@@ -1778,6 +1850,7 @@ function viewPlan(){
    <div class="card kpi"><span class="lbl">Próximo pago</span><span class="val">${fshort(t.due)}</span><span class="foot">${dd<0?`<span style="color:var(--bad)">Vencido</span>`:dd<=5?`<span style="color:var(--warn)">En ${dd} días</span>`:`En ${dd} días`}</span></div>
   </div>
   <div class="grid g3">${MODS.filter(m=>m.id!=='lector'||t.mods.includes('lector')).map(m=>{const on=t.mods.includes(m.id);const asked=reqs.includes(m.id);const paying=modOrder(t,m.id);return`<div class="mod ${on?'has':''}"><div class="spread"><span class="row" style="gap:8px">${ic(m.icon)}<strong>${m.name}</strong></span>${on?'<span class="pill good">Activo</span>':paying?'<span class="pill warn">Pago en revisión</span>':asked?'<span class="pill warn">Solicitado</span>':''}</div><p>${m.desc}</p><div class="foot spread"><span class="small muted">${p.mods.includes(m.id)?'Incluido en tu plan':(m.addon?'Complemento · ':'')+'+ '+money(m.price)+'/mes'}</span>${on||asked||paying?'':`<button class="btn sm primary" data-a="mod-buy" data-v="${m.id}">Contratar</button>`}</div></div>`}).join('')}</div>
+  <div class="mod ${t.catPos?'has':''}" style="max-width:760px"><div class="spread"><span class="row" style="gap:8px">${ic('tag')}<strong>Caja por categorías</strong></span>${t.catPos?'<span class="pill good">Activa</span>':''}</div><p>Los productos salen en la caja agrupados por las categorías que tú creas (Panes, Bebidas, Lácteos…). Tocas una categoría y ves solo esos productos.</p><div class="foot spread"><span class="small muted">Sin costo · se activa si tú la pides</span>${t.catPos?`<button class="btn sm" data-a="cats">${ic('tag',14)} Mis categorías</button>`:`<a class="btn sm primary" href="${waLink(`Hola Samanat, quiero activar la caja por categorías en Natara para ${t.name}.`)}" target="_blank" rel="noopener">Pedirla por WhatsApp</a>`}</div></div>
   <div class="mod ${t.setupPaid?'has':''}" style="max-width:760px"><div class="spread"><span class="row" style="gap:8px">${ic('users')}<strong>${SETUP.name}</strong></span>${t.setupPaid?'<span class="pill good">Incluida</span>':modOrder(t,'implementacion')?'<span class="pill warn">Pago en revisión</span>':reqs.includes('implementacion')?'<span class="pill warn">Solicitada</span>':''}</div><p>${SETUP.desc}</p><div class="foot spread"><span class="small muted">${money(SETUP.price)} · pago único</span>${t.setupPaid||reqs.includes('implementacion')||modOrder(t,'implementacion')?'':`<button class="btn sm primary" data-a="mod-buy" data-v="implementacion">Contratar</button>`}</div></div>
   <div class="card"><h2>Historial de pagos</h2><div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Medio</th><th class="r">Valor</th></tr></thead><tbody>${S.payments.filter(x=>x.tid===t.id).sort((a,b)=>b.at-a.at).map(x=>`<tr><td>${fdate(x.at)}</td><td>${esc(x.concept||'Mensualidad')}</td><td>${esc(x.method)}</td><td class="r num">${money(x.amount)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Sin pagos registrados</td></tr>'}</tbody></table></div></div>`;
 }
@@ -1824,7 +1897,7 @@ function aResumen(){
 }
 function aClientes(){
  return `<div class="page-head"><div><h1>Clientes</h1><p>Elige qué módulos ve cada negocio y controla su acceso al instante.</p></div><div class="actions"><button class="btn primary" data-a="tenant-new">${ic('plus',16)} Nuevo cliente</button></div></div>
-  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Negocio</th><th>Plan y módulos</th><th class="r">Cuota</th><th>Vence</th><th title="Complemento de lector de código de barras">Lector de barras</th><th title="Si lo apagas, el negocio queda bloqueado al instante">Acceso a Natara</th><th></th></tr></thead><tbody>${S.tenants.map(t=>{const o=S.users.find(u=>u.tid===t.id&&u.role==='dueno');return`<tr><td><b>${esc(t.name)}</b><div class="muted small">${esc(t.type)} · ${esc(t.city)} · ${esc(o?.name||'')}</div>${liveLine(t)}</td><td><div class="small" style="margin-bottom:4px"><b>${planById(t.plan).name}</b></div><div class="chips">${t.mods.map(m=>`<span class="pill">${modById(m)?.name}</span>`).join('')}</div></td><td class="r num">${money(fee(t))}</td><td style="white-space:nowrap">${fshort(t.due)}<div style="margin-top:4px">${pillDue(t)}</div></td><td><button class="switch ${t.mods.includes('lector')?'on':''}" data-a="lector-toggle" data-id="${t.id}" aria-label="Lector de barras de ${esc(t.name)}" title="Lector de código de barras (+${money(modById('lector').price)})"></button></td><td><button class="switch ${t.status==='activo'?'on':''}" data-a="tenant-toggle" data-id="${t.id}" aria-label="Acceso de ${esc(t.name)}"></button></td><td class="r"><button class="btn sm" data-a="tenant" data-id="${t.id}">Gestionar</button></td></tr>`}).join('')}</tbody></table></div></div>`;
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Negocio</th><th>Plan y módulos</th><th class="r">Cuota</th><th>Vence</th><th title="Complemento de lector de código de barras">Lector de barras</th><th title="Gratis: productos agrupados por categorías en la caja. Actívala cuando el cliente la pida">Caja por categorías</th><th title="Si lo apagas, el negocio queda bloqueado al instante">Acceso a Natara</th><th></th></tr></thead><tbody>${S.tenants.map(t=>{const o=S.users.find(u=>u.tid===t.id&&u.role==='dueno');return`<tr><td><b>${esc(t.name)}</b><div class="muted small">${esc(t.type)} · ${esc(t.city)} · ${esc(o?.name||'')}</div>${liveLine(t)}</td><td><div class="small" style="margin-bottom:4px"><b>${planById(t.plan).name}</b></div><div class="chips">${t.mods.map(m=>`<span class="pill">${modById(m)?.name}</span>`).join('')}</div></td><td class="r num">${money(fee(t))}</td><td style="white-space:nowrap">${fshort(t.due)}<div style="margin-top:4px">${pillDue(t)}</div></td><td><button class="switch ${t.mods.includes('lector')?'on':''}" data-a="lector-toggle" data-id="${t.id}" aria-label="Lector de barras de ${esc(t.name)}" title="Lector de código de barras (+${money(modById('lector').price)})"></button></td><td><button class="switch ${t.catPos?'on':''}" data-a="catpos-toggle" data-id="${t.id}" aria-label="Caja por categorías de ${esc(t.name)}" title="Caja por categorías (sin costo)"></button></td><td><button class="switch ${t.status==='activo'?'on':''}" data-a="tenant-toggle" data-id="${t.id}" aria-label="Acceso de ${esc(t.name)}"></button></td><td class="r"><button class="btn sm" data-a="tenant" data-id="${t.id}">Gestionar</button></td></tr>`}).join('')}</tbody></table></div></div>`;
 }
 function aActividad(){
  const now=Date.now(),today=sod(now);const rows=S.tenants.map(t=>({t,x:tenantLive(t)}));
@@ -1955,6 +2028,17 @@ document.addEventListener('click',e=>{
   'reset-do':()=>{S=seed();save();L0=seedLive();liveSave();closeModal();toast('Demo restablecida');render()},
   // POS
   add:()=>{addToCart(S.products.find(p=>p.id===id));const q=$('#pos-q');if(q){q.focus()}},
+  'pos-cat':()=>{pos.cat=v;pos.q='';const q=$('#pos-q');if(q)q.value='';const pr=$('#pos-results');if(pr)pr.innerHTML=posResults()},
+  // categorías (dueño o empleado con permiso de editar inventario)
+  cats:()=>catsModal(),
+  'cat-mv':()=>{const cs=catsOf();const i=cs.findIndex(c=>c.id===id);const j=i+Number(v);if(i<0||j<0||j>=cs.length)return;[cs[i],cs[j]]=[cs[j],cs[i]];cs.forEach((c,ix)=>c.order=ix);save();catsRefresh()},
+  'cat-del-ask':()=>{catUI.del=id;catsRefresh(false)},
+  'cat-del':()=>{const c=S.cats.find(x=>x.id===id);if(!c)return;const k=catKey(c.name);T('products').forEach(p=>{if(catKey(p.cat)===k)p.cat=''});S.cats=S.cats.filter(x=>x.id!==id);catsOf().forEach((x,ix)=>x.order=ix);catUI.del=null;if(pos.cat===id)pos.cat='';save();catsRefresh();toast(`Categoría “${c.name}” eliminada`)},
+  'cats-import':()=>{const cs=catsOf();const loose=[...new Map(T('products').filter(p=>p.kind!=='insumo'&&p.cat&&!catOfProd(p,cs)).map(p=>[catKey(p.cat),p.cat.trim()])).values()];loose.forEach(n=>ensureCat(n));save();catsRefresh();toast(`${loose.length} categoría${loose.length>1?'s':''} agregada${loose.length>1?'s':''}`)},
+  'cat-pick':()=>{catUI.pick=id;catUI.del=null;catsRefresh(false);setTimeout(()=>$('#cat-pq')?.focus(),20)},
+  'cat-back':()=>{catUI.pick=null;catsRefresh(false)},
+  'cat-pick-save':()=>{const c=S.cats.find(x=>x.id===catUI.pick);if(!c)return;const k=catKey(c.name);const on=new Set([...document.querySelectorAll('#cat-picks input[name=cp]:checked')].map(x=>x.value));let n=0;T('products').filter(p=>p.kind!=='insumo').forEach(p=>{const was=catKey(p.cat)===k;if(on.has(p.id)&&!was){p.cat=c.name;n++}else if(!on.has(p.id)&&was){p.cat='';n++}});catUI.pick=null;save();catsRefresh();toast(n?`“${c.name}” actualizada (${n} cambio${n>1?'s':''})`:'Sin cambios')},
+  'catpos-toggle':()=>{const t=S.tenants.find(x=>x.id===id);t.catPos=!t.catPos;if(t.catPos)S.messages.push({id:uid(),to:t.id,kind:'promo',title:'Activamos la caja por categorías',body:'Ahora puedes crear tus propias categorías (por ejemplo Panes, Bebidas, Lácteos) en Inventario → Categorías y asignarles los productos. En la caja verás los productos agrupados: tocas una categoría y te salen solo esos.',at:Date.now(),readBy:[]});save();render();toast(t.catPos?`Caja por categorías activada para ${t.name}`:`Caja por categorías desactivada para ${t.name}`)},
   qty:()=>{const i=cart[+el.dataset.ix];i.qty=Math.max(1,i.qty+Number(el.dataset.d));refreshPOS()},
   rm:()=>{cart.splice(+el.dataset.ix,1);refreshPOS()},
   pay:()=>{pos.method=v;refreshPOS()},
@@ -2081,6 +2165,7 @@ document.addEventListener('input',e=>{
  if(e.target.matches?.('[data-money]'))fmtMoneyInput(e.target);
  const el=e.target,k=el.dataset.i;if(!k)return;
  if(k==='pos-q'){pos.q=el.value;$('#pos-results').innerHTML=posResults()}
+ else if(k==='cat-pq'){const q=norm(el.value);document.querySelectorAll('#cat-picks .check').forEach(l=>l.hidden=!!q&&!l.dataset.n.includes(q))}
  else if(k==='pos-rec'){pos.received=el.value;const c=$('#pos-change');if(c)c.textContent=money(Math.max(0,parseMoney(el.value)-payTotal()))}
  else if(k==='fid-doc'){pos.fdoc=el.value;if(pos.fmiss){pos.fmiss=false;const b=$('#fid-miss');if(b)b.remove()}}
  else if(k==='pos-ref')pos.ref=el.value;
@@ -2110,7 +2195,11 @@ document.addEventListener('change',e=>{
     let data=cv.toDataURL('image/png');if(data.length>300000)data=cv.toDataURL('image/jpeg',0.9);if(data.length>700000)return toast('La imagen es muy pesada. Recórtala solo al QR','bad');
     S.config.pay={...payInfo(),qr:data};save();render();pubSync();toast('QR guardado. Tus clientes ya lo ven al pagar')};img.onerror=()=>toast('No pudimos leer esa imagen','bad');img.src=url},
   'co-setup':()=>{coCapture();co.setup=el.checked;coRender()},
-  'pf-kind':()=>{const f=$('#prod-form');const d=Object.fromEntries(new FormData(f).entries());const o={code:d.code,name:d.name,cat:d.cat,cost:parseMoney(d.cost),price:parseMoney(d.price),stock:Number(d.stock)||0,min:Number(d.min)||0,supplier:d.supplier||'',unit:d.unit,_keep:true};if(el.value==='insumo')pfRecipe=[];f.outerHTML=productForm(o,el.value);const h=document.querySelector('.modal-h h3');if(h)h.textContent=el.value==='insumo'?'Nuevo insumo':'Nuevo producto'},
+  'pf-kind':()=>{const f=$('#prod-form');const d=Object.fromEntries(new FormData(f).entries());const o={code:d.code,name:d.name,cat:d.cat==='__new'?(d.newcat||''):d.cat,cost:parseMoney(d.cost),price:parseMoney(d.price),stock:Number(d.stock)||0,min:Number(d.min)||0,supplier:d.supplier||'',unit:d.unit,_keep:true};if(el.value==='insumo')pfRecipe=[];f.outerHTML=productForm(o,el.value);const h=document.querySelector('.modal-h h3');if(h)h.textContent=el.value==='insumo'?'Nuevo insumo':'Nuevo producto'},
+  'pf-cat':()=>{const w=$('#pf-newcat');if(w){w.hidden=el.value!=='__new';if(!w.hidden)setTimeout(()=>$('#f-newcat')?.focus(),20)}},
+  'cat-ren':()=>{const c=S.cats.find(x=>x.id===el.dataset.id);if(!c)return;const name=el.value.trim();if(!name){el.value=c.name;return}if(name===c.name)return;
+   if(catsOf().some(x=>x.id!==c.id&&catKey(x.name)===catKey(name))){toast(`Ya tienes la categoría “${name}”`,'bad');el.value=c.name;return}
+   const k=catKey(c.name);T('products').forEach(p=>{if(catKey(p.cat)===k)p.cat=name});c.name=name;save();catsRefresh();toast('Categoría renombrada')},
   'tm-plan':()=>{const p=planById(el.value);document.querySelectorAll('#tm-mods input').forEach(c=>{if(p.mods.includes(c.value))c.checked=true})},
  };
  M[k]?.();
@@ -2141,13 +2230,15 @@ document.addEventListener('submit',e=>{
   'recipe-save':()=>{const er=m=>{$('#rc-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};
    const recipe=pfRecipe.filter(r=>r.pid&&Number(r.qty)>0).map(r=>({pid:r.pid,qty:Number(r.qty)}));const name=(d.rname||'').trim();const price=parseMoney(d.rprice);
    if(!name)return er('Escribe el nombre.');if(!price)return er('Escribe el precio de venta.');if(!recipe.length)return er('Agrega al menos un ingrediente con su cantidad.');
-   const data={name,cat:d.rcat||'Recetas',price,cost:Math.round(recipeCost(recipe)),recipe,kind:'venta',unit:'und',min:0,supplier:''};
+   const data={name,cat:catMode()?(d.rcat||''):(d.rcat||'Recetas'),price,cost:Math.round(recipeCost(recipe)),recipe,kind:'venta',unit:'und',min:0,supplier:''};
    if(pfSelf){Object.assign(S.products.find(x=>x.id===pfSelf),data)}else{S.products.push({id:uid(),tid:t.id,code:autoCode(null,'R'),stock:0,...data})}
    save();closeModal();render();toast(pfSelf?'Receta actualizada':`${name} listo para vender en la caja`)},
+  'cat-add':()=>{const name=(d.name||'').trim();if(!name)return;if(catsOf().some(c=>catKey(c.name)===catKey(name))){toast(`Ya tienes la categoría “${name}”`,'bad');return}ensureCat(name);save();catsRefresh();setTimeout(()=>$('#cat-new')?.focus(),20);toast(`Categoría “${name}” creada`)},
   'prod-save':()=>{const kind=d.kind||'venta';const code=d.code.trim()||autoCode(null,kind==='insumo'?'INS':'P');const dup=S.products.find(p=>p.tid===t.id&&p.code===code&&p.id!==d.id);if(dup){toast(`El código ${code} ya es de “${dup.name}”`,'bad');return}
    const recipe=kind==='insumo'?[]:pfRecipe.filter(r=>r.pid&&Number(r.qty)>0).map(r=>({pid:r.pid,qty:Number(r.qty)}));
    if(!recipe.length&&!parseMoney(d.cost)&&d.cost!=='0'){toast('Escribe el costo del producto','bad');return}
-   const data={code,name:d.name.trim(),cat:d.cat.trim(),cost:recipe.length?Math.round(recipeCost(recipe)):parseMoney(d.cost),price:kind==='insumo'?0:parseMoney(d.price),kind,unit:kind==='insumo'?(d.unit||'kg'):'und',min:recipe.length?0:(Number(d.min)||0),supplier:d.supplier||'',recipe};if(d.id)delete data.kind;
+   let cat=(d.cat||'').trim();if(cat==='__new'){const nm=(d.newcat||'').trim();if(!nm){toast('Escribe el nombre de la nueva categoría','bad');return}cat=ensureCat(nm)}
+   const data={code,name:d.name.trim(),cat,cost:recipe.length?Math.round(recipeCost(recipe)):parseMoney(d.cost),price:kind==='insumo'?0:parseMoney(d.price),kind,unit:kind==='insumo'?(d.unit||'kg'):'und',min:recipe.length?0:(Number(d.min)||0),supplier:d.supplier||'',recipe};if(d.id)delete data.kind;
    if(d.id){Object.assign(S.products.find(p=>p.id===d.id),data)}else{const np={id:uid(),tid:t.id,...data,stock:recipe.length?0:(Number(d.stock)||0)};S.products.push(np);if(np.stock)S.kardex.push({id:uid(),tid:t.id,pid:np.id,type:'entrada',qty:np.stock,at:Date.now(),note:'Stock inicial'})}
    save();closeModal();render();toast(d.id?'Guardado':kind==='insumo'?'Insumo creado':'Producto creado')},
   'stock-adj':()=>{const p=S.products.find(x=>x.id===d.id);const q=Number(d.qty)||0;let delta=d.type==='entrada'?q:d.type==='salida'?-q:q-p.stock;p.stock=Math.round((p.stock+delta)*100)/100;S.kardex.push({id:uid(),tid:t.id,pid:p.id,type:d.type,qty:d.type==='ajuste'?q:Math.abs(delta),at:Date.now(),note:d.note||(d.type==='entrada'?'Entrada manual':d.type==='salida'?(p.kind==='insumo'?'Consumo en producción':'Salida manual'):'Conteo físico')});save();closeModal();render();toast(`${p.name}: quedan ${num(p.stock)} ${p.unit||'und'}`)},
@@ -2193,7 +2284,7 @@ document.addEventListener('submit',e=>{
    if(d.amount){S.payments.push({id:uid(),tid:id,amount:d.amount,at:Date.now(),method:'Bre-B',concept:d.concept||'Compra desde la demo',ref:d.ref||''});if(d.setup)t.setupPaid=true}else{S.payments.push({id:uid(),tid:id,amount:p.price,at:Date.now(),method:'Transferencia',concept:'Mensualidad'});if(d.setup){t.setupPaid=true;S.payments.push({id:uid(),tid:id,amount:SETUP.price,at:Date.now(),method:'Transferencia',concept:'Implementación asistida'})}}S.messages.push({id:uid(),to:id,kind:'aviso',title:`Bienvenido a Natara, ${u.name.split(' ')[0]}`,body:'Tu cuenta está lista. Empieza cargando tu inventario desde Excel o creando tus productos.',at:Date.now(),readBy:[]});save();render();sendWelcome(t,u,pass)},
   'tenant-del':()=>{const t=S.tenants.find(x=>x.id===d.id);if(norm(d.confirm)!==norm(t.name)){$('#del-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">El nombre no coincide. Escríbelo tal como aparece arriba.</div></div>`;return}
    const ids=new Set(S.users.filter(x=>x.tid===t.id).map(x=>x.id));if(REAL)rPurge(t.id,[...ids]);
-   ['products','sales','moves','customers','ledger','suppliers','sessions','kardex','requests','purchases','members','pmoves','settings'].forEach(k=>S[k]=(S[k]||[]).filter(x=>x.tid!==t.id));
+   ['products','sales','moves','customers','ledger','suppliers','sessions','kardex','requests','purchases','members','pmoves','settings','cats'].forEach(k=>S[k]=(S[k]||[]).filter(x=>x.tid!==t.id));
    S.users=REAL?S.users.map(x=>x.tid===t.id?{id:x.id,email:x.email,name:x.name,role:x.role,tid:null,perms:[],active:false,archived:true}:x):S.users.filter(x=>x.tid!==t.id);S.messages=S.messages.filter(m=>m.to!==t.id).map(m=>({...m,readBy:m.readBy.filter(r=>r!==t.id)}));
    S.payments.forEach(x=>{if(x.tid===t.id){x.formerName=t.name}});S.tenants=S.tenants.filter(x=>x.id!==t.id);
    liveRefresh();L0.feed=L0.feed.filter(e=>e.tid!==t.id);delete L0.views[t.id];ids.forEach(i=>delete L0.presence[i]);liveSave();
@@ -2275,10 +2366,10 @@ ${REAL_URL}`)},
 /* =========================================================
    APP REAL · Firebase (Auth + Firestore)
    ========================================================= */
-const TCOLLS=['products','sales','moves','customers','ledger','suppliers','sessions','kardex','purchases','members','pmoves','settings'];
+const TCOLLS=['products','sales','moves','customers','ledger','suppliers','sessions','kardex','purchases','members','pmoves','settings','cats'];
 const SYNC_COLLS=[...TCOLLS,'tenants','users','payments','requests','messages','orders'];
 const RB={authReady:false,profileReady:false,user:null,unsubs:[],synced:{},needVerify:false,noProfile:false,pendingRender:false,lastBeat:0,renderT:null};
-function emptyState(){return {v:1,config:{contact:'WhatsApp 314 661 9135 · samanat2026@gmail.com',brand:'Samanat',priceChanges:[]},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[],members:[],pmoves:[],settings:[]}}
+function emptyState(){return {v:1,config:{contact:'WhatsApp 314 661 9135 · samanat2026@gmail.com',brand:'Samanat',priceChanges:[]},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[],members:[],pmoves:[],settings:[],cats:[]}}
 const stable=o=>JSON.stringify(o,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((a,x)=>(a[x]=v[x],a),{}):v);
 const pathOf=(c,r)=>TCOLLS.includes(c)?`tenants/${r.tid}/${c}/${r.id}`:c==='tenants'?`tenants/${r.id}`:`${c}/${r.id}`;
 function authErr(e){const c=e&&e.code||'';return({'auth/email-already-in-use':'Ese correo ya tiene una cuenta en Natara.','auth/invalid-email':'Revisa el correo: debe tener la forma nombre@dominio.com.','auth/weak-password':'La contraseña es muy débil.','auth/network-request-failed':'No hay conexión a internet. Revisa tu conexión e intenta de nuevo.','auth/too-many-requests':'Demasiados intentos. Espera un momento e intenta de nuevo.','auth/operation-not-allowed':'El inicio con correo no está activado en Firebase (Authentication → Método de acceso).'})[c]||`Ocurrió un error (${c||'desconocido'}). Intenta de nuevo.`}

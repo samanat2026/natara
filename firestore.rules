@@ -47,6 +47,8 @@ service cloud.firestore {
         || (coll in ['members', 'pmoves'] && hasMod(tid, 'fidelizacion'))
         || (coll in ['customers', 'ledger'] && (hasPerm('fiados') || hasPerm('anular')))
         || (coll == 'products' && hasPerm('inv_edit'))
+        // Caja por categorías: quien edita el inventario también crea y ordena las categorías
+        || (coll == 'cats' && hasPerm('inv_edit'))
         || (coll in ['suppliers', 'purchases'] && hasPerm('proveedores'))
         || (coll == 'moves' && (hasPerm('finanzas') || hasPerm('proveedores')));
     }

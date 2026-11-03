@@ -64,6 +64,18 @@ Complemento de $5.000/mes que paga el dueño del negocio (incluido en el plan To
 - **Configuración (dueño → Puntos → Configurar):** por defecto 1 punto por cada $1.000, cada punto vale $7, mínimo 100 para usarlos, vencen a los 12 meses, 0 de bienvenida.
 - Datos en Firestore: `tenants/{tid}/members` (afiliados con sus lotes), `tenants/{tid}/pmoves` (historial) y `tenants/{tid}/settings/fid_{tid}` (configuración).
 
+## Caja por categorías
+
+Opción **sin costo** que Samanat activa por negocio, solo si el cliente la pide (no todos la quieren). Apagada, la caja sigue igual que siempre.
+
+- **Activar:** consola → *Clientes* → columna *Caja por categorías*. Al encenderla, el dueño recibe un mensaje. El dueño la puede pedir desde *Mi plan* (botón de WhatsApp).
+- **Categorías:** el dueño (o un empleado con permiso de editar inventario) las crea en *Inventario → Categorías*: agregar, renombrar, ordenar con flechas y eliminar. Si los productos ya traían categoría (por ejemplo del Excel), *Agregarlas* las crea de una vez.
+- **Unir productos:** en cada categoría, *Elegir productos* muestra la lista con buscador para marcar varios a la vez. También se elige al crear o editar un producto (o una receta/combo), con la opción *+ Nueva categoría…*.
+- **En la caja:** arriba salen las categorías como botones (*Más vendidos*, Panes, Bebidas…, *Sin categoría*). Al tocar una salen todos sus productos; la búsqueda sigue buscando en todo el inventario. Las categorías vacías no aparecen.
+- Renombrar una categoría actualiza sus productos; eliminarla deja los productos como “Sin categoría” (no se borran). Apagar la opción no borra nada.
+- Datos en Firestore: `tenants/{tid}.catPos` (encendida o no) y `tenants/{tid}/cats` (`name`, `order`). El producto guarda el nombre de su categoría en `cat`, como antes.
+- **Reglas:** se agregó `cats` a lo que puede escribir un empleado con permiso `inv_edit`. Hay que volver a pegar `firestore.rules` en Firebase.
+
 ## Pagos con llave Bre-B
 
 - **Cuota:** el dueño entra a *Mi plan → Pagar mi cuota*, ve la llave, el valor exacto y una referencia (NAT-XXXXXX), paga desde su banco y toca *Ya pagué*. Mientras Samanat revisa, la cuenta no se bloquea (hasta 7 días).
