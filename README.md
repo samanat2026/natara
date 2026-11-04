@@ -118,6 +118,22 @@ Sección nueva del menú, solo para el dueño (*Cuenta → Mi negocio*).
   - *Lector de código de barras:* si lo tiene; apagado, la caja busca solo por nombre.
 - No hay que cambiar las reglas de Firebase: el dueño ya podía escribir en `settings`.
 
+## Imprimir recibos
+
+Opción **sin costo** que arranca **apagada en todos los planes**. Se enciende o apaga en dos lugares:
+
+- **Consola de Samanat:** *Clientes* → columna *Imprimir recibos* (campo `print` del negocio). Al encenderla, el dueño recibe un mensaje.
+- **Mi negocio (dueño):** tarjeta *Imprimir recibos* (`print` en `tenants/{tid}/settings/opts_{tid}`). Si el dueño ya la tocó, manda lo que él eligió; si nunca la tocó, vale lo que Samanat dejó en la consola. Si Samanat la cambia después, el negocio queda como Samanat la dejó.
+
+Encendida, cada recibo (ventas de caja, pagos de mesas y ventas anteriores en *Ventas*) trae el botón **Imprimir** y el enlace *Configurar impresora*. La impresora se configura **en cada equipo** (se guarda en el navegador, `localStorage` → `natara_printer`), porque cada caja o celular tiene la suya:
+
+- **Impresora del equipo** (por defecto): abre la ventana de impresión con el recibo ajustado al papel. Sirve para térmicas USB o de red instaladas en el computador, impresoras Wi-Fi, Bluetooth emparejadas con el celular y cualquier impresora normal.
+- **Térmica Bluetooth directo** (Chrome o Edge en Android, Windows y Mac; no en iPhone): toca *Buscar impresora*, se conecta por Web Bluetooth y el recibo sale sin ventana de impresión, con comandos ESC/POS (sin tildes, para que no salgan símbolos raros) y corte de papel si la impresora tiene cortador. Se reconecta sola a la última impresora. Las impresoras solo Bluetooth clásico no aparecen: se emparejan en el celular con una app de servicio de impresión (por ejemplo RawBT) y se usa *Impresora del equipo*.
+- **Papel:** térmica 58 mm (32 letras), térmica 80 mm (48 letras) o carta / media carta.
+- **Copias** (1 a 3) e **Imprimir solo al terminar cada venta** (si está apagado, se imprime con el botón cuando el cliente lo pida).
+- *Imprimir prueba* saca un recibo de ejemplo con los datos del negocio.
+- No hay que cambiar las reglas de Firebase.
+
 ## Caja por categorías
 
 Opción **sin costo** en cualquier plan. El dueño la enciende o apaga en *Mi negocio* (Samanat también puede dejarla encendida desde la consola). Apagada, la caja sigue igual que siempre.

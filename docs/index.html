@@ -449,6 +449,27 @@ details.hint summary{cursor:pointer}
 .hint{font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:10px;padding:12px 14px}
 .hint b{color:var(--ink)}
 .wa{white-space:pre-wrap;background:var(--surface-2);border-radius:10px;padding:12px;font-size:14px;max-height:200px;overflow:auto}
+/* impresión de recibos (58 mm, 80 mm o carta) */
+.prn-st{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);background:var(--surface-2);border-radius:10px;padding:10px 12px}
+.prn-st .dot{width:9px;height:9px;border-radius:50%;background:var(--ink-3);flex:none}
+.prn-st .dot.on{background:var(--good)}
+.prn-under{margin:10px 0 0;text-align:center}
+#print-area{display:none}
+@media print{
+ body>*:not(#print-area){display:none!important}
+ html,body{background:#fff!important;margin:0!important;padding:0!important;min-height:0!important}
+ #print-area{display:block;color:#000;background:#fff;font:12px/1.45 ui-monospace,"SF Mono",Menlo,Consolas,"Courier New",monospace}
+ #print-area .pa-copy{break-after:page;page-break-after:always}
+ #print-area .pa-copy:last-child{break-after:auto;page-break-after:auto}
+ #print-area.pa-58{width:48mm;padding:1mm 1mm 6mm;font-size:10.5px}
+ #print-area.pa-80{width:72mm;padding:1mm 2mm 6mm;font-size:12px}
+ #print-area.pa-carta{max-width:90mm;margin:0 auto;font-size:12px}
+ #print-area .receipt{background:none;padding:0;border-radius:0;font:inherit;line-height:1.45}
+ #print-area .c{text-align:center}
+ #print-area .ln{display:flex;justify-content:space-between;gap:6px}
+ #print-area .ln>:last-child{text-align:right;white-space:nowrap}
+ #print-area hr{border:0;border-top:1px dashed #000;margin:5px 0}
+}
 </style>
 </head>
 <body>
@@ -548,6 +569,7 @@ const IC={
  store:'M3 9l1.5-5h15L21 9M3 9h18v1.5a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0zM5 13v8h14v-8M10 21v-5h4v5',
  clock:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 7v5l3 2',
  back:'M19 12H5M11 18l-6-6 6-6',
+ printer:'M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z',
 };
 const ic=(n,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n]||''}"/></svg>`;
 const LOGO='data:image/webp;base64,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';
@@ -772,6 +794,9 @@ function setOpt(k,v){const t=tenant();const id='opts_'+t.id;let r=S.settings.fin
 const catMode=()=>{const o=optsOf().cat;return typeof o==='boolean'?o:!!tenant()?.catPos};
 // Lector de código de barras: complemento que activa Samanat; el dueño lo puede apagar si no lo está usando
 const lectorOn=()=>has('lector')&&optsOf().lector!==false;
+// Imprimir recibos: arranca APAGADO en todos los planes. Samanat lo enciende o apaga en la consola (tenant.print)
+// y el dueño lo enciende o apaga en Mi negocio (opts.print). Si el dueño ya lo tocó, manda lo que él eligió.
+const printOn=()=>{const o=optsOf().print;return typeof o==='boolean'?o:!!tenant()?.print};
 // Datos legales del negocio para el recibo (tenants/{tid}/settings/biz_{tid})
 const bizOf=tid=>S.settings.find(x=>x.id==='biz_'+tid)||{};
 // Dígito de verificación del NIT (algoritmo de la DIAN)
@@ -1542,10 +1567,9 @@ function checkout(){
  const pr=$('#pos-results');if(pr)pr.innerHTML=posResults();const q=$('#pos-q');if(q)q.value='';
  refreshPOS();
 }
-function showReceipt(s,fresh=false){
+function receiptHTML(s){
  const t=S.tenants.find(x=>x.id===s.tid);
- const body=`${fresh?`<div class="banner info">${ic('check')}<div class="grow"><b>Venta registrada.</b> ${s.method==='efectivo'&&s.received>s.total?`Entrega ${money(s.received-s.total)} de cambio.`:''}${s.method==='transferencia'&&!s.confirmed?'Quedó por confirmar la transferencia.':''}</div></div>`:''}
-  <div class="receipt">${receiptHead(t)}<hr>
+ return `<div class="receipt">${receiptHead(t)}<hr>
   <div class="ln"><span>Venta #${s.num}</span><span>${fdt(s.at)}</span></div><div class="ln"><span>Atendió</span><span>${esc(userName(s.seller))}</span></div>${s.mesa?`<div class="ln"><span>Mesa</span><span>${esc(s.mesa)}${s.tab&&s.mesaN?` · pago ${s.mesaN}`:''}</span></div>`:''}<hr>
   ${s.items.map(i=>`<div class="ln"><span>${i.qty} × ${esc(i.name)}</span><span>${money(i.qty*i.price)}</span></div>`).join('')}<hr>
   ${s.disc?`<div class="ln"><span>Subtotal</span><span>${money(s.sub)}</span></div><div class="ln"><span>Descuento ${num(s.ptsUsed)} puntos</span><span>−${money(s.disc)}</span></div>`:''}
@@ -1555,9 +1579,121 @@ function showReceipt(s,fresh=false){
   ${s.mid?`<hr><div class="ln"><span>Cliente</span><span>${esc(S.members.find(m=>m.id===s.mid)?.name||'')}</span></div><div class="ln"><span>Puntos ganados</span><span>${num(s.ptsEarned||0)}</span></div><div class="ln"><span>Saldo de puntos</span><span>${num(s.ptsAfter||0)}</span></div>`:''}
   ${s.status==='anulada'?`<hr><div class="c"><b>VENTA ANULADA</b></div>`:''}
   <hr>${receiptFoot(t)}</div>`;
+}
+function showReceipt(s,fresh=false){
+ const t=S.tenants.find(x=>x.id===s.tid);
+ const body=`${fresh?`<div class="banner info">${ic('check')}<div class="grow"><b>Venta registrada.</b> ${s.method==='efectivo'&&s.received>s.total?`Entrega ${money(s.received-s.total)} de cambio.`:''}${s.method==='transferencia'&&!s.confirmed?'Quedó por confirmar la transferencia.':''}</div></div>`:''}
+${receiptHTML(s)}${printOn()?`<p class="small muted prn-under">${ic('printer',14)} ${esc(prnLabel())} · <button class="linkish" data-a="prn-setup">Configurar impresora</button></p>`:''}`;
  const can=canDo('anular')&&s.status!=='anulada';
- const foot=`${s.method==='transferencia'&&!s.confirmed&&s.status!=='anulada'?`<button class="btn" data-a="confirm-tr" data-id="${s.id}">${ic('check',16)} Confirmar transferencia</button>`:''}${can&&!fresh?`<button class="btn danger" data-a="void-ask" data-id="${s.id}">Anular venta</button>`:''}<button class="btn primary" data-a="close-modal">${fresh?'Nueva venta':'Cerrar'}</button>`;
+ const foot=`${s.method==='transferencia'&&!s.confirmed&&s.status!=='anulada'?`<button class="btn" data-a="confirm-tr" data-id="${s.id}">${ic('check',16)} Confirmar transferencia</button>`:''}${can&&!fresh?`<button class="btn danger" data-a="void-ask" data-id="${s.id}">Anular venta</button>`:''}${printOn()?`<button class="btn" data-a="prn-sale" data-id="${s.id}">${ic('printer',16)} Imprimir</button>`:''}<button class="btn primary" data-a="close-modal">${fresh?'Nueva venta':'Cerrar'}</button>`;
  openModal(fresh?'Venta registrada':`Venta #${s.num}`,body,foot);
+ if(fresh&&printOn()&&prnCfg().auto)printSale(s);
+}
+
+/* =========================================================
+   IMPRESIÓN DE RECIBOS
+   Opción del negocio (printOn). La impresora se configura en cada equipo (localStorage),
+   porque cada caja o celular tiene su propia impresora conectada.
+   - 'sistema': el diálogo de impresión del navegador. Sirve para cualquier impresora que el
+     equipo ya tenga instalada: térmica USB, Wi-Fi/red, Bluetooth emparejada o una normal.
+   - 'bt': impresora térmica Bluetooth (BLE) directo desde Chrome con comandos ESC/POS, sin diálogo.
+   ========================================================= */
+const PRN_KEY='natara_printer';
+function prnCfg(){let c={};try{c=JSON.parse(localStorage.getItem(PRN_KEY)||'{}')||{}}catch(e){}
+ return {mode:c.mode==='bt'?'bt':'sistema',paper:['58','80','carta'].includes(c.paper)?c.paper:'80',auto:!!c.auto,copies:Math.min(3,Math.max(1,Number(c.copies)||1)),btName:c.btName||'',btId:c.btId||''}}
+function setPrn(k,v){const c=prnCfg();c[k]=v;try{localStorage.setItem(PRN_KEY,JSON.stringify(c))}catch(e){}}
+const PAPER_L={'58':'Térmica 58 mm','80':'Térmica 80 mm','carta':'Carta o media carta'};
+const prnLabel=()=>{const c=prnCfg();return c.mode==='bt'?(c.btName?`Bluetooth: ${c.btName}`:'Bluetooth sin conectar')+' · '+(c.paper==='58'?'58 mm':'80 mm'):'Impresora del equipo · '+PAPER_L[c.paper]};
+// Impresora del equipo: se pinta el recibo en #print-area y se abre el diálogo de impresión
+function printHTML(html,paper,copies=1){
+ let a=document.getElementById('print-area');if(!a){a=document.createElement('div');a.id='print-area';document.body.appendChild(a)}
+ a.className='pa-'+paper;a.innerHTML=Array.from({length:copies},()=>`<div class="pa-copy">${html}</div>`).join('');
+ let st=document.getElementById('prn-page');if(!st){st=document.createElement('style');st.id='prn-page';document.head.appendChild(st)}
+ st.textContent=paper==='carta'?'@page{margin:12mm}':'@page{margin:0}';
+ const done=()=>{a.innerHTML='';window.removeEventListener('afterprint',done)};window.addEventListener('afterprint',done);
+ setTimeout(()=>{try{window.print()}catch(e){toast('Este navegador no deja imprimir','bad')}},80);
+}
+// Bluetooth (Web Bluetooth + ESC/POS). Servicios de las térmicas BLE más comunes (58/80 mm genéricas, Xprinter, MTP, PT-210…)
+const BT_SERVICES=['000018f0-0000-1000-8000-00805f9b34fb','e7810a71-73ae-499d-8c15-faa9aef0c3f2','49535343-fe7d-4ae5-8fa9-9fafd205e455','0000ff00-0000-1000-8000-00805f9b34fb','0000ffe0-0000-1000-8000-00805f9b34fb','0000fff0-0000-1000-8000-00805f9b34fb','0000ae30-0000-1000-8000-00805f9b34fb'];
+const bt={dev:null,ch:null,busy:false};
+const btOK=()=>!!(navigator.bluetooth&&window.isSecureContext);
+const btOn=()=>!!(bt.ch&&bt.dev?.gatt?.connected);
+async function btConnect(dev){
+ const srv=await dev.gatt.connect();let ch=null;
+ for(const u of BT_SERVICES){let sv;try{sv=await srv.getPrimaryService(u)}catch(e){continue}
+  try{const cs=await sv.getCharacteristics();ch=cs.find(c=>c.properties.writeWithoutResponse)||cs.find(c=>c.properties.write)}catch(e){}
+  if(ch)break}
+ if(!ch){try{dev.gatt.disconnect()}catch(e){}throw new Error('nochar')}
+ bt.dev=dev;bt.ch=ch;
+ if(!dev._natara){dev._natara=1;dev.addEventListener('gattserverdisconnected',()=>{bt.ch=null;if($('#prn-form'))prnSetup()})}
+}
+async function btPick(){
+ const dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:BT_SERVICES});
+ await btConnect(dev);setPrn('btName',dev.name||'Impresora Bluetooth');setPrn('btId',dev.id);
+}
+// Reconecta sin preguntar: a la misma impresora de esta sesión o, si el navegador lo permite, a la última usada
+async function btEnsure(){
+ if(btOn())return true;
+ if(bt.dev){await btConnect(bt.dev);return true}
+ if(navigator.bluetooth.getDevices){const id=prnCfg().btId;const L=await navigator.bluetooth.getDevices().catch(()=>[]);const d=L.find(x=>x.id===id);if(d){await btConnect(d);return true}}
+ return false;
+}
+async function btWrite(bytes){
+ const ch=bt.ch,N=ch.properties.writeWithoutResponse?20:180;
+ for(let i=0;i<bytes.length;i+=N){const part=bytes.slice(i,i+N);
+  if(ch.properties.writeWithoutResponse&&ch.writeValueWithoutResponse){await ch.writeValueWithoutResponse(part);await new Promise(r=>setTimeout(r,8))}
+  else if(ch.writeValueWithResponse)await ch.writeValueWithResponse(part);else await ch.writeValue(part)}
+}
+// Las térmicas no traen tildes por defecto: se imprimen sin ellas (á→a, ñ→n) para que nunca salgan símbolos raros
+const escAscii=t=>String(t).replace(/[\u00a0\u202f]/g,' ').replace(/×/g,'x').replace(/[−–—]/g,'-').replace(/▸/g,'>').replace(/·/g,'-').replace(/[“”]/g,'"').replace(/[‘’]/g,"'").normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\x20-\x7e]/g,'');
+function wrapTxt(t,w){const out=[];let line='';for(const word of t.split(/\s+/).filter(Boolean)){let x=word;while(x.length>w){if(line){out.push(line);line=''}out.push(x.slice(0,w));x=x.slice(w)}if(!line)line=x;else if(line.length+1+x.length<=w)line+=' '+x;else{out.push(line);line=x}}if(line)out.push(line);return out}
+// Convierte el mismo HTML del recibo (cabecera, líneas, totales, mesa, puntos, pie) a bytes ESC/POS
+function receiptEscPos(html,cols,copies=1){
+ const box=document.createElement('div');box.innerHTML=html;const root=box.querySelector('.receipt')||box;
+ const B=[];const txt=t=>{for(const ch of escAscii(t))B.push(ch.charCodeAt(0))};const nl=()=>B.push(10);
+ const align=a=>B.push(27,97,a),bold=b=>B.push(27,69,b?1:0);
+ const lr=(l,r,isB)=>{bold(isB);const L=wrapTxt(escAscii(l),cols);const last=L.pop()||'';L.forEach(x=>{txt(x);nl()});r=escAscii(r);
+  if(!r){txt(last);nl()}else if(last.length+1+r.length<=cols){txt(last+' '.repeat(cols-last.length-r.length)+r);nl()}else{if(last){txt(last);nl()}wrapTxt(r,cols).forEach(x=>{txt(x.padStart(cols));nl()})}bold(0)};
+ const one=()=>{B.push(27,64);B.push(27,50);
+  for(const el of root.children){
+   if(el.tagName==='HR'){align(0);txt('-'.repeat(cols));nl();continue}
+   if(el.classList.contains('c')){align(1);el.innerHTML.split(/<br\s*\/?>/i).forEach(part=>{const d=document.createElement('div');d.innerHTML=part;const t=d.textContent.trim();if(!t)return;bold(!!d.querySelector('b'));wrapTxt(escAscii(t),cols).forEach(x=>{txt(x);nl()});bold(0)});align(0);continue}
+   if(el.classList.contains('ln')){const K=[...el.children];lr(K[0]?.textContent.trim()||el.textContent.trim(),K.length>1?K[K.length-1].textContent.trim():'',!!el.querySelector('b'));continue}
+   const t=el.textContent.trim();if(t)wrapTxt(escAscii(t),cols).forEach(x=>{txt(x);nl()});
+  }
+  B.push(10,10,10,10);B.push(29,86,66,0);// avanza el papel y corta (si la impresora tiene cortador)
+ };
+ for(let i=0;i<copies;i++)one();
+ return new Uint8Array(B);
+}
+async function printReceipt(html){
+ const c=prnCfg();
+ if(c.mode!=='bt')return printHTML(html,c.paper,c.copies);
+ if(!btOK()){toast('Este navegador no se conecta a impresoras Bluetooth. Usa Chrome o elige "Impresora del equipo"','bad');return prnSetup()}
+ if(bt.busy)return;bt.busy=true;
+ try{
+  if(!await btEnsure()){toast('Primero conecta la impresora Bluetooth','bad');return prnSetup()}
+  await btWrite(receiptEscPos(html,c.paper==='58'?32:48,c.copies));toast('Recibo enviado a la impresora');
+ }catch(e){bt.ch=null;toast('No pudimos imprimir. Revisa que la impresora esté prendida, con papel y cerca','bad')}
+ finally{bt.busy=false}
+}
+function printSale(s){if(!printOn()||!s)return;printReceipt(receiptHTML(s))}
+function printTest(){const t=tenant();printReceipt(`<div class="receipt">${receiptHead(t)}<hr><div class="c"><b>PRUEBA DE IMPRESIÓN</b></div><div class="ln"><span>Fecha</span><span>${fdt(Date.now())}</span></div><div class="ln"><span>Impresora</span><span>${esc(prnLabel().split(' · ')[0])}</span></div><hr><div class="ln"><span>1 × Producto de ejemplo</span><span>${money(10000)}</span></div><div class="ln"><b>TOTAL</b><b>${money(10000)}</b></div><hr>${receiptFoot(t)}</div>`)}
+function prnSetup(){
+ const c=prnCfg();const bto=btOK();
+ const papers=c.mode==='bt'?[['58','Térmica 58 mm (32 letras)'],['80','Térmica 80 mm (48 letras)']]:[['80','Térmica 80 mm'],['58','Térmica 58 mm'],['carta','Carta o media carta (impresora normal)']];
+ const body=`<form class="stack" id="prn-form" onsubmit="return false">
+  <div class="form-grid">
+   ${field('Cómo está conectada',`<select class="input" data-c="prn-mode"><option value="sistema" ${c.mode==='sistema'?'selected':''}>Impresora del equipo (USB, Wi-Fi o la que ya esté instalada)</option><option value="bt" ${c.mode==='bt'?'selected':''} ${bto?'':'disabled'}>Térmica Bluetooth, directo desde Chrome${bto?'':' (no disponible aquí)'}</option></select>`,'full')}
+   ${field('Papel',`<select class="input" data-c="prn-paper">${papers.map(([v,l])=>`<option value="${v}" ${c.paper===v?'selected':''}>${l}</option>`).join('')}</select>`)}
+   ${field('Copias por recibo',`<select class="input" data-c="prn-copies">${[1,2,3].map(n=>`<option value="${n}" ${c.copies===n?'selected':''}>${n}</option>`).join('')}</select>`)}
+   <label class="check full" style="grid-column:1/-1"><input type="checkbox" data-c="prn-auto" ${c.auto?'checked':''}><span>Imprimir solo al terminar cada venta<small>Si lo dejas apagado, imprimes con el botón <b>Imprimir</b> del recibo cuando el cliente lo pida.</small></span></label>
+  </div>
+  ${c.mode==='bt'?`<div class="prn-st"><span class="dot ${btOn()?'on':''}"></span><div class="grow">${btOn()?`Conectada a <b>${esc(bt.dev.name||c.btName||'la impresora')}</b>`:c.btName?`Última impresora: <b>${esc(c.btName)}</b>. Se conecta sola al imprimir; si no, búscala otra vez.`:'Ninguna impresora conectada'}</div><button type="button" class="btn sm ${btOn()?'':'primary'}" data-a="prn-bt">${ic('search',14)} ${btOn()||c.btName?'Cambiar':'Buscar impresora'}</button></div>
+   <p class="small muted" style="margin:0">Prende la impresora, acércala y toca <b>Buscar impresora</b>. Funciona en Chrome o Edge (Android, Windows, Mac). En iPhone usa <b>Impresora del equipo</b>. Si tu impresora no aparece, es Bluetooth clásico: emparéjala en el celular, instala una app de servicio de impresión (por ejemplo RawBT) y elige <b>Impresora del equipo</b>.</p>`
+  :`<p class="small muted" style="margin:0">Al imprimir se abre la ventana de impresión: elige tu impresora (la primera vez) y el tamaño de papel. Sirve para térmicas USB o de red instaladas en el computador, impresoras Wi-Fi o Bluetooth emparejadas con el celular y cualquier impresora normal. Consejo: deja tu térmica como impresora predeterminada y en Chrome quita <b>Encabezados y pies de página</b>.</p>`}
+ </form>`;
+ openModal('Impresora de recibos',body,`<button class="btn" data-a="prn-test">${ic('printer',16)} Imprimir prueba</button><button class="btn primary" data-a="close-modal">Listo</button>`);
 }
 
 /* =========================================================
@@ -1990,7 +2126,7 @@ function guideSections(){
   'Para pagar tu cuota toca <b>Pagar mi cuota</b>: eliges 1 o 12 meses, pagas con la llave y tocas <b>Ya pagué</b>. Mientras Samanat revisa, tu cuenta no se bloquea.',
   'En <b>Mensajes</b> te llegan los avisos de Samanat: pagos, novedades y cambios de precio.',
   'Si la cuota se vence, tienes '+GRACE_DAYS+' días de gracia antes de que se bloquee el acceso. Tus datos nunca se pierden.']});
- if(own)S_.push({id:'negocio',icon:'store',title:'Mi negocio: datos del recibo y funciones',go:'negocio',steps:['En <b>Mi negocio</b> escribe tu razón social, NIT, dirección, teléfono y régimen. Salen arriba en cada recibo; el dígito de verificación del NIT se calcula solo.','En el pie del recibo puedes poner un mensaje para tus clientes (por ejemplo, tu horario o tus redes).','Ahí mismo enciendes o apagas la <b>caja por categorías</b> (sin costo, en cualquier plan) y, si los tienes en tu plan, <b>Puntos y fidelización</b> y el <b>lector de código de barras</b>.','El recibo de Natara es un documento de control interno: no es factura electrónica de la DIAN.']});
+ if(own)S_.push({id:'negocio',icon:'store',title:'Mi negocio: datos del recibo y funciones',go:'negocio',steps:['En <b>Mi negocio</b> escribe tu razón social, NIT, dirección, teléfono y régimen. Salen arriba en cada recibo; el dígito de verificación del NIT se calcula solo.','En el pie del recibo puedes poner un mensaje para tus clientes (por ejemplo, tu horario o tus redes).','Ahí mismo enciendes o apagas la <b>caja por categorías</b> (sin costo, en cualquier plan) y, si los tienes en tu plan, <b>Puntos y fidelización</b> y el <b>lector de código de barras</b>.','Si tienes impresora de recibos, enciende <b>Imprimir recibos</b> y toca <b>Configurar impresora</b>: térmica de 58 u 80 mm por USB, Wi-Fi o Bluetooth, o una impresora normal. Puedes imprimir solo al terminar cada venta o con el botón <b>Imprimir</b> del recibo.','El recibo de Natara es un documento de control interno: no es factura electrónica de la DIAN.']});
  if(own&&m('fidelizacion')&&!fidOn())S_.push({id:'puntos-off',icon:'gift',title:'Puntos y fidelización (apagado)',go:'negocio',steps:['Tu plan incluye <b>Puntos y fidelización</b>, pero está apagado: por eso no lo ves en la caja ni en el menú.','Para usarlo entra a <b>Mi negocio</b> y enciende <b>Puntos y fidelización</b>. Lo puedes apagar cuando quieras sin perder los puntos de tus clientes.']});
  if(m('mesas')){S_.push({id:'mesas',icon:'table',title:'Mesas y cuentas divididas',go:'mesas',steps:[
   ...(own?['La primera vez entra a <b>Mesas</b> y escribe cuántas mesas tienes. Con <b>Configurar mesas</b> les cambias el nombre (Terraza 1, Barra…) o agregas y quitas mesas.']:[]),
@@ -2289,6 +2425,7 @@ function viewNegocio(){
  F.push(card(catMode(),'Caja por categorías','tag',(catMode()?'Encendida: en la caja salen tus categorías como botones (Panes, Bebidas…).':'Apagada: la caja muestra los más vendidos y la búsqueda, sin botones de categorías.')+' Sin costo, en cualquier plan.',sw(catMode(),'neg-cat','la caja por categorías'),catMode()?`<button class="btn sm" data-a="cats">${ic('tag',14)} Mis categorías</button>`:''));
  if(t.mods.includes('fidelizacion'))F.push(card(fidOn(),'Puntos y fidelización','gift',fidOn()?'Encendido: la caja pide la cédula del cliente, suma puntos y deja usarlos como descuento.':'Apagado: no aparece en la caja ni en el menú. Tus clientes afiliados y sus puntos quedan guardados.',sw(fidOn(),fidOn()?'fid-off':'fid-on','Puntos y fidelización')));
  else F.push(card(false,'Puntos y fidelización','gift','Tus clientes acumulan puntos con cada compra y los usan como descuento. No está en tu plan.',`<button class="btn sm" data-a="go" data-v="plan">Ver en Mi plan</button>`));
+ F.push(card(printOn(),'Imprimir recibos','printer',printOn()?'Encendido: cada recibo trae el botón <b>Imprimir</b>. Funciona con térmicas de 58 u 80 mm por USB, Wi-Fi o Bluetooth, o con cualquier impresora del equipo.':'Apagado: los recibos se ven en pantalla, sin botón de imprimir. Enciéndelo si tienes impresora de recibos.',sw(printOn(),'neg-print','la impresión de recibos'),printOn()?`<button class="btn sm" data-a="prn-setup">${ic('printer',14)} Configurar impresora</button><span class="small muted">${esc(prnLabel())}</span>`:''));
  if(has('lector'))F.push(card(lectorOn(),'Lector de código de barras','barcode',lectorOn()?'Encendido: en la caja puedes escanear el código del producto.':'Apagado: la caja busca solo por nombre, como si no tuvieras lector.',sw(lectorOn(),'neg-lector','el lector de código de barras')));
  const v=(k,d='')=>esc(b[k]??d);
  return `<div class="page-head"><div><h1>Mi negocio</h1><p>Los datos que salen en tus recibos y las funciones que tú enciendes o apagas.</p></div></div>
@@ -2360,7 +2497,7 @@ function aResumen(){
 }
 function aClientes(){
  return `<div class="page-head"><div><h1>Clientes</h1><p>Elige qué módulos ve cada negocio y controla su acceso al instante.</p></div><div class="actions"><button class="btn primary" data-a="tenant-new">${ic('plus',16)} Nuevo cliente</button></div></div>
-  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Negocio</th><th>Plan y módulos</th><th class="r">Cuota</th><th>Vence</th><th title="Complemento de lector de código de barras">Lector de barras</th><th title="Gratis: productos agrupados por categorías en la caja. Actívala cuando el cliente la pida">Caja por categorías</th><th title="Si lo apagas, el negocio queda bloqueado al instante">Acceso a Natara</th><th></th></tr></thead><tbody>${S.tenants.map(t=>{const o=S.users.find(u=>u.tid===t.id&&u.role==='dueno');return`<tr><td><b>${esc(t.name)}</b><div class="muted small">${esc(t.type)} · ${esc(t.city)} · ${esc(o?.name||'')}</div>${liveLine(t)}</td><td><div class="small" style="margin-bottom:4px"><b>${planById(t.plan).name}</b></div><div class="chips">${t.mods.map(m=>`<span class="pill">${modById(m)?.name}</span>`).join('')}</div></td><td class="r num">${money(fee(t))}</td><td style="white-space:nowrap">${fshort(t.due)}<div style="margin-top:4px">${pillDue(t)}</div></td><td><button class="switch ${t.mods.includes('lector')?'on':''}" data-a="lector-toggle" data-id="${t.id}" aria-label="Lector de barras de ${esc(t.name)}" title="Lector de código de barras (+${money(modById('lector').price)})"></button></td><td><button class="switch ${t.catPos?'on':''}" data-a="catpos-toggle" data-id="${t.id}" aria-label="Caja por categorías de ${esc(t.name)}" title="Caja por categorías (sin costo)"></button></td><td><button class="switch ${t.status==='activo'?'on':''}" data-a="tenant-toggle" data-id="${t.id}" aria-label="Acceso de ${esc(t.name)}"></button></td><td class="r"><button class="btn sm" data-a="tenant" data-id="${t.id}">Gestionar</button></td></tr>`}).join('')}</tbody></table></div></div>`;
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Negocio</th><th>Plan y módulos</th><th class="r">Cuota</th><th>Vence</th><th title="Complemento de lector de código de barras">Lector de barras</th><th title="Gratis: productos agrupados por categorías en la caja. Actívala cuando el cliente la pida">Caja por categorías</th><th title="Botón Imprimir en los recibos. Arranca apagado; el dueño también lo puede encender o apagar en Mi negocio">Imprimir recibos</th><th title="Si lo apagas, el negocio queda bloqueado al instante">Acceso a Natara</th><th></th></tr></thead><tbody>${S.tenants.map(t=>{const o=S.users.find(u=>u.tid===t.id&&u.role==='dueno');return`<tr><td><b>${esc(t.name)}</b><div class="muted small">${esc(t.type)} · ${esc(t.city)} · ${esc(o?.name||'')}</div>${liveLine(t)}</td><td><div class="small" style="margin-bottom:4px"><b>${planById(t.plan).name}</b></div><div class="chips">${t.mods.map(m=>`<span class="pill">${modById(m)?.name}</span>`).join('')}</div></td><td class="r num">${money(fee(t))}</td><td style="white-space:nowrap">${fshort(t.due)}<div style="margin-top:4px">${pillDue(t)}</div></td><td><button class="switch ${t.mods.includes('lector')?'on':''}" data-a="lector-toggle" data-id="${t.id}" aria-label="Lector de barras de ${esc(t.name)}" title="Lector de código de barras (+${money(modById('lector').price)})"></button></td><td><button class="switch ${t.catPos?'on':''}" data-a="catpos-toggle" data-id="${t.id}" aria-label="Caja por categorías de ${esc(t.name)}" title="Caja por categorías (sin costo)"></button></td><td><button class="switch ${t.print?'on':''}" data-a="print-toggle" data-id="${t.id}" aria-label="Imprimir recibos de ${esc(t.name)}" title="Imprimir recibos"></button></td><td><button class="switch ${t.status==='activo'?'on':''}" data-a="tenant-toggle" data-id="${t.id}" aria-label="Acceso de ${esc(t.name)}"></button></td><td class="r"><button class="btn sm" data-a="tenant" data-id="${t.id}">Gestionar</button></td></tr>`}).join('')}</tbody></table></div></div>`;
 }
 function aActividad(){
  const now=Date.now(),today=sod(now);const rows=S.tenants.map(t=>({t,x:tenantLive(t)}));
@@ -2516,6 +2653,12 @@ document.addEventListener('click',e=>{
   'fid-new':()=>fidNewModal(sess.view==='caja'?docDigits(pos.fdoc):''),
   'fid-cfg':()=>fidCfgModal(),
   'neg-lector':()=>{const on=!lectorOn();setOpt('lector',on);toast(on?'Lector encendido: ya puedes escanear en la caja':'Lector apagado: la caja busca solo por nombre')},
+  'neg-print':()=>{const on=!printOn();setOpt('print',on);toast(on?'Impresión encendida: configura la impresora de este equipo':'Impresión de recibos apagada');if(on)setTimeout(prnSetup,120)},
+  'prn-setup':()=>prnSetup(),
+  'prn-sale':()=>printSale(S.sales.find(x=>x.id===id)),
+  'prn-test':()=>printTest(),
+  'prn-bt':async()=>{if(!btOK())return toast('Este navegador no se conecta a impresoras Bluetooth. Usa Chrome o Edge','bad');try{await btPick();toast('Impresora conectada');prnSetup()}catch(e){if(e&&e.name==='NotFoundError')return;toast(e&&e.message==='nochar'?'Esa impresora no recibe datos por Bluetooth directo. Usa "Impresora del equipo"':'No pudimos conectar la impresora. Préndela y acércala','bad')}},
+  'print-toggle':()=>{const t=S.tenants.find(x=>x.id===id);t.print=!t.print;const o=S.settings.find(x=>x.id==='opts_'+t.id);if(o&&typeof o.print==='boolean')o.print=t.print;if(t.print)S.messages.push({id:uid(),to:t.id,kind:'promo',title:'Ya puedes imprimir tus recibos',body:'Activamos la impresión de recibos. Cada recibo trae el botón Imprimir y sirve con impresoras térmicas de 58 u 80 mm (USB, Wi-Fi o Bluetooth) o con cualquier impresora. Configúrala en Mi negocio → Imprimir recibos → Configurar impresora; ahí también la puedes apagar.',at:Date.now(),readBy:[]});save();render();toast(t.print?`Impresión de recibos activada para ${t.name}`:`Impresión de recibos desactivada para ${t.name}`)},
   'neg-cat':()=>{const on=!catMode();setOpt('cat',on);toast(on?'Caja por categorías encendida. Crea tus categorías en Mis categorías':'Caja por categorías apagada')},
   'fid-on':()=>{setFid(true);toast('Puntos encendidos: ya aparecen en la caja y en el menú')},
   'fid-off':()=>openModal('Apagar puntos y fidelización',`<p style="margin:0">Mientras esté apagado, la caja no pide la cédula ni suma puntos, y <b>Puntos</b> sale del menú.</p><p class="muted small" style="margin:0">No se borra nada: los clientes afiliados y sus puntos quedan guardados para cuando lo vuelvas a encender.</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="fid-off-do">Apagar</button>`),
@@ -2672,6 +2815,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',e=>{
  const el=e.target,k=el.dataset.c;if(!k)return;
  const M={
+'prn-mode':()=>{setPrn('mode',el.value);if(el.value==='bt'&&prnCfg().paper==='carta')setPrn('paper','58');prnSetup()},'prn-paper':()=>setPrn('paper',el.value),'prn-copies':()=>setPrn('copies',Number(el.value)||1),'prn-auto':()=>setPrn('auto',el.checked),
 'pos-bank':()=>pos.bank=el.value,'pos-card':()=>pos.card=el.value,'pos-ver':()=>pos.verified=el.checked,'pos-cust':()=>pos.customer=el.value,'fid-use':()=>{pos.useP=el.checked;refreshPOS()},
   'qty-set':()=>{cart[+el.dataset.ix].qty=Math.max(1,Number(el.value)||1);refreshPOS()},
   'vf-range':()=>{vf.range=el.value;render()},'vf-method':()=>{vf.method=el.value;render()},'vf-origin':()=>{vf.origin=el.value;render()},'vf-seller':()=>{vf.seller=el.value;render()},
