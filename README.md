@@ -74,6 +74,10 @@ Complemento de $5.000/mes que paga el dueño del negocio (incluido en Premium y 
 - **Configuración (dueño → Puntos → Configurar):** por defecto 1 punto por cada $1.000, cada punto vale $7, mínimo 100 para usarlos, vencen a los 12 meses, 0 de bienvenida.
 - Datos en Firestore: `tenants/{tid}/members` (afiliados con sus lotes), `tenants/{tid}/pmoves` (historial) y `tenants/{tid}/settings/fid_{tid}` (configuración).
 
+## Botón Atrás
+
+Cada pantalla queda en el historial del navegador (`history.pushState` desde `render()`), así que el botón *Atrás* del celular o del navegador vuelve a la pantalla anterior en vez de cerrar la app: de un cobro a la mesa, de la mesa al mapa, de Ventas a Inicio. Si hay una ventana abierta o el menú del celular, *Atrás* solo los cierra. *Atrás* nunca vuelve a la sesión de otro usuario ni entra de nuevo después de cerrar sesión.
+
 ## Mesas y meseros
 
 Módulo de $29.900/mes para restaurantes, cafeterías y panaderías con mesas (incluido en el plan Restaurante; se puede agregar a cualquier otro plan). Si el negocio no tiene el módulo o no ha creado mesas, el cajero trabaja como siempre en la Caja. Solo se ofrece en *Mi plan* a negocios de comida; a los demás no les aparece.

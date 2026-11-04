@@ -836,7 +836,7 @@ async function saveFile(filename,rows,sheet='Datos'){
    ========================================================= */
 let navOpen=false;
 function render(){
- applyPrices();
+ navTrack();applyPrices();
  if(REAL){const g=realGate();if(g!==null){$('#app').innerHTML=g;return}}
  const u=me();
  if(u&&u.role==='superadmin'&&MODE==='demo'&&!DEMO_ADMIN){sess={uid:null,view:null};saveSess();$('#app').innerHTML=viewLogin();return}
@@ -1227,6 +1227,33 @@ function mzCfgModal(){
   <form class="row" data-f="mz-more" id="mz-more" style="gap:8px;align-items:flex-end">${field('Agregar mesas',inp('count','1','number','min="1" max="100" inputmode="numeric" style="width:90px"'))}<button class="btn">${ic('plus',16)} Agregar</button></form>`,`<button class="btn primary" data-a="close-modal">Listo</button>`);
 }
 function mzMake(n){const t=tenant();const M=mesasOf();let k=M.length;const names=new Set(M.map(m=>norm(m.name)));let i=1;for(let c=0;c<n;c++){while(names.has(norm('Mesa '+i)))i++;names.add(norm('Mesa '+i));S.tables.push({id:uid(),tid:t.id,name:'Mesa '+i,order:k++})}}
+
+/* =========================================================
+   BOTÓN ATRÁS (celular y navegador)
+   Cada pantalla queda en el historial: Atrás vuelve a la anterior en vez de cerrar la app.
+   Con una ventana o el menú abiertos, Atrás solo los cierra. Nunca vuelve a la sesión de otro usuario.
+   ========================================================= */
+let navRestoring=false;
+const navKey=()=>({nt:1,u:sess.uid||null,v:sess.view||null,m:mz.id||null,p:!!mz.pay});
+const navSame=(a,b)=>!!a&&!!b&&a.u===b.u&&a.v===b.v&&a.m===b.m&&a.p===b.p;
+function navTrack(){if(navRestoring)return;try{const h=history.state&&history.state.nt?history.state:null;const k=navKey();if(!h)history.replaceState(k,'');else if(!navSame(h,k))history.pushState(k,'')}catch(e){}}
+window.addEventListener('popstate',e=>{
+ const s=e.state;if(!s||!s.nt)return;
+ const keep=()=>{try{history.pushState(navKey(),'')}catch(_){}};
+ // primero se cierra lo que esté encima: una ventana o el menú del celular
+ if($('#modal-root').innerHTML){closeModal();keep();return}
+ if(navOpen){navOpen=false;document.querySelector('.shell')?.classList.remove('open');keep();return}
+ // otra sesión (alguien cerró sesión o entró otro usuario): no se vuelve a ella
+ if(s.u!==(sess.uid||null)){try{history.replaceState(navKey(),'')}catch(_){}return}
+ navRestoring=true;
+ try{
+  if(mz.pay&&!(s.p&&s.m===mz.id))mzPayExit(true);
+  sess.view=s.v;saveSess();mz.id=s.m;mz.q='';mz.cat='';
+  if(s.p&&s.m&&tabOf(s.m)&&canCobrar()){mz.pay=false;mzPayStart()}else render();
+  $('#main')?.scrollTo(0,0);
+ }finally{navRestoring=false}
+ try{history.replaceState(navKey(),'')}catch(_){}
+});
 
 /* =========================================================
    CAJA / POS
