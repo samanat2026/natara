@@ -17,14 +17,14 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 
 | Correo | Rol | Qué ve |
 |---|---|---|
-| marta@laespiga.co | Dueña · Panadería La Espiga | Plan Total (todos los módulos) |
+| marta@laespiga.co | Dueña · Panadería La Espiga | Plan Premium (todo para tiendas), con puntos encendidos |
 | juan@laespiga.co | Cajero · Panadería La Espiga | Caja + permisos: inventario, costos, recetas, proveedores y fiados |
 | laura@laespiga.co | Cajera · Panadería La Espiga | Sin permisos extra: solo vende y ve sus propias ventas |
 | pedro@laespiga.co | Cajero desactivado | Prueba el mensaje de usuario desactivado |
 | carlos@vidasana.co | Dueño · Droguería Vida Sana | Plan Pro |
-| pacho@minimercado.co | Dueño · Minimercado Don Pacho | Plan Básico |
+| pacho@minimercado.co | Dueño · Minimercado Don Pacho | Plan Básico (18 productos de ejemplo) |
 | andrea@arcoiris.co | Dueña · Papelería Arcoíris | Cuenta suspendida (pantalla de bloqueo) |
-| diana@elfogon.co | Dueña · Restaurante El Fogón Paisa | Plan Total, con 12 mesas y 4 ocupadas |
+| diana@elfogon.co | Dueña · Restaurante El Fogón Paisa | Plan Restaurante, con 12 mesas y 4 ocupadas; puntos incluidos pero apagados |
 | andres@elfogon.co | Cajero · El Fogón | Entra a las mesas y cobra por persona |
 | camila@elfogon.co | Mesera · El Fogón | Solo ve las mesas: abre, agrega productos y pide la cuenta. No cobra |
 | sebastian@elfogon.co | Mesero · El Fogón | Igual que Camila, pero con el permiso *Cobrar las mesas* |
@@ -35,11 +35,14 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 |---|---|---|---|
 | Básico | $59.900 | $599.000 | Inventario, Caja y ventas |
 | Pro | $109.900 | $1.099.000 | + Ingresos y egresos, Estadísticas, Empleados |
-| Total | $159.900 | $1.599.000 | **Todo:** + Fiados y clientes, Proveedores, Mesas y meseros, Recetas y combos, Puntos y fidelización y Lector de código de barras |
+| Premium | $159.900 | $1.599.000 | **Todo para tiendas:** + Fiados y clientes, Proveedores, Recetas y combos, Puntos y fidelización y Lector de código de barras |
+| Restaurante | $179.900 | $1.799.000 | **Todo lo de Premium + Mesas y meseros** |
+
+El plan Premium se llamaba *Total* (en el código su id sigue siendo `total`, para no tocar a los clientes que ya lo tienen). Premium ya no incluye Mesas; los negocios que lo tenían antes la pierden sola (campo `v2` del negocio) a menos que Samanat se la active aparte. Premium + Mesas suelto saldría a $189.800, así que el plan Restaurante ($179.900) es lo que conviene ofrecerle a un restaurante; *Mi plan* se lo sugiere al dueño.
 
 ### Módulos sueltos y complementos
 
-Los complementos se suman a Básico o Pro; el plan Total ya los incluye todos (también los módulos que se agreguen después).
+Los complementos se suman a cualquier plan. Premium incluye todos los módulos menos Mesas, y Restaurante los incluye todos (en ambos casos también los que se agreguen después).
 
 | Módulo | Precio mensual |
 |---|---|
@@ -59,7 +62,9 @@ Implementación opcional: $180.000 una sola vez (carga de inventario, configurac
 
 ## Puntos y fidelización
 
-Complemento de $5.000/mes que paga el dueño del negocio (incluido en el plan Total); solo aparece si lo tiene activo. Para el cliente final afiliarse es gratis.
+Complemento de $5.000/mes que paga el dueño del negocio (incluido en Premium y Restaurante). Para el cliente final afiliarse es gratis.
+
+- **Encender y apagar:** aunque esté en el plan, arranca **apagado**. El dueño lo enciende en *Mi plan → Puntos y fidelización → Encender* (y lo apaga ahí o en *Puntos*). Apagado, no aparece en la caja, en el cobro de mesas, en el menú ni en la guía, y no se borra nada. Se guarda en `on` de `tenants/{tid}/settings/fid_{tid}`; los negocios que ya lo usaban (con configuración o afiliados) siguen encendidos.
 
 - **Afiliación:** en la caja se escribe la cédula; si no está afiliado, *Afiliarlo ahora* pide nombre, celular y la autorización de datos (Ley 1581 de 2012).
 - **Acumular:** cada venta suma `floor(total pagado / monto por punto)` puntos. Las ventas fiadas no suman.
@@ -71,7 +76,7 @@ Complemento de $5.000/mes que paga el dueño del negocio (incluido en el plan To
 
 ## Mesas y meseros
 
-Módulo de $29.900/mes para restaurantes, cafeterías y panaderías con mesas (incluido en el plan Total). Solo se ofrece en *Mi plan* a negocios de comida; a los demás no les aparece.
+Módulo de $29.900/mes para restaurantes, cafeterías y panaderías con mesas (incluido en el plan Restaurante; se puede agregar a cualquier otro plan). Si el negocio no tiene el módulo o no ha creado mesas, el cajero trabaja como siempre en la Caja. Solo se ofrece en *Mi plan* a negocios de comida; a los demás no les aparece.
 
 - **Mesas:** el dueño escribe cuántas mesas tiene y se crean como Mesa 1, Mesa 2…; en *Configurar mesas* las renombra (Terraza 1, Barra…), agrega o elimina (las ocupadas no se eliminan).
 - **Mapa de mesas:** libres (punteadas), ocupadas (verde) y las que pidieron la cuenta (amarillo), con el tiempo abierta, lo que falta por cobrar, las personas y quién la atiende.

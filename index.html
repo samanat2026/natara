@@ -240,7 +240,7 @@ tbody tr.click:hover{background:var(--surface-2)}
 .pay-row span{color:var(--ink-3);font-size:13px;min-width:130px}
 .pay-row b{font-size:16px}.pay-row .btn{margin-left:auto}
 .pay-row.big{background:var(--accent-soft)}.pay-row.big b{font-size:24px;font-variant-numeric:tabular-nums}
-.co-plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.co-plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 @media (max-width:620px){.co-plans{grid-template-columns:1fr}}
 .co-plan{display:flex;flex-direction:column;gap:4px;padding:12px;border:2px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;text-align:left}
 .co-plan.on{border-color:var(--accent);background:var(--accent-soft)}
@@ -444,7 +444,7 @@ details.hint summary{cursor:pointer}
    ========================================================= */
 const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';const DEMO_ADMIN=MODE==='demo'&&window.NATARA_DEMO_ADMIN===true;const ADMIN_EMAIL='samanat2026@gmail.com';
 const REAL_URL='https://samanat2026.github.io/natara/',DEMO_URL='https://samanat2026.github.io/natara/demo/';
-const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v14';
+const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v15';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 const WA_NUM='573146619135',WA_TXT='314 661 9135';
@@ -535,7 +535,7 @@ const MODS=[
  {id:'empleados',name:'Empleados',icon:'users',price:19900,desc:'Un usuario por empleado, con permisos que eliges tú. Cada venta queda a nombre de quien la hizo.'},
  {id:'fiados',name:'Fiados y clientes',icon:'heart',price:22900,desc:'Ventas a crédito, saldo por cliente y registro de abonos.'},
  {id:'proveedores',name:'Proveedores',icon:'truck',price:19900,desc:'Directorio de proveedores y registro de compras que suben el inventario y quedan como egreso.'},
- {id:'mesas',name:'Mesas y meseros',icon:'table',price:29900,desc:'Para restaurantes y cafeterías: ves tus mesas libres y ocupadas, cada mesero abre su mesa y agrega lo que piden, y en la caja cobras por persona: cada quien paga lo suyo y la mesa sigue abierta hasta que se pague todo.'},
+ {id:'mesas',name:'Mesas y meseros',icon:'table',price:29900,food:true,desc:'Para restaurantes y cafeterías: ves tus mesas libres y ocupadas, cada mesero abre su mesa y agrega lo que piden, y en la caja cobras por persona: cada quien paga lo suyo y la mesa sigue abierta hasta que se pague todo.'},
  {id:'recetas',name:'Recetas y combos',icon:'chef',price:10000,addon:true,desc:'Arma productos con lo que tienes en inventario: una arepa con chorizo y queso, un desayuno, un combo. Al venderlos, cada ingrediente se descuenta solo, y ves cuánto te cuesta y cuánto ganas en cada uno.'},
  {id:'lector',name:'Lector de código de barras',icon:'barcode',price:14900,addon:true,desc:'Vende y busca productos escaneando el código con un lector USB o Bluetooth. Ideal si el negocio vende productos empacados.'},
  {id:'fidelizacion',name:'Puntos y fidelización',icon:'gift',price:5000,addon:true,desc:'Tus clientes se afilian gratis con su cédula, acumulan puntos con cada compra y los usan como descuento en la caja, al estilo de Puntos Colombia. Tú decides cada cuánto se gana un punto, cuánto vale y cuándo vence.'},
@@ -543,10 +543,15 @@ const MODS=[
 const PLANS=[
  {id:'basico',name:'Básico',price:59900,mods:['inventario','caja'],pitch:'Para empezar a controlar el inventario y la caja.'},
  {id:'pro',name:'Pro',price:109900,mods:['inventario','caja','finanzas','estadisticas','empleados'],pitch:'Para el negocio con empleados que quiere ver sus números.'},
- {id:'total',name:'Total',price:159900,mods:MODS.map(m=>m.id),pitch:'Todo Natara: todos los módulos, incluidos mesas y meseros, recetas y combos, puntos y fidelización y lector de código de barras.'},
+ // Premium (id 'total' por compatibilidad): todo para tiendas, sin mesas. Incluye también los módulos que se agreguen después, salvo los de restaurante.
+ {id:'total',name:'Premium',price:159900,mods:MODS.filter(m=>!m.food).map(m=>m.id),pitch:'Todo para tu tienda: fiados, proveedores, recetas y combos, puntos y fidelización y lector de código de barras.'},
+ // Restaurante: todo lo de Premium más mesas y meseros
+ {id:'restaurante',name:'Restaurante',price:179900,food:true,mods:MODS.map(m=>m.id),pitch:'Todo lo de Premium más mesas y meseros: cada mesero toma el pedido desde su celular y en la caja cada persona paga lo suyo.'},
 ];
-// El plan Total siempre tiene todos los módulos, también los que se agreguen después
-function normTenant(t){if(t&&t.plan==='total'){const all=PLANS[2].mods;if(all.some(m=>!(t.mods||[]).includes(m)))t.mods=[...new Set([...(t.mods||[]),...all])]}return t}
+// Premium y Restaurante siempre tienen todos sus módulos, también los que se agreguen después.
+// Premium ya no trae Mesas: a los negocios de antes (sin v2) se les quita; después solo la tienen si la contratan aparte.
+function normTenant(t){if(!t)return t;if(t.plan==='total'&&!t.v2){t.mods=(t.mods||[]).filter(m=>m!=='mesas');t.v2=true}
+ if(t.plan==='total'||t.plan==='restaurante'){const all=planById(t.plan).mods;if(all.some(m=>!(t.mods||[]).includes(m)))t.mods=[...new Set([...(t.mods||[]),...all])]}return t}
 const modById=id=>MODS.find(m=>m.id===id);
 const planById=id=>PLANS.find(p=>p.id===id)||PLANS[0];
 let _BP=null;const BASE_PRICE=()=>_BP||(_BP={plan:Object.fromEntries(PLANS.map(p=>[p.id,p.price])),mod:Object.fromEntries(MODS.map(m=>[m.id,m.price])),setup:{implementacion:SETUP.price}});
@@ -572,11 +577,11 @@ function seed(){
  const S={v:1,config:{contact:'WhatsApp 314 661 9135 · samanat2026@gmail.com',brand:'Samanat'},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[],members:[],pmoves:[],settings:[],cats:[],tables:[],tabs:[],tablines:[]};
  if(MODE==='real'){S.config.contact='WhatsApp 314 661 9135 · samanat2026@gmail.com';S.users=[{id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'samanat2026@gmail.com',pass:'',mustChange:true,perms:[],active:true}];return S}
  S.tenants=[
-  {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:PLANS[2].mods.slice(),status:'activo',due:today+18*DAY,since:today-140*DAY,catPos:true},
+  {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:PLANS[2].mods.slice(),v2:true,status:'activo',due:today+18*DAY,since:today-140*DAY,catPos:true},
   {id:'t2',name:'Droguería Vida Sana',type:'Farmacia',city:'Envigado',phone:'311 208 9934',plan:'pro',mods:PLANS[1].mods.slice(),status:'activo',due:today+3*DAY,since:today-75*DAY},
   {id:'t3',name:'Minimercado Don Pacho',type:'Minimercado',city:'Bello',phone:'320 744 1180',plan:'basico',mods:PLANS[0].mods.slice(),status:'activo',due:today+12*DAY,since:today-64*DAY},
   {id:'t4',name:'Papelería Arcoíris',type:'Papelería',city:'Itagüí',phone:'315 630 2257',plan:'pro',mods:PLANS[1].mods.slice(),status:'suspendido',due:today-4*DAY,since:today-50*DAY},
-  {id:'t5',name:'Restaurante El Fogón Paisa',type:'Restaurante',city:'Medellín',phone:'304 381 2207',plan:'total',mods:PLANS[2].mods.slice(),status:'activo',due:today+22*DAY,since:today-45*DAY,catPos:true},
+  {id:'t5',name:'Restaurante El Fogón Paisa',type:'Restaurante',city:'Medellín',phone:'304 381 2207',plan:'restaurante',mods:PLANS[3].mods.slice(),v2:true,status:'activo',due:today+22*DAY,since:today-45*DAY,catPos:true},
  ];
  S.users=[
   {id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'natalia@samanat.co',pin:'0000',active:true},
@@ -597,7 +602,7 @@ function seed(){
  const prods={
   t1:[['7709990000011','Pan francés','Panes',350,700,180,40],['7709990000028','Pan de bono','Panes',700,1500,95,30],['7709990000035','Almojábana','Panes',650,1500,70,25],['7709990000042','Buñuelo','Panes',500,1200,60,25],['7709990000059','Croissant de mantequilla','Hojaldres',1400,3500,28,12],['7709990000066','Pastel de pollo','Hojaldres',1600,4000,22,10],['7709990000073','Torta de chocolate (porción)','Repostería',2200,6000,16,8],['7709990000080','Torta tres leches (porción)','Repostería',2500,6500,6,8],['7709990000097','Pan tajado integral 600 g','Empacados',4200,7500,14,6],['7709990000103','Leche entera 1 L','Lácteos',3300,4600,24,12],['7709990000110','Yogur de fresa 200 g','Lácteos',1700,2800,4,10],['7709990000127','Queso campesino 250 g','Lácteos',5200,8500,11,5],['7709990000134','Gaseosa 400 ml','Bebidas',1900,3200,40,15],['7709990000141','Jugo de naranja 300 ml','Bebidas',2100,4000,18,8],['7709990000158','Café tinto','Bebidas',400,1500,500,0],['7709990000165','Chocolate caliente','Bebidas',900,3000,300,0],['7709990000172','Huevos AA x 30','Abarrotes',13500,17900,9,4]],
   t2:[['7702001000017','Acetaminofén 500 mg x 10 tab','Analgésicos',1200,2800,85,30],['7702001000024','Ibuprofeno 400 mg x 10 tab','Analgésicos',1800,4200,60,25],['7702001000031','Loratadina 10 mg x 10 tab','Antialérgicos',1500,3900,40,15],['7702001000048','Suero oral sabor fresa 500 ml','Hidratación',2600,5200,30,12],['7702001000055','Alcohol antiséptico 350 ml','Primeros auxilios',3800,7200,18,10],['7702001000062','Curitas x 20','Primeros auxilios',2500,5500,25,10],['7702001000079','Vitamina C 500 mg x 30','Vitaminas',8500,16900,12,6],['7702001000086','Tapabocas x 10','Cuidado personal',3000,6500,7,10],['7702001000093','Crema dental 100 ml','Cuidado personal',3900,7400,22,10],['7702001000109','Pañitos húmedos x 50','Bebé',4500,8900,15,6],['7702001000116','Gel antibacterial 250 ml','Cuidado personal',4200,8500,3,8],['7702001000123','Termómetro digital','Equipos',9800,22000,5,3]],
-  t3:[['7703000000014','Arroz 1 kg','Granos',3600,4900,40,15],['7703000000021','Aceite 1 L','Abarrotes',8200,11500,18,8],['7703000000038','Azúcar 1 kg','Granos',3400,4600,30,12],['7703000000045','Panela x 2','Abarrotes',3000,4400,22,10]],
+  t3:[['7703000000014','Arroz 1 kg','Granos',3600,4900,40,15],['7703000000021','Aceite 1 L','Abarrotes',8200,11500,18,8],['7703000000038','Azúcar 1 kg','Granos',3400,4600,30,12],['7703000000045','Panela x 2','Abarrotes',3000,4400,22,10],['7703000000052','Fríjol cargamanto 500 g','Granos',5200,7200,16,6],['7703000000069','Lenteja 500 g','Granos',2400,3500,20,8],['7703000000076','Pasta spaghetti 500 g','Abarrotes',2300,3400,26,10],['7703000000083','Atún en lata 170 g','Enlatados',4300,6200,18,8],['7703000000090','Leche entera 1 L','Lácteos',3400,4300,30,12],['7703000000106','Huevos x 12','Huevos',9800,12500,14,6],['7703000000113','Café molido 250 g','Bebidas',7600,10500,12,5],['7703000000120','Chocolate de mesa 250 g','Bebidas',4800,6900,15,6],['7703000000137','Gaseosa 1.5 L','Bebidas',3900,5500,24,10],['7703000000144','Jabón de loza 500 g','Aseo',3300,4800,18,6],['7703000000151','Papel higiénico x 4','Aseo',5200,7500,20,8],['7703000000168','Detergente 1 kg','Aseo',8900,12900,10,4],['7703000000175','Sal 1 kg','Abarrotes',1400,2200,25,8],['7703000000182','Galletas de soda x 6','Mecato',3100,4500,22,8]],
   t4:[['7704000000011','Cuaderno 100 hojas cuadriculado','Cuadernos',2800,5500,60,20],['7704000000028','Lapicero negro','Escritura',600,1500,120,40],['7704000000035','Resma carta 75 g','Papel',16000,23000,10,5],['7704000000042','Colores x 12','Arte',5200,9800,25,10],['7704000000059','Pegante en barra 21 g','Oficina',1700,3500,30,12]],
   t5:[['FG01','Bandeja paisa','Platos fuertes',13500,32000,40,10],['FG02','Churrasco','Platos fuertes',17000,38000,25,8],['FG03','Mojarra frita','Platos fuertes',14500,34000,20,6],['FG04','Pechuga a la plancha','Platos fuertes',9800,26000,30,8],['FG05','Sancocho trifásico','Platos fuertes',9500,24000,35,10],['FG06','Almuerzo ejecutivo','Menú del día',7200,18000,60,15],['FG07','Chicharrón con arepa','Entradas',5200,14000,30,8],['FG08','Empanadas x3','Entradas',2600,8000,45,12],['FG09','Patacones con hogao','Entradas',3300,10000,40,10],['FG10','Limonada natural','Bebidas',1500,6000,80,20],['FG11','Limonada de coco','Bebidas',3200,9000,50,15],['FG12','Jugo en agua','Bebidas',1800,6000,60,15],['FG13','Gaseosa 400 ml','Bebidas',2100,4500,48,24],['FG14','Cerveza nacional','Bebidas',3000,6500,72,24],['FG15','Agua sin gas 600 ml','Bebidas',1300,3500,40,12],['FG16','Torta tres leches','Postres',3000,8000,16,6],['FG17','Brevas con arequipe','Postres',3400,9000,12,5]],
  };
@@ -681,6 +686,8 @@ function seed(){
  [...new Set(S.products.filter(p=>p.tid==='t1'&&p.kind!=='insumo').map(p=>p.cat))].forEach((name,i)=>S.cats.push({id:uid(),tid:'t1',name,order:i}));
  // clientes afiliados a puntos (La Espiga): [puntos, hace cuántos días los ganó]
  [['1036654321','Luisa Fernanda Restrepo','300 455 1290',[[420,40],[180,200]]],['71789456','Jorge Iván Cardona','312 778 4410',[[95,10],[60,350]]],['1017223344','Valentina Zapata','318 902 3366',[[35,5]]]].forEach(([doc,name,phone,ls])=>{const id=uid();S.members.push({id,tid:'t1',doc,name,phone,consent:true,since:today-210*DAY,last:today-DAY,lotes:ls.map(([p,d])=>({p,v:today+(365-d)*DAY})).sort((a,b)=>a.v-b.v)});ls.forEach(([p,d])=>S.pmoves.push({id:uid(),tid:'t1',mid:id,type:'acumula',pts:p,note:'Compras',sid:'',at:today-d*DAY+11*3600e3,by:'u2'}))});
+ // Puntos y fidelización: La Espiga los tiene encendidos; El Fogón los tiene en su plan pero apagados
+ S.settings.push({id:'fid_t1',tid:'t1',on:true});
  // caja abierta hoy
  S.sessions.push({id:uid(),tid:'t1',openedAt:today+6*3600e3,openedBy:'u2',base:150000,closedAt:null});
  S.sessions.push({id:uid(),tid:'t2',openedAt:today+7*3600e3,openedBy:'u5',base:100000,closedAt:null});
@@ -889,6 +896,7 @@ function tenantNav(){
   const locked=n.mod&&!t.mods.includes(n.mod);
   if(locked&&u.role!=='dueno')continue;
   if(n.v==='mesas'&&locked&&!foodType(t))continue;
+  if(n.v==='puntos'&&!locked&&!fidOn())continue;
   if(sec!==printed){out+=`<div class="nav-label">${sec}</div>`;printed=sec}
   out+=navBtn(n.v,n.label,n.icon,{locked,count:n.v==='mensajes'?unreadFor(t.id):0});
  }
@@ -898,6 +906,7 @@ function tenantView(){
  const u=me(),t=tenant();
  let v=sess.view;const n=NAV.find(x=>x.v===v);
  if(!n||!navAllowed(n,u)){v=sess.view=isMesero(u)||(u.role==='cajero'&&t.mods.includes('mesas')&&T('tables').length)?'mesas':u.role==='cajero'&&t.mods.includes('caja')?'caja':'inicio';saveSess()}
+ if(v==='puntos'&&t.mods.includes('fidelizacion')&&!fidOn()){v=sess.view='plan';saveSess()}
  const nn=NAV.find(x=>x.v===v);
  if(nn.mod&&!t.mods.includes(nn.mod))return viewUpsell(nn.mod);
  return ({inicio:viewInicio,mesas:viewMesas,caja:viewCaja,cierre:viewCierre,ventas:viewVentas,inventario:viewInventario,recetas:viewRecetas,guia:viewGuia,fiados:viewFiados,puntos:viewPuntos,finanzas:viewFinanzas,estadisticas:viewStats,proveedores:viewProveedores,empleados:viewEmpleados,plan:viewPlan,mensajes:viewMensajes})[v]();
@@ -920,10 +929,10 @@ function loginBrand(){return `<section class="login-brand">
 function viewLogin(){
  if(MODE==='real'||lg.mode!=='pick')return viewLoginReal();
  const acc=u=>{const t=S.tenants.find(x=>x.id===u.tid);return`<button class="acc" data-a="login" data-id="${u.id}"><div class="avatar">${initials(u.name)}</div><div class="who"><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin · Samanat':u.role==='dueno'?'Dueño(a) · ve todo el negocio':isMesero(u)?(meseroCobra(u)?'Mesero(a) · atiende mesas y también cobra':'Mesero(a) · atiende mesas, no cobra'):(()=>{const ps=(u.perms||[]).map(id=>PERMS.find(p=>p.id===id)).filter(p=>p&&t&&t.mods.includes(p.mod));return ps.length?'Cajero(a) · vende y además puede: '+ps.map(p=>p.short).join(', '):'Cajero(a) sin permisos extra · solo vende y ve sus ventas'})()}</span></div>${t?pillDue(t):`<span class="pill ac">Admin</span>`}</button>`};
- const rank={basico:0,pro:1,total:2};
- const ideal={basico:'Para empezar: controla tu inventario y tu caja.',pro:'Para el negocio con empleados que quiere ver sus números.',total:'Todo incluido: fiados, proveedores, recetas, puntos y lector de código.'};
+ const rank={basico:0,pro:1,total:2,restaurante:3};
+ const ideal={basico:'Para empezar: controla tu inventario y tu caja.',pro:'Para el negocio con empleados que quiere ver sus números.',total:'Todo para tu tienda: fiados, proveedores, recetas, puntos y lector de código.',restaurante:'Para restaurantes: todo lo de Premium más mesas, meseros y cuentas divididas.'};
  const byT=S.tenants.slice().sort((a,b)=>(a.status!=='activo')-(b.status!=='activo')||rank[a.plan]-rank[b.plan]).map(t=>{const p=planById(t.plan);const extras=t.mods.filter(m=>!p.mods.includes(m));const susp=t.status!=='activo';
-  return `<div class="plan-demo ${susp?'susp':''}"><div class="pd-head">${susp?`<div><span class="pd-kicker">Así se ve una cuenta suspendida</span><strong>${esc(t.name)}</strong><span class="muted small">${esc(t.type)} · plan ${p.name} sin pagar</span></div><span class="pill bad">${ic('lock',12)} Suspendida</span>`:`<div><span class="pd-kicker">Ejemplo: ${esc(t.name)} · ${esc(t.type)}</span><strong>Plan ${p.name}</strong><span class="muted small">${t.mods.includes('mesas')&&foodType(t)?'Restaurante: mesas, meseros y cuentas divididas por persona.':ideal[t.plan]}</span></div><div class="pd-price"><b>${money(fee(t))}</b><span class="muted small">al mes${extras.length?` · plan ${money(p.price)} + ${extras.map(m=>modById(m).name.toLowerCase()).join(', ')}`:''}</span></div>`}</div>
+  return `<div class="plan-demo ${susp?'susp':''}"><div class="pd-head">${susp?`<div><span class="pd-kicker">Así se ve una cuenta suspendida</span><strong>${esc(t.name)}</strong><span class="muted small">${esc(t.type)} · plan ${p.name} sin pagar</span></div><span class="pill bad">${ic('lock',12)} Suspendida</span>`:`<div><span class="pd-kicker">Ejemplo: ${esc(t.name)} · ${esc(t.type)}</span><strong>Plan ${p.name}</strong><span class="muted small">${ideal[t.plan]}</span></div><div class="pd-price"><b>${money(fee(t))}</b><span class="muted small">al mes${extras.length?` · plan ${money(p.price)} + ${extras.map(m=>modById(m).name.toLowerCase()).join(', ')}`:''}</span></div>`}</div>
   ${susp?'':`<div class="chips">${t.mods.map(m=>`<span class="pill ${p.mods.includes(m)?'':'ac'}">${modById(m).name}</span>`).join('')}</div>`}
   <div class="acc-group">${S.users.filter(u=>u.tid===t.id&&u.active).map(acc).join('')}</div>${susp?'':`<button class="btn primary" data-a="co-open" data-v="${t.plan}" style="align-self:flex-start">${ic('cart',16)} Contratar el plan ${p.name}</button>`}</div>`}).join('');
  return `<div class="login">${loginBrand()}
@@ -1305,7 +1314,7 @@ function addToCart(p,qty=1){
 function checkout(){
  if(!cart.length)return;
  if(pos.tab&&!mzCheck())return;
- const sub=cartTotal();const fm=has('fidelizacion')&&pos.mid?T('members').find(x=>x.id===pos.mid):null;const cfg=fidCfg();
+ const sub=cartTotal();const fm=fidOn()&&pos.mid?T('members').find(x=>x.id===pos.mid):null;const cfg=fidCfg();
  const used=fm&&pos.useP?maxRedeem(fm,sub,cfg):0;const disc=used*cfg.valorPunto;const total=sub-disc;
  if(!openSession()){toast('Abre la caja antes de cobrar','bad');return}
  if(pos.method==='efectivo'&&pos.received!==''&&parseMoney(pos.received)<total){toast('El dinero recibido no alcanza para el total','bad');return}
@@ -1356,6 +1365,10 @@ function showReceipt(s,fresh=false){
    ========================================================= */
 const FID_DEF={montoPorPunto:1000,valorPunto:7,minimoRedimir:100,mesesVigencia:12,bienvenida:0};
 function fidCfg(){const t=tenant();const r=t&&S.settings.find(x=>x.id==='fid_'+t.id);return {...FID_DEF,...(r||{})}}
+// El módulo puede estar en el plan y aun así apagado: arranca apagado y el dueño lo enciende cuando quiera.
+// (Los negocios que ya lo usaban antes de este cambio, con configuración o afiliados, siguen encendidos.)
+function fidOn(){if(!has('fidelizacion'))return false;const t=tenant();const r=S.settings.find(x=>x.id==='fid_'+t.id);if(r&&typeof r.on==='boolean')return r.on;return !!r||T('members').length>0}
+function setFid(on){const t=tenant();const id='fid_'+t.id;const r=S.settings.find(x=>x.id===id);if(r)r.on=on;else S.settings.push({id,tid:t.id,on});if(!on){pos.mid='';pos.fdoc='';pos.useP=false}save();render()}
 const docDigits=v=>String(v||'').replace(/\D/g,'');
 const memberByDoc=d=>T('members').find(m=>m.doc===docDigits(d));
 const lotesVig=m=>(m.lotes||[]).filter(l=>l.v>Date.now()&&l.p>0).sort((a,b)=>a.v-b.v);
@@ -1367,7 +1380,7 @@ function ptsConsume(m,q){let r=q;m.lotes=lotesVig(m).map(l=>{const x=Math.min(l.
 function ptsMove(m,type,pts,note,sid){S.pmoves.push({id:uid(),tid:m.tid,mid:m.id,type,pts,note,sid:sid||'',at:Date.now(),by:me()?.id||''})}
 // Puntos que se pueden usar en una compra: todos los disponibles, sin pasarse del total
 function maxRedeem(m,total,cfg){const p=ptsOf(m);if(p<cfg.minimoRedimir)return 0;return Math.min(p,Math.floor(total/cfg.valorPunto))}
-function fidDisc(total){if(!has('fidelizacion')||!pos.mid||!pos.useP)return 0;const m=T('members').find(x=>x.id===pos.mid);if(!m)return 0;const cfg=fidCfg();return maxRedeem(m,total,cfg)*cfg.valorPunto}
+function fidDisc(total){if(!fidOn()||!pos.mid||!pos.useP)return 0;const m=T('members').find(x=>x.id===pos.mid);if(!m)return 0;const cfg=fidCfg();return maxRedeem(m,total,cfg)*cfg.valorPunto}
 function fidFind(){
  const inp_=$('#fid-doc');if(inp_)pos.fdoc=inp_.value;const dc=docDigits(pos.fdoc);
  if(dc.length<5){toast('Escribe la cédula completa del cliente','bad');return}
@@ -1376,7 +1389,7 @@ function fidFind(){
  refreshPOS();
 }
 function fidBox(total){
- if(!has('fidelizacion'))return '';
+ if(!fidOn())return '';
  const cfg=fidCfg();const m=pos.mid&&T('members').find(x=>x.id===pos.mid);
  if(m){const p=ptsOf(m);const mx=maxRedeem(m,total,cfg);const disc=pos.useP?mx*cfg.valorPunto:0;const gana=pos.method==='fiado'?0:earnPts(total-disc,cfg);
   return `<div class="fid on"><div class="spread"><span class="row" style="gap:8px">${ic('gift',16)}<b>${esc(m.name)}</b></span><button class="btn ghost sm" data-a="fid-clear">Quitar</button></div>
@@ -1419,7 +1432,7 @@ function viewPuntos(){
  const tot=sum(M,m=>m.p);const mv=T('pmoves');const m0=new Date();m0.setDate(1);const from=sod(m0);
  const earn=sum(mv.filter(x=>x.type==='acumula'&&x.at>=from),x=>x.pts);const red=-sum(mv.filter(x=>x.type==='redime'&&x.at>=from),x=>x.pts);
  const news=M.filter(m=>m.since>=from).length;
- return `<div class="page-head"><div><h1>Puntos</h1><p>1 punto por cada <b>${money(cfg.montoPorPunto)}</b> en compras · cada punto vale <b>${money(cfg.valorPunto)}</b> · vencen a los ${cfg.mesesVigencia} meses</p></div><div class="actions"><button class="btn" data-a="fid-cfg">${ic('edit',16)} Configurar</button><button class="btn primary" data-a="fid-new">${ic('plus',16)} Afiliar cliente</button></div></div>
+ return `<div class="page-head"><div><h1>Puntos</h1><p>1 punto por cada <b>${money(cfg.montoPorPunto)}</b> en compras · cada punto vale <b>${money(cfg.valorPunto)}</b> · vencen a los ${cfg.mesesVigencia} meses</p></div><div class="actions"><button class="btn ghost" data-a="fid-off">Apagar</button><button class="btn" data-a="fid-cfg">${ic('edit',16)} Configurar</button><button class="btn primary" data-a="fid-new">${ic('plus',16)} Afiliar cliente</button></div></div>
   <div class="grid g4">
    <div class="card kpi"><span class="lbl">Clientes afiliados</span><span class="val">${num(M.length)}</span><span class="foot">${news} nuevo${news===1?'':'s'} este mes</span></div>
    <div class="card kpi"><span class="lbl">Puntos vigentes</span><span class="val">${num(tot)}</span><span class="foot">${money(tot*cfg.valorPunto)} en descuentos por usar</span></div>
@@ -1720,7 +1733,7 @@ function guideSections(){
    'Elige cómo te pagan: <b>Efectivo</b> (escribe lo que recibiste y te dice el cambio)'+',<b> Transferencia</b> (elige Nequi, Daviplata, Bancolombia o Bre-B y marca <i>Verifiqué que el dinero llegó</i>), <b>Datáfono</b> (elige débito o crédito y, si quieres, anota el número de aprobación)'+(m('fiados')&&canDo('fiados')?' o <b>Fiado</b> (elige el cliente)':'')+'.',
    'Toca <b>Cobrar</b>. La venta queda a tu nombre, el inventario se descuenta solo y ves el recibo.',
    ...(m('recetas')?['Las <b>recetas y combos</b> también se venden aquí: muestran “alcanza N” y al venderlos se descuenta cada ingrediente.']:[]),
-   ...(m('fidelizacion')?['<b>Puntos:</b> antes de cobrar, escribe la cédula del cliente y toca <b>Buscar</b>. Con la compra suma puntos, y si tiene suficientes puedes marcar <b>Usar puntos</b> para descontarlos. Si quiere unirse, toca <b>Afiliarlo ahora</b>: es gratis para el cliente.']:[])]});
+   ...(fidOn()?['<b>Puntos:</b> antes de cobrar, escribe la cédula del cliente y toca <b>Buscar</b>. Con la compra suma puntos, y si tiene suficientes puedes marcar <b>Usar puntos</b> para descontarlos. Si quiere unirse, toca <b>Afiliarlo ahora</b>: es gratis para el cliente.']:[])]});
   S_.push({id:'ventas',icon:'receipt',title:allV?'Revisar las ventas':'Revisar tus ventas',go:'ventas',steps:[
    allV?'En <b>Ventas</b> ves todas las ventas del negocio. Filtra por fecha, forma de pago o vendedor.':'En <b>Mis ventas</b> ves solo las ventas que hiciste tú. Filtra por fecha o forma de pago.',
    'Toca una venta para ver el recibo.',
@@ -1774,6 +1787,7 @@ function guideSections(){
   'Para pagar tu cuota toca <b>Pagar mi cuota</b>: eliges 1 o 12 meses, pagas con la llave y tocas <b>Ya pagué</b>. Mientras Samanat revisa, tu cuenta no se bloquea.',
   'En <b>Mensajes</b> te llegan los avisos de Samanat: pagos, novedades y cambios de precio.',
   'Si la cuota se vence, tienes '+GRACE_DAYS+' días de gracia antes de que se bloquee el acceso. Tus datos nunca se pierden.']});
+ if(own&&m('fidelizacion')&&!fidOn())S_.push({id:'puntos-off',icon:'gift',title:'Puntos y fidelización (apagado)',go:'plan',steps:['Tu plan incluye <b>Puntos y fidelización</b>, pero está apagado: por eso no lo ves en la caja ni en el menú.','Para usarlo entra a <b>Mi plan</b> y en la tarjeta de Puntos toca <b>Encender</b>. Lo puedes apagar cuando quieras sin perder los puntos de tus clientes.']});
  if(m('mesas')){S_.push({id:'mesas',icon:'table',title:'Mesas y cuentas divididas',go:'mesas',steps:[
   ...(own?['La primera vez entra a <b>Mesas</b> y escribe cuántas mesas tienes. Con <b>Configurar mesas</b> les cambias el nombre (Terraza 1, Barra…) o agregas y quitas mesas.']:[]),
   'Toca una mesa libre y luego <b>Abrir mesa</b>. Si quieres, escribe cuántas personas son.',
@@ -2059,7 +2073,7 @@ function viewPlan(){
    <div class="card kpi"><span class="lbl">Cuota mensual</span><span class="val">${money(fee(t))}</span>${(()=>{const nx=pendingChanges()[0];if(!nx)return'';const f2=feeAt(t,nx.from+1);return f2!==fee(t)?`<span class="foot" style="color:var(--warn)">Desde el ${fdate(nx.from)}: ${money(f2)}</span>`:''})()}<span class="foot">o ${money(fee(t)*ANNUAL_MONTHS)} al año (2 meses gratis)</span></div>
    <div class="card kpi"><span class="lbl">Próximo pago</span><span class="val">${fshort(t.due)}</span><span class="foot">${dd<0?`<span style="color:var(--bad)">Vencido</span>`:dd<=5?`<span style="color:var(--warn)">En ${dd} días</span>`:`En ${dd} días`}</span></div>
   </div>
-  <div class="grid g3">${MODS.filter(m=>(m.id!=='lector'||t.mods.includes('lector'))&&(m.id!=='mesas'||foodType(t)||t.mods.includes('mesas'))).map(m=>{const on=t.mods.includes(m.id);const asked=reqs.includes(m.id);const paying=modOrder(t,m.id);return`<div class="mod ${on?'has':''}"><div class="spread"><span class="row" style="gap:8px">${ic(m.icon)}<strong>${m.name}</strong></span>${on?'<span class="pill good">Activo</span>':paying?'<span class="pill warn">Pago en revisión</span>':asked?'<span class="pill warn">Solicitado</span>':''}</div><p>${m.desc}</p><div class="foot spread"><span class="small muted">${p.mods.includes(m.id)?'Incluido en tu plan':(m.addon?'Complemento · ':'')+'+ '+money(m.price)+'/mes'}</span>${on||asked||paying?'':`<button class="btn sm primary" data-a="mod-buy" data-v="${m.id}">Contratar</button>`}</div></div>`}).join('')}</div>
+  <div class="grid g3">${MODS.filter(m=>(m.id!=='lector'||t.mods.includes('lector'))&&(m.id!=='mesas'||foodType(t)||t.mods.includes('mesas'))).map(m=>{const on=t.mods.includes(m.id);const asked=reqs.includes(m.id);const paying=modOrder(t,m.id);return`<div class="mod ${on?'has':''}"><div class="spread"><span class="row" style="gap:8px">${ic(m.icon)}<strong>${m.name}</strong></span>${on&&m.id==='fidelizacion'&&!fidOn()?'<span class="pill">Apagado</span>':on?'<span class="pill good">Activo</span>':paying?'<span class="pill warn">Pago en revisión</span>':asked?'<span class="pill warn">Solicitado</span>':''}</div><p>${m.desc}</p>${on&&m.id==='fidelizacion'&&!fidOn()?'<p class="small" style="margin:0;color:var(--accent)"><b>Lo tienes, pero está apagado.</b> Enciéndelo cuando quieras: mientras esté apagado no aparece en la caja ni en el menú.</p>':''}${m.id==='mesas'&&!on&&t.plan==='total'?`<p class="small" style="margin:0;color:var(--accent)">Con el plan <b>Restaurante</b> pagas ${money(planById('restaurante').price)} al mes por todo, menos que Premium + Mesas (${money(planById('total').price+m.price)}). <a class="linkish" href="${waLink(`Hola Samanat, quiero pasar ${t.name} al plan Restaurante de Natara.`)}" target="_blank" rel="noopener">Pídelo por WhatsApp</a></p>`:''}<div class="foot spread"><span class="small muted">${p.mods.includes(m.id)?'Incluido en tu plan':(m.addon?'Complemento · ':'')+'+ '+money(m.price)+'/mes'}</span>${on&&m.id==='fidelizacion'?(fidOn()?`<button class="btn sm" data-a="fid-off">Apagar</button>`:`<button class="btn sm primary" data-a="fid-on">${ic('gift',14)} Encender</button>`):on||asked||paying?'':`<button class="btn sm primary" data-a="mod-buy" data-v="${m.id}">Contratar</button>`}</div></div>`}).join('')}</div>
   <div class="mod ${t.catPos?'has':''}" style="max-width:760px"><div class="spread"><span class="row" style="gap:8px">${ic('tag')}<strong>Caja por categorías</strong></span>${t.catPos?'<span class="pill good">Activa</span>':''}</div><p>Los productos salen en la caja agrupados por las categorías que tú creas (Panes, Bebidas, Lácteos…). Tocas una categoría y ves solo esos productos.</p><div class="foot spread"><span class="small muted">Sin costo · se activa si tú la pides</span>${t.catPos?`<button class="btn sm" data-a="cats">${ic('tag',14)} Mis categorías</button>`:`<a class="btn sm primary" href="${waLink(`Hola Samanat, quiero activar la caja por categorías en Natara para ${t.name}.`)}" target="_blank" rel="noopener">Pedirla por WhatsApp</a>`}</div></div>
   <div class="mod ${t.setupPaid?'has':''}" style="max-width:760px"><div class="spread"><span class="row" style="gap:8px">${ic('users')}<strong>${SETUP.name}</strong></span>${t.setupPaid?'<span class="pill good">Incluida</span>':modOrder(t,'implementacion')?'<span class="pill warn">Pago en revisión</span>':reqs.includes('implementacion')?'<span class="pill warn">Solicitada</span>':''}</div><p>${SETUP.desc}</p><div class="foot spread"><span class="small muted">${money(SETUP.price)} · pago único</span>${t.setupPaid||reqs.includes('implementacion')||modOrder(t,'implementacion')?'':`<button class="btn sm primary" data-a="mod-buy" data-v="implementacion">Contratar</button>`}</div></div>
   <div class="card"><h2>Historial de pagos</h2><div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Medio</th><th class="r">Valor</th></tr></thead><tbody>${S.payments.filter(x=>x.tid===t.id).sort((a,b)=>b.at-a.at).map(x=>`<tr><td>${fdate(x.at)}</td><td>${esc(x.concept||'Mensualidad')}</td><td>${esc(x.method)}</td><td class="r num">${money(x.amount)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Sin pagos registrados</td></tr>'}</tbody></table></div></div>`;
@@ -2177,7 +2191,7 @@ function aMensajes(){
 }
 function aPlanes(){
  return `<div class="page-head"><div><h1>Planes y precios</h1><p>Lo que ofreces a tus clientes. Los módulos sueltos se suman a cualquier plan.</p></div></div>
-  <div class="grid g3">${PLANS.map(p=>`<div class="card plan-card"><div class="spread"><b style="font-size:17px">${p.name}</b><span class="pill">${S.tenants.filter(t=>t.plan===p.id).length} clientes</span></div><span class="price">${money(p.price)}<span class="muted small" style="font-weight:500"> /mes</span></span><span class="muted small">o ${money(p.price*ANNUAL_MONTHS)} al año · 2 meses gratis</span><p class="muted small" style="margin:0">${p.pitch}</p><ul>${p.mods.map(m=>`<li>${modById(m).name}</li>`).join('')}</ul></div>`).join('')}</div>
+  <div class="grid g4">${PLANS.map(p=>`<div class="card plan-card"><div class="spread"><b style="font-size:17px">${p.name}</b><span class="pill">${S.tenants.filter(t=>t.plan===p.id).length} clientes</span></div><span class="price">${money(p.price)}<span class="muted small" style="font-weight:500"> /mes</span></span><span class="muted small">o ${money(p.price*ANNUAL_MONTHS)} al año · 2 meses gratis</span><p class="muted small" style="margin:0">${p.pitch}</p><ul>${p.mods.map(m=>`<li>${modById(m).name}</li>`).join('')}</ul></div>`).join('')}</div>
   <div class="hint">${ic('info',15)} <b>Implementación opcional:</b> ${money(SETUP.price)} por una sola vez. Incluye cargar el inventario del cliente desde su lista o fotos, configurar empleados y una capacitación de 1 hora. Los precios no incluyen IVA.</div>
   <div class="card"><h2>Cambiar precios <span class="sub">los clientes afectados reciben un aviso</span></h2>
    <form class="stack" data-f="prices" id="price-form" novalidate><div class="tbl-wrap"><table><thead><tr><th>Qué</th><th class="r">Precio actual</th><th class="r">Precio nuevo</th><th class="r">Clientes que lo pagan</th></tr></thead><tbody>
@@ -2258,6 +2272,9 @@ document.addEventListener('click',e=>{
   'fid-clear':()=>{pos.mid='';pos.fdoc='';pos.useP=false;pos.fmiss=false;refreshPOS()},
   'fid-new':()=>fidNewModal(sess.view==='caja'?docDigits(pos.fdoc):''),
   'fid-cfg':()=>fidCfgModal(),
+  'fid-on':()=>{setFid(true);toast('Puntos encendidos: ya aparecen en la caja y en el menú')},
+  'fid-off':()=>openModal('Apagar puntos y fidelización',`<p style="margin:0">Mientras esté apagado, la caja no pide la cédula ni suma puntos, y <b>Puntos</b> sale del menú.</p><p class="muted small" style="margin:0">No se borra nada: los clientes afiliados y sus puntos quedan guardados para cuando lo vuelvas a encender.</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="fid-off-do">Apagar</button>`),
+  'fid-off-do':()=>{closeModal();setFid(false);toast('Puntos apagados. Los puedes encender en Mi plan')},
   'fid-member':()=>fidMemberModal(T('members').find(m=>m.id===id)),
   checkout,
   'mz-open':()=>{mz.id=id;mz.q='';mz.cat='';render();$('#main')?.scrollTo(0,0)},
@@ -2328,7 +2345,7 @@ document.addEventListener('click',e=>{
   'tenant-toggle':()=>{const t=S.tenants.find(x=>x.id===id);t.status=t.status==='activo'?'suspendido':'activo';
    S.messages.push({id:uid(),to:t.id,kind:'suspension',title:t.status==='activo'?'Tu acceso fue reactivado':'Tu acceso fue suspendido',body:t.status==='activo'?'Gracias por tu pago. Ya puedes seguir usando Natara con normalidad.':'Suspendimos el acceso por falta de pago. Tus datos siguen guardados.',at:Date.now(),readBy:[]});
    save();if(el.dataset.close)closeModal();render();toast(t.status==='activo'?`${t.name} reactivado`:`${t.name} suspendido al instante`)},
-  'lector-toggle':()=>{const t=S.tenants.find(x=>x.id===id);if(t.plan==='total'){toast('El plan Total ya incluye el lector de código de barras');return}const on=t.mods.includes('lector');t.mods=on?t.mods.filter(m=>m!=='lector'):[...t.mods,'lector'];if(!on)S.messages.push({id:uid(),to:t.id,kind:'promo',title:'Activamos el lector de código de barras',body:`Ya puedes escanear productos en la caja y el inventario. Tu cuota mensual queda en ${money(fee(t))}.`,at:Date.now(),readBy:[]});save();render();toast(on?`Lector desactivado para ${t.name}`:`Lector activado para ${t.name} (+${money(modById('lector').price)}/mes)`)},
+  'lector-toggle':()=>{const t=S.tenants.find(x=>x.id===id);if(planById(t.plan).mods.includes('lector')){toast(`El plan ${planById(t.plan).name} ya incluye el lector de código de barras`);return}const on=t.mods.includes('lector');t.mods=on?t.mods.filter(m=>m!=='lector'):[...t.mods,'lector'];if(!on)S.messages.push({id:uid(),to:t.id,kind:'promo',title:'Activamos el lector de código de barras',body:`Ya puedes escanear productos en la caja y el inventario. Tu cuota mensual queda en ${money(fee(t))}.`,at:Date.now(),readBy:[]});save();render();toast(on?`Lector desactivado para ${t.name}`:`Lector activado para ${t.name} (+${money(modById('lector').price)}/mes)`)},
   tenant:()=>tenantModal(S.tenants.find(t=>t.id===id)),
   'tenant-new':()=>openModal('Nuevo cliente',`<form class="stack" data-f="tenant-new" id="tn-form" novalidate><div class="form-grid">${field('Nombre del negocio',inp('name','','text','required'),'full')}${field('Tipo de negocio',inp('type','','text','required list="types" placeholder="Panadería, farmacia…"'))}<datalist id="types">${['Panadería','Farmacia','Minimercado','Papelería','Ferretería','Tienda de ropa','Licorera','Restaurante','Cafetería','Salón de uñas'].map(x=>`<option value="${x}">`).join('')}</datalist>${field('Ciudad',inp('city','','text','required'))}${field('Celular',inp('phone','','tel','required inputmode="tel" placeholder="300 123 4567"'))}${field('Plan',sel('plan',PLANS.map(p=>[p.id,`${p.name} · ${money(p.price)}`]),'basico'))}<label class="check full" style="grid-column:1/-1"><input type="checkbox" name="setup" value="1"><span>Cobrar implementación asistida (${money(SETUP.price)}, pago único)<small>Carga del inventario, configuración de empleados y 1 hora de capacitación.</small></span></label>${field('Nombre del dueño(a)',inp('owner','','text','required'))}${field('Correo del dueño(a)',inp('email','','email','required'))}</div><p class="muted small">El primer mes queda pagado desde hoy. Al crearlo, le enviamos un correo al dueño con su usuario y una contraseña temporal.</p><div id="tn-err"></div></form>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="tn-form">Crear cliente</button>`),
   'resend':()=>{if(REAL)return rResend(id);const t=S.tenants.find(x=>x.id===id);const u=S.users.find(x=>x.tid===id&&x.role==='dueno');const pass=genTemp();u.pass=pass;u.mustChange=true;save();sendWelcome(t,u,pass)},
@@ -2515,7 +2532,7 @@ document.addEventListener('submit',e=>{
    if(changed&&d.resend){const pass=genTemp();o.pass=pass;o.mustChange=true;save();sendWelcome(tt,o,pass)}else{closeModal();toast(changed?`Datos guardados. ${o.name.split(' ')[0]} ahora entra con ${email}`:'Cambios aplicados. El cliente los ve al instante')}},
   'tenant-new':()=>{const email=(d.email||'').trim().toLowerCase();const er=m=>{$('#tn-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};if(!phoneOk(d.phone))return er('Revisa el celular: debe tener 10 dígitos, por ejemplo 300 123 4567.');if(!EMAIL_RE.test(email))return er('Revisa el correo del dueño: debe tener la forma nombre@dominio.com.');if(emailTaken(email))return er('Ya existe un usuario con ese correo.');
    if(REAL)return rTenantNew(d,email,er);
-   const id='t'+uid();const p=planById(d.plan);const due=new Date();due.setMonth(due.getMonth()+(Number(d.months)||1));const t={id,name:d.name.trim(),type:d.type,city:d.city,phone:fmtPhone(d.phone),plan:p.id,mods:[...p.mods,...(d.extra||[]).filter(m=>!p.mods.includes(m))],status:'activo',due:sod(due),since:sod(Date.now())};S.tenants.push(t);
+   const id='t'+uid();const p=planById(d.plan);const due=new Date();due.setMonth(due.getMonth()+(Number(d.months)||1));const t={id,name:d.name.trim(),type:d.type,city:d.city,phone:fmtPhone(d.phone),plan:p.id,mods:[...p.mods,...(d.extra||[]).filter(m=>!p.mods.includes(m))],status:'activo',v2:true,due:sod(due),since:sod(Date.now())};S.tenants.push(t);
    const pass=genTemp();const u={id:uid(),tid:id,name:d.owner.trim(),role:'dueno',email,pass,mustChange:true,perms:[],active:true};S.users.push(u);
    if(d.amount){S.payments.push({id:uid(),tid:id,amount:d.amount,at:Date.now(),method:'Bre-B',concept:d.concept||'Compra desde la demo',ref:d.ref||''});if(d.setup)t.setupPaid=true}else{S.payments.push({id:uid(),tid:id,amount:p.price,at:Date.now(),method:'Transferencia',concept:'Mensualidad'});if(d.setup){t.setupPaid=true;S.payments.push({id:uid(),tid:id,amount:SETUP.price,at:Date.now(),method:'Transferencia',concept:'Implementación asistida'})}}S.messages.push({id:uid(),to:id,kind:'aviso',title:`Bienvenido a Natara, ${u.name.split(' ')[0]}`,body:'Tu cuenta está lista. Empieza cargando tu inventario desde Excel o creando tus productos.',at:Date.now(),readBy:[]});save();render();sendWelcome(t,u,pass)},
   'tenant-del':()=>{const t=S.tenants.find(x=>x.id===d.id);if(norm(d.confirm)!==norm(t.name)){$('#del-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">El nombre no coincide. Escríbelo tal como aparece arriba.</div></div>`;return}
@@ -2736,7 +2753,7 @@ async function rTenantNew(d,email,er){
  busy('tn-form','Creando…');let pass=genTemp();let uidA,reused;try{({id:uidA,reused}=await authFor(email,pass))}catch(e){busy('tn-form');return er(e.dup?DUP_AUTH:authErr(e))}
  if(reused)pass=null;
  const id='t'+uid();const p=planById(d.plan);const due=new Date();due.setMonth(due.getMonth()+(Number(d.months)||1));
- const t={id,name:d.name.trim(),type:d.type,city:d.city,phone:fmtPhone(d.phone),plan:p.id,mods:[...p.mods,...(d.extra||[]).filter(m=>!p.mods.includes(m))],status:'activo',due:sod(due),since:sod(Date.now())};S.tenants.push(t);
+ const t={id,name:d.name.trim(),type:d.type,city:d.city,phone:fmtPhone(d.phone),plan:p.id,mods:[...p.mods,...(d.extra||[]).filter(m=>!p.mods.includes(m))],status:'activo',v2:true,due:sod(due),since:sod(Date.now())};S.tenants.push(t);
  const u={id:uidA,tid:id,name:d.owner.trim(),role:'dueno',email,mustChange:!reused,perms:[],active:true};S.users.push(u);
  if(d.amount){S.payments.push({id:uid(),tid:id,amount:d.amount,at:Date.now(),method:'Bre-B',concept:d.concept||'Compra desde la demo',ref:d.ref||''});if(d.setup)t.setupPaid=true}else{S.payments.push({id:uid(),tid:id,amount:p.price,at:Date.now(),method:'Transferencia',concept:'Mensualidad'});if(d.setup){t.setupPaid=true;S.payments.push({id:uid(),tid:id,amount:SETUP.price,at:Date.now(),method:'Transferencia',concept:'Implementación asistida'})}}
  S.messages.push({id:uid(),to:id,kind:'aviso',title:`Bienvenido a Natara, ${u.name.split(' ')[0]}`,body:'Tu cuenta está lista. Empieza cargando tu inventario desde Excel o creando tus productos.',at:Date.now(),readBy:[]});

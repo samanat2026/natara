@@ -37,10 +37,12 @@ service cloud.firestore {
       return coll == 'products' && hasPerm('recetas') && data.get('recipe', []).size() > 0;
     }
     // Puntos y fidelización: cualquier usuario del negocio afilia y suma puntos en la caja, si el negocio tiene el módulo
-    // El plan Total incluye todos los módulos
+    // El plan Restaurante incluye todos los módulos; Premium (id 'total') todos menos Mesas
     function hasMod(tid, m) {
       let t = get(/databases/$(database)/documents/tenants/$(tid)).data;
-      return m in t.get('mods', []) || t.get('plan', '') == 'total';
+      return m in t.get('mods', [])
+        || t.get('plan', '') == 'restaurante'
+        || (t.get('plan', '') == 'total' && m != 'mesas');
     }
     function canWrite(tid, coll) {
       return isOwnerOf(tid)
@@ -131,7 +133,7 @@ service cloud.firestore {
             && request.resource.data.status == 'pendiente'
             && !id.matches('pend_.*')
             && request.resource.data.keys().hasOnly(['id','type','status','at','ref','plan','mods','months','setup','amount','business','btype','city','phone','owner','email','comprobante'])
-            && request.resource.data.plan in ['basico','pro','total']
+            && request.resource.data.plan in ['basico','pro','total','restaurante']
             && request.resource.data.months in [1, 12]
             && request.resource.data.amount is number
             && request.resource.data.email is string && request.resource.data.email.size() < 120
