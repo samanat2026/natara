@@ -298,6 +298,30 @@ details.guide[open] summary{margin-bottom:10px}
 .lock-card .ic{width:68px;height:68px;border-radius:50%;background:var(--bad-soft);color:var(--bad);display:grid;place-items:center}
 .lock-card h1{font-family:var(--f-display);font-weight:500;font-size:22px}
 
+/* ---------- Escáner con cámara ---------- */
+.search .scan-btn{position:absolute;right:5px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.search .scan-btn svg{position:static;transform:none;color:var(--accent)}
+.search .scan-btn:hover{border-color:var(--accent)}
+.search.has-scan .input{padding-right:104px}
+.pos-search .scan-btn{right:7px;padding:8px 12px}
+@media (max-width:520px){.search .scan-btn span{display:none}.search.has-scan .input{padding-right:52px}}
+.code-in{position:relative}.code-in .input{padding-right:48px;width:100%}.code-in .icon-btn{position:absolute;right:4px;top:50%;transform:translateY(-50%);color:var(--accent)}
+.scan-back{position:fixed;inset:0;z-index:70;background:#000;display:flex;flex-direction:column;color:#fff}
+.scan-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:max(12px,env(safe-area-inset-top,0px)) 16px 12px}
+.scan-top b{font-size:16px}
+.scan-top .icon-btn{color:#fff}
+.scan-cam{position:relative;flex:1;overflow:hidden}
+.scan-cam video{width:100%;height:100%;object-fit:cover;display:block}
+.scan-frame{position:absolute;left:50%;top:50%;width:min(80vw,420px);height:min(34vw,170px);transform:translate(-50%,-50%);border:3px solid rgba(255,255,255,.9);border-radius:14px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45);transition:border-color .15s}
+.scan-frame::after{content:"";position:absolute;left:8px;right:8px;top:50%;height:2px;background:#ff4d4d;opacity:.8;animation:scanline 1.6s ease-in-out infinite}
+.scan-frame.ok{border-color:#3ddc84}.scan-frame.bad{border-color:#ff4d4d}
+@keyframes scanline{0%,100%{transform:translateY(-55px)}50%{transform:translateY(55px)}}
+.scan-msg{position:absolute;left:0;right:0;top:calc(50% + min(17vw,85px) + 18px);text-align:center;padding:0 20px;font-size:14px;text-shadow:0 1px 3px #000}
+.scan-bot{padding:14px 16px max(16px,env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px;background:#0d1412}
+.scan-last{min-height:44px;display:flex;align-items:center;gap:10px;font-size:15px}
+.scan-last .pill{flex:none}
+.scan-bot .row{display:flex;gap:10px}.scan-bot .btn{flex:1;justify-content:center}
+.scan-last .grow{flex:1;min-width:0}.scan-bot .muted{color:#b9c6c1}
 /* ---------- POS ---------- */
 .pos{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);gap:16px;align-items:start}
 @media (max-width:1000px){.pos{grid-template-columns:1fr}}
@@ -505,6 +529,8 @@ const IC={
  pulse:'M2 12h4l3-8 4 16 3-8h6',
  inbox:'M22 12h-6l-2 3h-4l-2-3H2M5.5 5h13L22 12v7H2v-7z',
  barcode:'M3 5v14M6.5 5v14M9 5v14M12.5 5v14M15 5v14M18 5v14M21 5v14',
+ camera:'M3 8h4l2-3h6l2 3h4v12H3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+ bolt:'M13 2 4 14h7l-1 8 9-12h-7z',
  alert:'M12 3 2 20h20zM12 10v4M12 17h.01',
  check:'M5 12.5l4.5 4.5L19 7',
  trash:'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
@@ -536,7 +562,7 @@ const MODS=[
  {id:'proveedores',name:'Proveedores',icon:'truck',price:19900,desc:'Directorio de proveedores y registro de compras que suben el inventario y quedan como egreso.'},
  {id:'mesas',name:'Mesas y meseros',icon:'table',price:29900,food:true,desc:'Para restaurantes y cafeterías: ves tus mesas libres y ocupadas, cada mesero abre su mesa y agrega lo que piden, y en la caja cobras por persona: cada quien paga lo suyo y la mesa sigue abierta hasta que se pague todo.'},
  {id:'recetas',name:'Recetas y combos',icon:'chef',price:10000,addon:true,desc:'Arma productos con lo que tienes en inventario: una arepa con chorizo y queso, un desayuno, un combo. Al venderlos, cada ingrediente se descuenta solo, y ves cuánto te cuesta y cuánto ganas en cada uno.'},
- {id:'lector',name:'Lector de código de barras',icon:'barcode',price:14900,addon:true,desc:'Vende y busca productos escaneando el código con un lector USB o Bluetooth. Ideal si el negocio vende productos empacados.'},
+ {id:'lector',name:'Lector de código de barras',icon:'barcode',price:14900,addon:true,desc:'Vende y busca productos escaneando el código con la cámara del celular o con un lector USB o Bluetooth. Ideal si el negocio vende productos empacados.'},
  {id:'fidelizacion',name:'Puntos y fidelización',icon:'gift',price:5000,addon:true,desc:'Tus clientes se afilian gratis con su cédula, acumulan puntos con cada compra y los usan como descuento en la caja, al estilo de Puntos Colombia. Tú decides cada cuánto se gana un punto, cuánto vale y cuándo vence.'},
 ];
 const PLANS=[
@@ -804,6 +830,136 @@ liveRefresh();
 setInterval(beat,15000);
 window.addEventListener('storage',e=>{if(e.key!==LIVE)return;liveRefresh();if(me()?.role==='superadmin'&&['actividad','resumen','clientes'].includes(sess.view)&&!$('#modal-root').innerHTML)render()});
 setInterval(()=>{if(me()?.role==='superadmin'&&sess.view==='actividad'&&!$('#modal-root').innerHTML){const m=$('#main');const y=m?m.scrollTop:0;render();const m2=$('#main');if(m2)m2.scrollTop=y}},10000);
+
+/* ---------- Lector de código de barras: cámara del celular + lector USB/Bluetooth ----------
+   - Cámara: usa el BarcodeDetector del navegador (Chrome/Android, gratis y rápido) y, si no existe
+     (iPhone, Firefox), carga ZXing desde el CDN solo la primera vez que se abre el escáner.
+   - Lector USB/Bluetooth: escribe como un teclado muy rápido y termina con Enter. Se detecta en
+     cualquier parte de la caja, las mesas y el inventario, aunque el campo de búsqueda no tenga el foco. */
+const SCAN_FORMATS=['ean_13','ean_8','upc_a','upc_e','code_128','code_39','code_93','itf','codabar','qr_code'];
+const ZXING_URL='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+const scan={on:false,target:null,stream:null,det:null,zx:null,timer:0,last:'',lastAt:0,n:0,busy:false};
+const camOK=()=>!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)&&window.isSecureContext!==false;
+const scanBtn=t=>has('lector')&&camOK()?`<button type="button" class="scan-btn" data-a="scan" data-v="${t}" aria-label="Escanear con la cámara">${ic('camera',16)}<span>Cámara</span></button>`:'';
+let _zxP=null;
+function loadZXing(){if(window.ZXing)return Promise.resolve(window.ZXing);if(_zxP)return _zxP;
+ _zxP=new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src=ZXING_URL;sc.async=true;sc.onload=()=>window.ZXing?ok(window.ZXing):ko(new Error('zxing'));sc.onerror=()=>{_zxP=null;ko(new Error('zxing'))};document.head.appendChild(sc)});return _zxP}
+async function nativeDetector(){
+ if(!('BarcodeDetector' in window))return null;
+ try{const sup=await BarcodeDetector.getSupportedFormats();const f=SCAN_FORMATS.filter(x=>sup.includes(x));if(!f.includes('ean_13'))return null;return new BarcodeDetector({formats:f})}catch(_){return null}
+}
+let _beepCtx=null;
+function scanBeep(good=true){
+ try{navigator.vibrate&&navigator.vibrate(good?60:[40,60,40])}catch(_){}
+ try{_beepCtx=_beepCtx||new (window.AudioContext||window.webkitAudioContext)();const c=_beepCtx,o=c.createOscillator(),g=c.createGain();o.type='square';o.frequency.value=good?1650:320;g.gain.setValueAtTime(.08,c.currentTime);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+(good?.12:.3));o.connect(g).connect(c.destination);o.start();o.stop(c.currentTime+(good?.13:.31))}catch(_){}
+}
+const SCAN_TITLE={pos:'Escanear para vender',mz:'Escanear para la mesa',pur:'Escanear lo que llegó',inv:'Buscar en el inventario',code:'Escanear el código del producto'};
+const scanMulti=t=>['pos','mz','pur'].includes(t);
+async function scanOpen(target){
+ if(scan.on)return;
+ if(!camOK()){toast('Este navegador no deja usar la cámara. Usa el lector USB o escribe el código.','bad');return}
+ scan.on=true;scan.target=target;scan.last='';scan.lastAt=0;scan.n=0;
+ const root=document.createElement('div');root.id='scan-root';root.className='scan-back';root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-label',SCAN_TITLE[target]||'Escanear');
+ root.innerHTML=`<div class="scan-top"><b>${SCAN_TITLE[target]||'Escanear'}</b><button class="icon-btn" data-a="scan-close" aria-label="Cerrar">${ic('x',22)}</button></div>
+  <div class="scan-cam"><video id="scan-video" playsinline muted autoplay></video><div class="scan-frame" id="scan-frame"></div><div class="scan-msg" id="scan-msg">Abriendo la cámara…</div></div>
+  <div class="scan-bot"><div class="scan-last" id="scan-last">${scanMulti(target)?'<span class="muted">Apunta al código de barras. Cada producto que leas se agrega solo.</span>':'<span class="muted">Apunta al código de barras.</span>'}</div>
+  <div class="row"><button class="btn" data-a="scan-torch" id="scan-torch" hidden>${ic('bolt',16)} Linterna</button><button class="btn primary" data-a="scan-close">${scanMulti(target)?'Listo':'Cancelar'}</button></div></div>`;
+ document.body.appendChild(root);
+ try{history.pushState({...(history.state||{}),scan:1},'')}catch(_){}
+ const video=$('#scan-video');const msg=t=>{const m=$('#scan-msg');if(m)m.textContent=t};
+ try{
+  scan.stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
+  if(!scan.on){scanStopStream();return}
+  video.srcObject=scan.stream;await video.play().catch(()=>{});
+  const tr=scan.stream.getVideoTracks()[0];const caps=tr&&tr.getCapabilities?tr.getCapabilities():{};
+  if(caps.torch){const b=$('#scan-torch');if(b)b.hidden=false}
+  if(caps.focusMode&&caps.focusMode.includes('continuous'))tr.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(()=>{});
+  msg('Pon el código dentro del recuadro');
+  scan.det=await nativeDetector();
+  if(!scan.det){
+   msg('Cargando el lector…');
+   const Z=await loadZXing();if(!scan.on)return;
+   const hints=new Map();hints.set(Z.DecodeHintType.POSSIBLE_FORMATS,[Z.BarcodeFormat.EAN_13,Z.BarcodeFormat.EAN_8,Z.BarcodeFormat.UPC_A,Z.BarcodeFormat.UPC_E,Z.BarcodeFormat.CODE_128,Z.BarcodeFormat.CODE_39,Z.BarcodeFormat.ITF,Z.BarcodeFormat.QR_CODE]);
+   scan.zx=new Z.BrowserMultiFormatReader(hints);
+   msg('Pon el código dentro del recuadro');
+  }
+  // un solo ciclo para los dos motores: lee el cuadro actual del video cada ~150 ms
+  const loop=async()=>{if(!scan.on)return;
+   if(!scan.busy&&video.readyState>=2){scan.busy=true;
+    try{if(scan.det){const r=await scan.det.detect(video);if(r&&r.length)scanHit(r[0].rawValue)}else if(scan.zx){const r=scan.zx.decode(video);if(r)scanHit(r.getText())}}catch(_){}
+    scan.busy=false}
+   scan.timer=setTimeout(loop,scan.det?120:160)};
+  loop();
+ }catch(err){
+  const n=err&&err.name;
+  scanClose(true);
+  toast(n==='NotAllowedError'||n==='SecurityError'?'Natara no tiene permiso para usar la cámara. Actívalo en el candado de la barra de direcciones.':n==='NotFoundError'||n==='OverconstrainedError'?'No encontramos una cámara en este equipo. Usa el lector USB o escribe el código.':err&&err.message==='zxing'?'No se pudo cargar el lector. Revisa tu conexión a internet.':'No se pudo abrir la cámara. Intenta de nuevo.','bad');
+ }
+}
+function scanStopStream(){try{scan.stream&&scan.stream.getTracks().forEach(t=>t.stop())}catch(_){}scan.stream=null}
+function scanClose(fromBack){
+ if(!scan.on&&!$('#scan-root'))return;
+ scan.on=false;clearTimeout(scan.timer);scan.zx=null;scan.busy=false;scan.det=null;scanStopStream();
+ $('#scan-root')?.remove();
+ if(!fromBack&&history.state&&history.state.scan){scanSkipPop=true;try{history.back()}catch(_){scanSkipPop=false}}
+ const t=scan.target;scan.target=null;
+ if(t==='pos'){$('#pos-results')&&($('#pos-results').innerHTML=posResults())}
+}
+let scanSkipPop=false;
+function scanFlash(ok,html){const f=$('#scan-frame');if(f){f.classList.remove('ok','bad');void f.offsetWidth;f.classList.add(ok?'ok':'bad');setTimeout(()=>f.classList.remove('ok','bad'),600)}const l=$('#scan-last');if(l&&html)l.innerHTML=html}
+function findByCode(code){const c=String(code).trim();if(!c)return null;const P=T('products');
+ return P.find(p=>p.code===c)||P.find(p=>String(p.code).toLowerCase()===c.toLowerCase())
+  // EAN-13 que empieza en 0 = UPC-A: se acepta con o sin el cero
+  ||(c.length===13&&c[0]==='0'?P.find(p=>p.code===c.slice(1)):c.length===12?P.find(p=>p.code==='0'+c):null)||null}
+function scanHit(raw){
+ const code=String(raw||'').trim();if(!code)return;const now=Date.now();
+ // mientras el mismo código siga frente a la cámara no se vuelve a sumar; para sumar otro igual, retira el producto y vuelve a apuntar
+ if(code===scan.last&&now-scan.lastAt<1200){scan.lastAt=now;return}
+ scan.last=code;scan.lastAt=now;
+ const t=scan.target;
+ if(t==='code'){scanBeep();const i=$('#prod-form [name=code]');if(i){i.value=code;i.dispatchEvent(new Event('input',{bubbles:true}))}scanClose();toast(`Código ${code} listo`);const n=$('#prod-form [name=name]');if(n&&!n.value)setTimeout(()=>n.focus(),40);return}
+ if(t==='inv'){scanBeep();scanClose();applyCode(code,'inv');return}
+ const ok=applyCode(code,t);
+ if(ok){scan.n++;scanBeep(true);scanFlash(true,`<span class="pill good">${ic('check',14)} ${scan.n}</span><span class="grow"><b>${esc(ok.name)}</b>${ok.extra?` · ${esc(ok.extra)}`:''}</span>`)}
+ else{scanBeep(false);const mk=canDo('inv_edit')&&has('inventario');scanFlash(false,`<span class="pill bad">${ic('alert',14)}</span><span class="grow">No encontramos el código <b class="mono">${esc(code)}</b>.</span>${mk?`<button class="btn sm" data-a="scan-newprod" data-v="${esc(code)}">${ic('plus',14)} Crearlo</button>`:''}`)}
+}
+// Lleva un código (de la cámara o del lector USB) a la pantalla donde está la persona
+function applyCode(code,where){
+ const p=findByCode(code);
+ if(where==='pos'){if(!p||p.kind==='insumo')return null;addToCart(p);const it=cart.find(i=>i.pid===p.id);return{name:p.name,extra:`${num(it?.qty||1)} en la venta · ${money(p.price)}`}}
+ if(where==='mz'){if(!p||p.kind==='insumo'||!mz.id)return null;mzAdd(p.id);return{name:p.name,extra:money(p.price)}}
+ if(where==='pur'){if(!p)return null;purAdd(p);return{name:p.name,extra:'escribe cantidad y costo'}}
+ if(where==='inv'){inv.q=code;if(p){inv.kind=p.kind==='insumo'?'insumo':'venta'}render();if(p&&isOwner())setTimeout(()=>H_stock(p.id),30);else if(!p)toast(`No encontramos el código ${code}`,'bad');return p}
+ return null;
+}
+// Lector USB/Bluetooth (modo teclado): llega como teclas muy seguidas que terminan en Enter
+const wedge={buf:'',t0:0,last:0};
+function wedgeWhere(){
+ if(!has('lector')||scan.on)return null;
+ const mo=$('#modal-root').innerHTML;
+ if(mo){if($('#pur-q'))return 'pur';return null}
+ if(sess.view==='caja')return 'pos';
+ if(sess.view==='mesas'&&mz.id&&!mz.pay)return 'mz';
+ if(sess.view==='inventario')return 'inv';
+ return null;
+}
+document.addEventListener('keydown',e=>{
+ const tg=e.target,typing=tg&&(tg.tagName==='INPUT'||tg.tagName==='TEXTAREA'||tg.tagName==='SELECT'||tg.isContentEditable);
+ if(typing)return; // si hay un campo con el foco, el lector escribe ahí y el Enter de ese campo hace el resto
+ const now=Date.now();
+ if(e.key==='Enter'){
+  const b=wedge.buf,fast=b.length>=4&&(wedge.last-wedge.t0)/(b.length-1||1)<45&&now-wedge.last<120;wedge.buf='';
+  if(!fast)return;const w=wedgeWhere();if(!w)return;e.preventDefault();
+  if(w==='inv'){applyCode(b,'inv');return}
+  const ok=applyCode(b,w);if(ok)scanBeep(true);else{scanBeep(false);toast(`No encontramos el código ${b}`,'bad')}
+  return;
+ }
+ if(e.key.length!==1||e.ctrlKey||e.metaKey||e.altKey)return;
+ if(now-wedge.last>80)wedge.buf='',wedge.t0=now;
+ wedge.buf+=e.key;wedge.last=now;
+},true);
+window.addEventListener('popstate',e=>{if(scanSkipPop){scanSkipPop=false;e.stopImmediatePropagation();return}if(scan.on){e.stopImmediatePropagation();scanClose(true)}},true);
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&scan.on)scanClose()});
 
 /* ---------- UI helpers ---------- */
 function toast(msg,kind=''){const el=document.createElement('div');el.className='toast '+kind;el.textContent=msg;$('#toast').appendChild(el);setTimeout(()=>el.remove(),3200)}
@@ -1162,7 +1318,7 @@ function viewMesa(){
   <div class="actions"><button class="btn sm" data-a="mz-move">${ic('arrow',15)} Cambiar de mesa</button><button class="btn sm" data-a="mz-guests">${ic('users',15)} Personas</button></div></div>
   ${t.bill?`<div class="banner info">${ic('bell')}<div class="grow">Esta mesa pidió la cuenta.</div></div>`:''}
   <div class="pos">
-   <div class="stack"><div class="search pos-search">${ic('search',20)}<input class="input" id="mz-q" placeholder="Busca un plato o bebida" autocomplete="off" value="${esc(mz.q)}" data-i="mz-q"></div><div id="mz-results">${mzResults()}</div></div>
+   <div class="stack"><div class="search pos-search ${scanBtn('mz')?'has-scan':''}">${ic('search',20)}<input class="input" id="mz-q" placeholder="Busca un plato o bebida" autocomplete="off" value="${esc(mz.q)}" data-i="mz-q">${scanBtn('mz')}</div><div id="mz-results">${mzResults()}</div></div>
    <div class="card cart" id="mz-bill">${mzBill(t)}</div>
   </div>
   <button class="mz-jump" id="mz-jump" data-a="mz-jump">${mzJump(t)}</button>`;
@@ -1262,11 +1418,11 @@ function viewCaja(){
  const u=me();
  const sess0=openSession();
  return `<div class="page-head"><div><h1>Caja</h1><p>${sess0?`Caja abierta desde las ${ftime(sess0.openedAt)} por ${esc(userName(sess0.openedBy))}`:'La caja está cerrada'}</p></div>
-  <div class="actions">${has('lector')?`<span class="pill good">${ic('barcode',14)} Lector listo</span>`:false?`<button class="btn sm" data-a="go" data-v="plan">${ic('barcode',15)} ¿Tienes lector de barras?</button>`:''}</div></div>
+  <div class="actions">${has('lector')?`<span class="pill good" title="Escanea con la cámara del celular o con un lector USB/Bluetooth, sin tocar el campo de búsqueda">${ic('barcode',14)} Lector listo · cámara o USB</span>`:false?`<button class="btn sm" data-a="go" data-v="plan">${ic('barcode',15)} ¿Tienes lector de barras?</button>`:''}</div></div>
   ${sess0?'':`<div class="banner">${ic('register')}<div class="grow">Abre la caja antes de cobrar. Así el cierre del día cuadra con lo que hay en el cajón.</div><button class="btn sm primary" data-a="go" data-v="cierre">Abrir caja</button></div>`}
   <div class="pos">
    <div class="stack">
-    <div class="search pos-search">${ic('search',20)}<input class="input" id="pos-q" placeholder="${has('lector')?'Escanea el código o escribe el nombre del producto':'Escribe el nombre o la categoría del producto'}" autocomplete="off" value="${esc(pos.q)}" data-i="pos-q"></div>
+    <div class="search pos-search ${scanBtn('pos')?'has-scan':''}">${ic('search',20)}<input class="input" id="pos-q" placeholder="${has('lector')?'Escanea o escribe el nombre':'Escribe el nombre o la categoría del producto'}" autocomplete="off" value="${esc(pos.q)}" data-i="pos-q">${scanBtn('pos')}</div>
     <div id="pos-results">${posResults()}</div>
    </div>
    <div class="card cart" id="cart-panel">${cartPanel()}</div>
@@ -1554,7 +1710,7 @@ function viewInventario(){
   ${CM&&own&&!CS.length?`<div class="banner info">${ic('tag')}<div class="grow"><b>Tu caja ahora se organiza por categorías.</b> Crea tus categorías y asígnales los productos para que salgan agrupados al vender.</div><button class="btn sm primary" data-a="cats">Crear categorías</button></div>`:''}
   ${isIns?`<div class="hint">${ic('info',15)} <b>Los insumos no salen en la caja.</b> Son lo que compras para producir: harina, azúcar, mantequilla. Suben cuando registras una compra en Proveedores. Bajan cuando registras lo que usaste: por ejemplo, si esta mañana gastaste 20 kg de harina haciendo pan, tocas <b>Registrar consumo</b> en la harina y descuentas 20 kg.</div>`:''}
   <div class="card"><div class="toolbar" style="margin-bottom:12px">
-   <div class="search">${ic('search',16)}<input class="input" id="inv-q" placeholder="${isIns?'Buscar insumo':L?'Buscar por nombre o escanear código':'Buscar por nombre o código'}" value="${esc(inv.q)}" data-i="inv-q"></div>
+   <div class="search ${scanBtn('inv')?'has-scan':''}">${ic('search',16)}<input class="input" id="inv-q" placeholder="${isIns?'Buscar insumo':L?'Buscar por nombre o escanear código':'Buscar por nombre o código'}" value="${esc(inv.q)}" data-i="inv-q">${scanBtn('inv')}</div>
    ${sel('inv-cat',[['','Todas las categorías'],...cats],inv.cat,'data-c="inv-cat"')}
    <label class="row small" style="gap:6px"><input type="checkbox" id="inv-low" ${inv.low?'checked':''} data-c="inv-low" style="accent-color:var(--accent)"> Solo stock bajo</label>
   </div>
@@ -1563,7 +1719,7 @@ function viewInventario(){
   :`<div class="tbl-wrap"><table><thead><tr>${L?'<th>Código</th>':''}<th>Producto</th><th>Categoría</th>${costs?'<th class="r">Costo</th>':''}<th class="r">Precio</th>${costs?'<th class="r">Margen</th>':''}<th class="r">Stock</th>${own?'<th></th>':''}</tr></thead><tbody>${rowsVenta}</tbody></table></div>`}
   </div>
   ${false?`<div class="hint">${ic('barcode',15)} <b>¿Tienes lector de código de barras?</b> Con el complemento de lector vendes más rápido: escaneas el producto y entra solo a la venta. <button class="btn sm" data-a="go" data-v="plan" style="margin-left:6px">Ver en Mi plan</button></div>`:''}
-  ${own&&!isIns&&L?`<div class="hint">${ic('barcode',15)} <b>¿Cómo funciona el código de barras?</b> Casi todos los productos traen un código impreso (EAN-13). Un lector USB o Bluetooth funciona como un teclado: haz clic en el campo “Código”, dispara el lector y el número se escribe solo. Para productos que tú haces (pan, tortas) inventa un código corto como PAN01 o imprime etiquetas.</div>`:''}`;
+  ${own&&!isIns&&L?`<div class="hint">${ic('barcode',15)} <b>¿Cómo funciona el código de barras?</b> Casi todos los productos traen un código impreso (EAN-13). Puedes leerlo de dos formas: con la <b>cámara del celular</b> (botón ${ic('camera',14)} junto al campo) o con un <b>lector USB o Bluetooth</b>, que funciona como un teclado: dispáralo y el número se escribe solo. Para productos que tú haces (pan, tortas) inventa un código corto como PAN01 o imprime etiquetas.</div>`:''}`;
 }
 /* ---------- categorías de la caja (las crea el dueño) ---------- */
 let catUI={del:null,pick:null};
@@ -1619,7 +1775,7 @@ function productForm(p,kind){
  pfRecipe=[];pfSelf=p?.id||'';
  kind=p?.kind||kind||'venta';const ins=kind==='insumo';const edit=!!p?.id;
  const sup=has('proveedores')?T('suppliers'):[];const L=has('lector');
- const codeField=L&&!ins?field('Código de barras',inp('code',p?.code||'','text','required placeholder="Escanea o escribe" autocomplete="off"')):field('Código interno (opcional)',inp('code',p?.code||'','text','placeholder="Se crea solo si lo dejas vacío" autocomplete="off"'));
+ const codeField=L&&!ins?field('Código de barras',`<div class="code-in">${inp('code',p?.code||'','text','required placeholder="Escanea o escribe" autocomplete="off"')}${camOK()?`<button type="button" class="icon-btn" data-a="scan" data-v="code" aria-label="Escanear el código con la cámara" title="Escanear con la cámara">${ic('camera',20)}</button>`:''}</div>`):field('Código interno (opcional)',inp('code',p?.code||'','text','placeholder="Se crea solo si lo dejas vacío" autocomplete="off"'));
  return `<form class="stack" data-f="prod-save" id="prod-form"><input type="hidden" name="id" value="${edit?p.id:''}"><div class="form-grid">
   ${field('Tipo',sel('kind',[['venta','Producto para vender (sale en la caja)'],['insumo','Insumo o materia prima (no sale en la caja)']],kind,'data-c="pf-kind"'+(edit?' disabled':'')),'full')}${edit?`<input type="hidden" name="kind" value="${kind}">`:''}
   ${field(ins?'Nombre del insumo':'Nombre del producto',inp('name',p?.name||'','text','required placeholder="'+(ins?'Ej: Harina de trigo':'Ej: Pan francés')+'"'),'full')}
@@ -2025,7 +2181,7 @@ let pur=null;
 function purchaseModal(sp){
  pur={sid:sp.id,items:[],q:'',method:'transferencia'};
  openModal(`Compra a ${sp.name}`,`<p class="muted small" style="margin:0">Busca lo que llegó, escribe la cantidad y el costo. El inventario sube solo y el total queda como egreso.</p>
-  <div class="search">${ic('search',16)}<input class="input" id="pur-q" placeholder="Buscar insumo o producto (ej: harina)" autocomplete="off" data-i="pur-q"></div>
+  <div class="search ${scanBtn('pur')?'has-scan':''}">${ic('search',16)}<input class="input" id="pur-q" placeholder="Buscar insumo o producto (ej: harina)" autocomplete="off" data-i="pur-q">${scanBtn('pur')}</div>
   <div id="pur-results">${purResults()}</div>
   <div id="pur-items">${purItems()}</div>
   <div class="form-grid">${field('Pagado con',sel('pur-method',[['transferencia','Transferencia'],['efectivo','Efectivo de la caja']],'transferencia','data-c="pur-method"'))}</div>`,
@@ -2260,6 +2416,10 @@ document.addEventListener('click',e=>{
  if(a==='modal-bg'){if(e.target===el)closeModal();return}
  const H={
   'close-modal':closeModal,
+  'scan':()=>scanOpen(v),
+  'scan-close':()=>scanClose(),
+  'scan-newprod':()=>{scanClose();openModal('Nuevo producto',productForm({code:v},'venta'),`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="prod-form">Guardar producto</button>`);setTimeout(()=>$('#prod-form [name=name]')?.focus(),60)},
+  'scan-torch':()=>{const tr=scan.stream?.getVideoTracks()[0];if(!tr)return;scan.torch=!scan.torch;tr.applyConstraints({advanced:[{torch:scan.torch}]}).catch(()=>toast('Este celular no deja prender la linterna','bad'));el.classList.toggle('primary',scan.torch)},
   'nav-open':()=>{navOpen=true;document.querySelector('.shell')?.classList.add('open')},
   'nav-close':()=>{navOpen=false;document.querySelector('.shell')?.classList.remove('open')},
   go:()=>{if(mz.pay)mzPayExit(true);if(v==='mesas')mz.id=null;sess.view=v;saveSess();if(me()?.tid)liveEvent('view',null,v);navOpen=false;closeModal();render();$('#main')?.scrollTo(0,0)},
@@ -2480,11 +2640,12 @@ document.addEventListener('change',e=>{
 document.addEventListener('keyup',e=>{if(e.target.id==='lg-pass'&&e.getModifierState){const c=$('#lg-caps');if(c)c.hidden=!e.getModifierState('CapsLock')}});
 document.addEventListener('keydown',e=>{
  if(e.target.id==='fid-doc'&&e.key==='Enter'){e.preventDefault();fidFind();return}
+ if(e.key==='Escape'&&scan.on){scanClose();return}
  if(e.key==='Escape'&&$('#modal-root').innerHTML){closeModal();return}
  if(e.target.id==='pur-q'&&e.key==='Enter'){e.preventDefault();const q=e.target.value.trim().toLowerCase();if(!q)return;const ex=T('products').find(p=>p.code.toLowerCase()===q);const m=ex?[ex]:purMatches();if(m.length)purAdd(m[0]);return}
  if(e.target.id==='pos-q'&&e.key==='Enter'){
   e.preventDefault();const q=e.target.value.trim();if(!q)return;
-  const P=T('products').filter(p=>p.kind!=='insumo');const exact=has('lector')?P.find(p=>p.code===q):null;
+  const P=T('products').filter(p=>p.kind!=='insumo');const exact=has('lector')?(f=>f&&f.kind!=='insumo'?f:null)(findByCode(q)):null;
   if(exact){addToCart(exact);pos.q='';e.target.value='';$('#pos-results').innerHTML=posResults();return}
   const m=posMatches();if(m.length===1){addToCart(m[0]);pos.q='';e.target.value='';$('#pos-results').innerHTML=posResults()}
   else if(!m.length)toast(has('lector')?`No encontramos el código ${q}`:`No encontramos “${q}”`,'bad');

@@ -55,7 +55,7 @@ Los complementos se suman a cualquier plan. Premium incluye todos los módulos m
 | Proveedores | $19.900 |
 | Mesas y meseros (restaurantes y cafeterías) | $29.900 |
 | Recetas y combos (complemento) | $10.000 |
-| Lector de código de barras (complemento, no se promociona) | $14.900 |
+| Lector de código de barras: cámara o USB (complemento, no se promociona) | $14.900 |
 | Puntos y fidelización (complemento) | $5.000 |
 
 Implementación opcional: $180.000 una sola vez (carga de inventario, configuración y capacitación).
@@ -73,6 +73,17 @@ Complemento de $5.000/mes que paga el dueño del negocio (incluido en Premium y 
 - **Anular una venta** quita los puntos ganados y devuelve los usados.
 - **Configuración (dueño → Puntos → Configurar):** por defecto 1 punto por cada $1.000, cada punto vale $7, mínimo 100 para usarlos, vencen a los 12 meses, 0 de bienvenida.
 - Datos en Firestore: `tenants/{tid}/members` (afiliados con sus lotes), `tenants/{tid}/pmoves` (historial) y `tenants/{tid}/settings/fid_{tid}` (configuración).
+
+## Lector de código de barras (cámara o USB)
+
+Complemento de $14.900/mes (incluido en Premium y Restaurante). Samanat lo activa por negocio en la consola. Con él activo, el negocio puede escanear de **dos formas, sin configurar nada**:
+
+- **Cámara del celular o del computador (gratis):** botón *Cámara* en la búsqueda de la Caja, las Mesas, el Inventario y las compras a proveedores, y botón de cámara junto al campo *Código de barras* del producto. En la caja y las mesas el escáner se queda abierto: cada producto que se lee entra solo a la venta, con pitido y vibración. Mientras el mismo código siga frente a la cámara no se suma dos veces; para otro igual se retira y se vuelve a apuntar. Si el código no existe, el dueño lo puede crear ahí mismo.
+  - Motor: el `BarcodeDetector` del navegador (Chrome en Android) y, donde no existe (iPhone, Firefox, computador), ZXing (`@zxing/library` 0.21.3 desde jsDelivr), que solo se descarga la primera vez que se abre la cámara. Lee EAN-13, EAN-8, UPC, Code 128, Code 39, ITF y QR.
+  - Necesita HTTPS (GitHub Pages ya lo es) y que la persona dé permiso de cámara.
+- **Lector USB o Bluetooth:** funciona como un teclado. En la Caja, las Mesas (dentro de una mesa) y el Inventario no hace falta tocar el campo de búsqueda: Natara reconoce las teclas rápidas que terminan en Enter y agrega el producto. Si el cursor está en un campo (por ejemplo *Código* del producto), el código se escribe ahí.
+
+Los códigos de la demo son inventados y no tienen dígito de control válido, así que con la cámara solo se leen productos reales; en la demo se puede probar escaneando cualquier producto empacado y creándolo con *Crearlo*.
 
 ## Botón Atrás
 
