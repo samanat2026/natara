@@ -23,7 +23,7 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 | pedro@laespiga.co | Cajero desactivado | Prueba el mensaje de usuario desactivado |
 | carlos@vidasana.co | Dueño · Droguería Vida Sana | Plan Pro |
 | pacho@minimercado.co | Dueño · Minimercado Don Pacho | Plan Básico (18 productos de ejemplo) |
-| andrea@arcoiris.co | Dueña · Papelería Arcoíris | Cuenta suspendida (pantalla de bloqueo) |
+| andrea@arcoiris.co | Dueña · Papelería Arcoíris | Cuenta suspendida (pantalla de bloqueo). Solo aparece en la consola de demo, no en la demo de clientes |
 | diana@elfogon.co | Dueña · Restaurante El Fogón Paisa | Plan Restaurante, con 12 mesas y 4 ocupadas; puntos incluidos pero apagados |
 | andres@elfogon.co | Cajero · El Fogón | Entra a las mesas y cobra por persona |
 | camila@elfogon.co | Mesera · El Fogón | Solo ve las mesas: abre, agrega productos y pide la cuenta. No cobra |
