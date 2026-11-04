@@ -1670,11 +1670,11 @@ function viewCierre(){
    <tr><td>Base inicial</td><td class="r num">${money(s.base)}</td></tr>
    <tr><td>Ventas en efectivo (${x.count} ventas en total)</td><td class="r num">+ ${money(x.cash)}</td></tr>
    <tr><td>Ingresos en efectivo</td><td class="r num">+ ${money(x.inC)}</td></tr>
-   <tr><td>Abonos de fiados en efectivo</td><td class="r num">+ ${money(x.abonos)}</td></tr>
+   ${has('fiados')||x.abonos?`<tr><td>Abonos de fiados en efectivo</td><td class="r num">+ ${money(x.abonos)}</td></tr>`:''}
    <tr><td>Egresos pagados con efectivo de la caja</td><td class="r num">− ${money(x.outC)}</td></tr>
    <tr><td><b>Debe haber en el cajón</b></td><td class="r num"><b style="font-size:18px">${money(x.expected)}</b></td></tr>
    </tbody></table></div>
-   <div class="row muted small" style="margin-top:10px"><span>Transferencias: <b>${money(x.tr)}</b></span>·<span>Datáfono: <b>${money(x.df)}</b></span>·<span>Fiado: <b>${money(x.fi)}</b></span></div></div>
+   <div class="row muted small" style="margin-top:10px"><span>Transferencias: <b>${money(x.tr)}</b></span>·<span>Datáfono: <b>${money(x.df)}</b></span>${has('fiados')||x.fi?`·<span>Fiado: <b>${money(x.fi)}</b></span>`:''}</div></div>
    <div class="card"><h2>Cerrar caja</h2><form class="stack" data-f="close-cash">${field('¿Cuánto efectivo contaste?',minp('counted','','required data-i="count-cash"'))}<div class="change"><span>Diferencia</span><span class="num" id="cash-diff">—</span></div><button class="btn primary" type="submit">Cerrar caja del día</button></form></div></div>`}
  return `<div class="page-head"><div><h1>Apertura y cierre</h1><p>Cuadra el efectivo del cajón al final de cada turno.</p></div></div>${main}
   <div class="card"><h2>Cierres anteriores</h2>${hist.length?`<div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Abrió</th><th>Cerró</th><th class="r">Base</th><th class="r">Diferencia</th></tr></thead><tbody>${hist.map(h=>`<tr><td>${fdate(h.openedAt)}</td><td>${esc(userName(h.openedBy))}</td><td>${esc(userName(h.closedBy))} · ${ftime(h.closedAt)}</td><td class="r num">${money(h.base)}</td><td class="r">${h.diff===0?'<span class="pill good">Cuadró</span>':`<span class="pill ${h.diff<0?'bad':'warn'}">${h.diff>0?'+':''}${money(h.diff)}</span>`}</td></tr>`).join('')}</tbody></table></div>`:`<p class="muted small">Todavía no hay cierres.</p>`}</div>`;
