@@ -443,7 +443,7 @@ details.hint summary{cursor:pointer}
    ========================================================= */
 const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';const DEMO_ADMIN=MODE==='demo'&&window.NATARA_DEMO_ADMIN===true;const ADMIN_EMAIL='samanat2026@gmail.com';
 const REAL_URL='https://samanat2026.github.io/natara/',DEMO_URL='https://samanat2026.github.io/natara/demo/';
-const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v12';
+const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v14';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 const WA_NUM='573146619135',WA_TXT='314 661 9135';
@@ -642,7 +642,7 @@ function seed(){
  mkTab('mz7',12,'u12',4,false,[['Chicharrón con arepa',1],['Empanadas x3',2],['Cerveza nacional',4]]);
  mkTab('mz11',35,'u11',3,false,[['Pechuga a la plancha',1],['Churrasco',1],['Limonada natural',3],['Torta tres leches',2]]);
  {const pl=S.tablines.filter(l=>l.tab===fam&&l.paid);const items=pl.map(l=>({pid:l.pid,name:l.name,price:l.price,cost:l.cost,qty:l.paid,line:l.id}));const total=sum(items,i=>i.price*i.qty);
-  S.sales.push({id:uid(),tid:'t5',at:now-4*6e4,items,total,method:'datafono',bank:'',card:'Débito',ref:String(ri(100000,999999)),confirmed:true,received:0,seller:'u10',customer:'',status:'ok',num:Math.max(1000,...S.sales.filter(s=>s.tid==='t5').map(s=>s.num))+1,tab:fam,mesa:'Mesa 2'});S.sales.sort((a,b)=>a.at-b.at)}
+  S.sales.push({id:uid(),tid:'t5',at:now-4*6e4,items,total,method:'datafono',bank:'',card:'Débito',ref:String(ri(100000,999999)),confirmed:true,received:0,seller:'u10',customer:'',status:'ok',num:Math.max(1000,...S.sales.filter(s=>s.tid==='t5').map(s=>s.num))+1,tab:fam,mesa:'Mesa 2',mesaN:1,mesaRest:sum(S.tablines.filter(l=>l.tab===fam),l=>(l.qty-l.paid)*l.price)});S.sales.sort((a,b)=>a.at-b.at)}
  // movimientos manuales
  const mv=(tid,type,cat,concept,amount,at,method='transferencia')=>S.moves.push({id:uid(),tid,type,cat,concept,amount,at,method});
  const m0=new Date(today);m0.setDate(1);const monthStart=m0.getTime();
@@ -654,6 +654,9 @@ function seed(){
  });
  for(let w=0;w<5;w++){mv('t2','egreso','Compra de mercancía','Pedido a distribuidora',ri(600,900)*1000,today-w*7*DAY-2*DAY+11*3600e3)}
  mv('t1','egreso','Transporte','Domicilios de la semana',62000,today-2*DAY+18*3600e3,'efectivo');
+ // gastos del restaurante El Fogón
+ mv('t5','egreso','Arriendo','Arriendo del local',3200000,monthStart+9*3600e3);mv('t5','egreso','Nómina','Quincena cocina y meseros',2850000,today-16*DAY+17*3600e3);mv('t5','egreso','Servicios públicos','Gas, energía y agua',920000,today-11*DAY+10*3600e3);
+ for(let w=0;w<5;w++){mv('t5','egreso','Compra de mercancía','Carnes y pescado (Carnes La Granja)',ri(780,980)*1000,today-w*7*DAY-DAY+8*3600e3);mv('t5','egreso','Compra de mercancía','Verduras y frutas (plaza Minorista)',ri(260,340)*1000,today-w*7*DAY-3*DAY+7*3600e3,'efectivo')}
  mv('t1','ingreso','Pedido especial','Torta de cumpleaños por encargo',145000,today-3*DAY+15*3600e3);
  mv('t1','ingreso','Pedido especial','Refrigerios para reunión de copropiedad',260000,today-9*DAY+11*3600e3);
  // fiados
@@ -1192,6 +1195,7 @@ function mzApplyPay(sale){
  const t=S.tabs.find(x=>x.id===pos.tab);if(!t)return null;const m=S.tables.find(x=>x.id===t.table);
  sale.tab=t.id;sale.mesa=m?.name||'';
  sale.items.forEach(i=>{const l=S.tablines.find(x=>x.id===i.line);if(l)l.paid=(l.paid||0)+Math.min(i.qty,pendQty(l))});
+ sale.mesaN=S.sales.filter(x=>x.tab===t.id&&x.status!=='anulada').length+1;sale.mesaRest=tabPend(t.id);
  const left=linesOf(t.id).some(l=>pendQty(l)>0);t.bill=false;
  if(!left)mzCloseTab(t);
  return {closed:!left,name:sale.mesa};
@@ -1203,6 +1207,9 @@ function mzVoid(s){
  its.forEach(i=>{const l=S.tablines.find(x=>x.id===i.line);if(l)l.paid=Math.max(0,(l.paid||0)-i.qty)});
  S.tablines.filter(l=>l.tab===t.id).forEach(l=>l.open=true);
 }
+// Pagos de una mesa (una venta por cada persona o grupo que pagó)
+const mesaPays=s=>s.tab?S.sales.filter(x=>x.tab===s.tab&&x.status!=='anulada').sort((a,b)=>a.at-b.at):[];
+const mesaPill=s=>s.mesa?`<span class="pill ac" style="margin-left:6px">${ic('table',12)} ${esc(s.mesa)}${s.tab&&s.mesaN?` · pago ${s.mesaN}`:''}</span>`:'';
 function mzCfgModal(){
  const M=mesasOf();
  openModal('Configurar mesas',`<p class="muted small" style="margin:0">Cambia el nombre tocando el texto. Las mesas ocupadas no se pueden eliminar.</p>
@@ -1326,10 +1333,10 @@ function showReceipt(s,fresh=false){
  const t=S.tenants.find(x=>x.id===s.tid);
  const body=`${fresh?`<div class="banner info">${ic('check')}<div class="grow"><b>Venta registrada.</b> ${s.method==='efectivo'&&s.received>s.total?`Entrega ${money(s.received-s.total)} de cambio.`:''}${s.method==='transferencia'&&!s.confirmed?'Quedó por confirmar la transferencia.':''}</div></div>`:''}
   <div class="receipt"><div class="c"><b>${esc(t.name)}</b><br>${esc(t.city)} · Tel. ${esc(t.phone)}</div><hr>
-  <div class="ln"><span>Venta #${s.num}</span><span>${fdt(s.at)}</span></div><div class="ln"><span>Atendió</span><span>${esc(userName(s.seller))}</span></div>${s.mesa?`<div class="ln"><span>Mesa</span><span>${esc(s.mesa)}</span></div>`:''}<hr>
+  <div class="ln"><span>Venta #${s.num}</span><span>${fdt(s.at)}</span></div><div class="ln"><span>Atendió</span><span>${esc(userName(s.seller))}</span></div>${s.mesa?`<div class="ln"><span>Mesa</span><span>${esc(s.mesa)}${s.tab&&s.mesaN?` · pago ${s.mesaN}`:''}</span></div>`:''}<hr>
   ${s.items.map(i=>`<div class="ln"><span>${i.qty} × ${esc(i.name)}</span><span>${money(i.qty*i.price)}</span></div>`).join('')}<hr>
   ${s.disc?`<div class="ln"><span>Subtotal</span><span>${money(s.sub)}</span></div><div class="ln"><span>Descuento ${num(s.ptsUsed)} puntos</span><span>−${money(s.disc)}</span></div>`:''}
-  <div class="ln"><b>TOTAL</b><b>${money(s.total)}</b></div>
+  <div class="ln"><b>TOTAL</b><b>${money(s.total)}</b></div>${s.tab&&s.status!=='anulada'?(()=>{const P=mesaPays(s);const rest=s.mesaRest||0;return `${rest?`<div class="ln"><span>Queda pendiente en la mesa</span><span>${money(rest)}</span></div>`:`<div class="ln"><span>Con este pago la mesa quedó</span><span>saldada</span></div>`}${P.length>1?`<hr><div class="ln"><b>Pagos de ${esc(s.mesa)}</b><span></span></div>${P.map(x=>`<div class="ln"><span>${x.id===s.id?'▸ ':''}Pago ${x.mesaN||''} · #${x.num} · ${ftime(x.at)}</span><span>${money(x.total)}</span></div>`).join('')}<div class="ln"><span>Total pagado en la mesa</span><span>${money(sum(P,x=>x.total))}</span></div>`:''}`})():''}
   <div class="ln"><span>Pago</span><span>${s.method==='efectivo'?'Efectivo':s.method==='datafono'?'Datáfono'+(s.card?' · '+esc(s.card):'')+(s.ref?' · aprob. '+esc(s.ref):''):s.method==='fiado'?'Fiado: '+esc(S.customers.find(c=>c.id===s.customer)?.name||''):esc(s.bank)+(s.ref?' · ref '+esc(s.ref):'')}</span></div>
   ${s.method==='efectivo'?`<div class="ln"><span>Recibido</span><span>${money(s.received)}</span></div><div class="ln"><span>Cambio</span><span>${money(Math.max(0,s.received-s.total))}</span></div>`:''}
   ${s.mid?`<hr><div class="ln"><span>Cliente</span><span>${esc(S.members.find(m=>m.id===s.mid)?.name||'')}</span></div><div class="ln"><span>Puntos ganados</span><span>${num(s.ptsEarned||0)}</span></div><div class="ln"><span>Saldo de puntos</span><span>${num(s.ptsAfter||0)}</span></div>`:''}
@@ -1459,25 +1466,27 @@ function viewCierre(){
 /* =========================================================
    VENTAS (historial)
    ========================================================= */
-let vf={range:'7',method:'',seller:'',q:''};
+let vf={range:'7',method:'',seller:'',q:'',origin:''};
 function viewVentas(){
  const u=me();const emps=S.users.filter(x=>x.tid===u.tid);
  const from=vf.range==='hoy'?sod(Date.now()):sod(Date.now())-(Number(vf.range)-1)*DAY;
  const allV=canDo('ver_todas');let list=T('sales').filter(s=>s.at>=from&&(allV||s.seller===u.id));
  if(vf.method==='pendiente')list=list.filter(s=>s.method==='transferencia'&&!s.confirmed);else if(vf.method)list=list.filter(s=>s.method===vf.method);
  if(vf.seller&&allV)list=list.filter(s=>s.seller===vf.seller);
- if(vf.q)list=list.filter(s=>String(s.num).includes(vf.q)||s.items.some(i=>norm(i.name).includes(norm(vf.q))));
+ if(vf.origin)list=list.filter(s=>vf.origin==='mesas'?!!s.mesa:!s.mesa);
+ if(vf.q)list=list.filter(s=>String(s.num).includes(vf.q)||norm(s.mesa).includes(norm(vf.q))||s.items.some(i=>norm(i.name).includes(norm(vf.q))));
  list=list.slice().sort((a,b)=>b.at-a.at);
  const ok=list.filter(s=>s.status!=='anulada');
  return `<div class="page-head"><div><h1>${allV?'Ventas':'Mis ventas'}</h1><p>${allV?'':'Solo ves las ventas que hiciste tú · '}${ok.length} ventas · ${money(sum(ok,s=>s.total))}</p></div>
   <div class="actions">${allV?`<button class="btn needs-dl" data-a="export-sales">${ic('download',16)} Exportar a Excel</button>`:''}</div></div>
   <div class="card"><div class="toolbar" style="margin-bottom:12px">
-   <div class="search">${ic('search',16)}<input class="input" placeholder="Buscar por número o producto" value="${esc(vf.q)}" data-i="vf-q" id="vf-q"></div>
+   <div class="search">${ic('search',16)}<input class="input" placeholder="${has('mesas')?'Buscar por número, producto o mesa':'Buscar por número o producto'}" value="${esc(vf.q)}" data-i="vf-q" id="vf-q"></div>
    ${sel('vf-range',[['hoy','Hoy'],['7','Últimos 7 días'],['30','Últimos 30 días']],vf.range,'data-c="vf-range"')}
+   ${has('mesas')?sel('vf-origin',[['','Mesas y caja'],['mesas','Solo mesas'],['caja','Solo caja (sin mesa)']],vf.origin,'data-c="vf-origin"'):''}
    ${sel('vf-method',[['','Todos los pagos'],['efectivo','Efectivo'],['transferencia','Transferencia'],['datafono','Datáfono'],['pendiente','Por confirmar'],['fiado','Fiado']],vf.method,'data-c="vf-method"')}
    ${allV?'':'<!--'}${sel('vf-seller',[['','Todos los vendedores'],...emps.map(e=>[e.id,e.name])],vf.seller,'data-c="vf-seller"')}${allV?'':'-->'}
   </div>
-  ${list.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Fecha</th><th>Productos</th><th>Vendedor</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${list.slice(0,150).map(s=>`<tr class="click" data-a="sale" data-id="${s.id}"><td class="mono">${s.num}</td><td style="white-space:nowrap">${fdt(s.at)}</td><td class="small">${esc(s.items.map(i=>i.qty+'× '+i.name).join(', '))}</td><td>${esc(userName(s.seller))}</td><td>${payPill(s)}</td><td class="r num"><b>${money(s.total)}</b></td></tr>`).join('')}</tbody></table></div>${list.length>150?`<p class="muted small">Mostrando 150 de ${list.length}. Exporta a Excel para ver todo.</p>`:''}`:`<div class="empty">${ic('receipt',26)}No hay ventas con estos filtros.</div>`}</div>`;
+  ${list.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Fecha</th><th>Productos</th><th>Vendedor</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${list.slice(0,150).map(s=>`<tr class="click" data-a="sale" data-id="${s.id}"><td class="mono">${s.num}</td><td style="white-space:nowrap">${fdt(s.at)}</td><td class="small">${esc(s.items.map(i=>i.qty+'× '+i.name).join(', '))}${mesaPill(s)}</td><td>${esc(userName(s.seller))}</td><td>${payPill(s)}</td><td class="r num"><b>${money(s.total)}</b></td></tr>`).join('')}</tbody></table></div>${list.length>150?`<p class="muted small">Mostrando 150 de ${list.length}. Exporta a Excel para ver todo.</p>`:''}`:`<div class="empty">${ic('receipt',26)}No hay ventas con estos filtros.</div>`}</div>`;
 }
 
 /* =========================================================
@@ -1896,8 +1905,9 @@ function viewFinanzas(){
  const inc=salesTot+inM,bal=inc-out;
  const cogs=sum(sales,s=>sum(s.items,i=>(i.cost||0)*i.qty));
  // filas: ventas agrupadas por día + movimientos
- const byDay={};sales.forEach(s=>{const k=dkey(s.at);byDay[k]=byDay[k]||{at:sod(s.at),amount:0,n:0};byDay[k].amount+=s.total;byDay[k].n++});
- let rows=[...Object.values(byDay).map(d=>({at:d.at+20*3600e3,type:'ingreso',cat:'Ventas',concept:`Ventas del día (${d.n})`,amount:d.amount,auto:true})),...mv,...abonos.map(a=>({at:a.at,type:'ingreso',cat:'Abono de fiado',concept:`${S.customers.find(c=>c.id===a.cid)?.name||''}`,amount:a.amount,auto:true}))];
+ const split=has('mesas')||sales.some(s=>s.mesa);const mesaTot=sum(sales.filter(s=>s.mesa),s=>s.total);
+ const byDay={};sales.forEach(s=>{const o=split?(s.mesa?'m':'c'):'';const k=dkey(s.at)+o;byDay[k]=byDay[k]||{at:sod(s.at),o,amount:0,n:0};byDay[k].amount+=s.total;byDay[k].n++});
+ let rows=[...Object.values(byDay).map(d=>({at:d.at+20*3600e3+(d.o==='m'?60e3:0),type:'ingreso',cat:'Ventas',concept:d.o==='m'?`Ventas en mesas del día (${d.n} pagos)`:d.o==='c'?`Ventas en caja del día (${d.n})`:`Ventas del día (${d.n})`,amount:d.amount,auto:true})),...mv,...abonos.map(a=>({at:a.at,type:'ingreso',cat:'Abono de fiado',concept:`${S.customers.find(c=>c.id===a.cid)?.name||''}`,amount:a.amount,auto:true}))];
  if(fin.type)rows=rows.filter(r=>r.type===fin.type);
  rows.sort((a,b)=>b.at-a.at);
  const byCat={};mv.filter(m=>m.type==='egreso').forEach(m=>byCat[m.cat]=(byCat[m.cat]||0)+m.amount);
@@ -1905,7 +1915,7 @@ function viewFinanzas(){
  return `<div class="page-head"><div><h1>Ingresos y egresos</h1><p>Las ventas entran solas. Registra aquí los gastos y otros ingresos.</p></div>
   <div class="actions"><div class="seg">${[['hoy','Hoy'],['7','7 días'],['mes','Este mes']].map(([k,l])=>`<button class="${fin.range===k?'on':''}" data-a="fin-range" data-v="${k}">${l}</button>`).join('')}</div><button class="btn" data-a="move-new" data-v="ingreso">${ic('plus',16)} Ingreso</button><button class="btn primary" data-a="move-new" data-v="egreso">${ic('plus',16)} Egreso</button></div></div>
   <div class="grid g4">
-   <div class="card kpi"><span class="lbl">Ingresos</span><span class="val" style="color:var(--good)">${money(inc)}</span><span class="foot">${money(salesTot)} en ventas</span></div>
+   <div class="card kpi"><span class="lbl">Ingresos</span><span class="val" style="color:var(--good)">${money(inc)}</span><span class="foot">${money(salesTot)} en ventas${mesaTot?` · ${money(mesaTot)} de mesas`:''}</span></div>
    <div class="card kpi"><span class="lbl">Egresos</span><span class="val" style="color:var(--bad)">${money(out)}</span><span class="foot">${mv.filter(m=>m.type==='egreso').length} registros</span></div>
    <div class="card kpi"><span class="lbl">Balance</span><span class="val" style="color:var(${bal>=0?'--good':'--bad'})">${money(bal)}</span><span class="foot">ingresos − egresos</span></div>
    <div class="card kpi"><span class="lbl">Utilidad bruta en ventas</span><span class="val">${money(salesTot-cogs)}</span><span class="foot">${salesTot?Math.round((salesTot-cogs)/salesTot*100):0}% de margen</span></div>
@@ -2400,7 +2410,7 @@ document.addEventListener('change',e=>{
  const M={
 'pos-bank':()=>pos.bank=el.value,'pos-card':()=>pos.card=el.value,'pos-ver':()=>pos.verified=el.checked,'pos-cust':()=>pos.customer=el.value,'fid-use':()=>{pos.useP=el.checked;refreshPOS()},
   'qty-set':()=>{cart[+el.dataset.ix].qty=Math.max(1,Number(el.value)||1);refreshPOS()},
-  'vf-range':()=>{vf.range=el.value;render()},'vf-method':()=>{vf.method=el.value;render()},'vf-seller':()=>{vf.seller=el.value;render()},
+  'vf-range':()=>{vf.range=el.value;render()},'vf-method':()=>{vf.method=el.value;render()},'vf-origin':()=>{vf.origin=el.value;render()},'vf-seller':()=>{vf.seller=el.value;render()},
   'inv-cat':()=>{inv.cat=el.value;render()},'inv-low':()=>{inv.low=el.checked;render()},
   'fin-type':()=>{fin.type=el.value;render()},
   'imp-file':()=>{if(el.files[0])readImport(el.files[0])},
