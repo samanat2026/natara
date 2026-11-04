@@ -467,7 +467,7 @@ details.hint summary{cursor:pointer}
    ========================================================= */
 const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';const DEMO_ADMIN=MODE==='demo'&&window.NATARA_DEMO_ADMIN===true;const ADMIN_EMAIL='samanat2026@gmail.com';
 const REAL_URL='https://samanat2026.github.io/natara/',DEMO_URL='https://samanat2026.github.io/natara/demo/';
-const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v15';
+const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v16';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 const WA_NUM='573146619135',WA_TXT='314 661 9135';
@@ -544,6 +544,7 @@ const IC={
  chat:'M21 12a8.5 8.5 0 0 1-12.4 7.6L3 21l1.4-5.4A8.5 8.5 0 1 1 21 12z',
  gift:'M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z',
  table:'M3 8h18M5 8v12M19 8v12M3 8l2-3h14l2 3M5 13h14',
+ store:'M3 9l1.5-5h15L21 9M3 9h18v1.5a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0zM5 13v8h14v-8M10 21v-5h4v5',
  clock:'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 7v5l3 2',
  back:'M19 12H5M11 18l-6-6 6-6',
 };
@@ -713,6 +714,9 @@ function seed(){
  [['1036654321','Luisa Fernanda Restrepo','300 455 1290',[[420,40],[180,200]]],['71789456','Jorge Iván Cardona','312 778 4410',[[95,10],[60,350]]],['1017223344','Valentina Zapata','318 902 3366',[[35,5]]]].forEach(([doc,name,phone,ls])=>{const id=uid();S.members.push({id,tid:'t1',doc,name,phone,consent:true,since:today-210*DAY,last:today-DAY,lotes:ls.map(([p,d])=>({p,v:today+(365-d)*DAY})).sort((a,b)=>a.v-b.v)});ls.forEach(([p,d])=>S.pmoves.push({id:uid(),tid:'t1',mid:id,type:'acumula',pts:p,note:'Compras',sid:'',at:today-d*DAY+11*3600e3,by:'u2'}))});
  // Puntos y fidelización: La Espiga los tiene encendidos; El Fogón los tiene en su plan pero apagados
  S.settings.push({id:'fid_t1',tid:'t1',on:true});
+ // datos del recibo de ejemplo (Mi negocio)
+ S.settings.push({id:'biz_t1',tid:'t1',razon:'Panadería La Espiga S.A.S.',nit:'900123456',dir:'Calle 50 # 43-21, barrio Prado',city:'Medellín',tel:'300 512 4471',email:'contacto@laespiga.co',regimen:'Responsable de IVA',pie:'Pan fresco todos los días desde las 6 a. m.'});
+ S.settings.push({id:'biz_t5',tid:'t5',razon:'El Fogón Paisa S.A.S.',nit:'900654321',dir:'Carrera 70 # 44-15, Laureles',city:'Medellín',tel:'304 381 2207',email:'',regimen:'No responsable de IVA',pie:'¡Gracias por visitarnos! Síguenos en redes'});
  // caja abierta hoy
  S.sessions.push({id:uid(),tid:'t1',openedAt:today+6*3600e3,openedBy:'u2',base:150000,closedAt:null});
  S.sessions.push({id:uid(),tid:'t2',openedAt:today+7*3600e3,openedBy:'u5',base:100000,closedAt:null});
@@ -759,7 +763,21 @@ const isLocked=()=>tenantLocked(tenant());
 const has=m=>{const t=tenant();return !!(t&&t.mods.includes(m))};
 const isOwner=()=>me()?.role==='dueno';
 // Caja por categorías: Samanat la activa por negocio, solo si el cliente la pide (tenant.catPos)
-const catMode=()=>!!tenant()?.catPos;
+// Opciones que el dueño enciende o apaga en Mi negocio (tenants/{tid}/settings/opts_{tid})
+const optsOf=()=>{const t=tenant();return (t&&S.settings.find(x=>x.id==='opts_'+t.id))||{}};
+function setOpt(k,v){const t=tenant();const id='opts_'+t.id;let r=S.settings.find(x=>x.id===id);if(!r){r={id,tid:t.id};S.settings.push(r)}r[k]=v;save();render()}
+// Caja por categorías: sin costo, en cualquier plan. El dueño la enciende o apaga en Mi negocio.
+// Si nunca la ha tocado, vale lo que Samanat haya dejado en la consola (tenant.catPos).
+const catMode=()=>{const o=optsOf().cat;return typeof o==='boolean'?o:!!tenant()?.catPos};
+// Lector de código de barras: complemento que activa Samanat; el dueño lo puede apagar si no lo está usando
+const lectorOn=()=>has('lector')&&optsOf().lector!==false;
+// Datos legales del negocio para el recibo (tenants/{tid}/settings/biz_{tid})
+const bizOf=tid=>S.settings.find(x=>x.id==='biz_'+tid)||{};
+// Dígito de verificación del NIT (algoritmo de la DIAN)
+function nitDV(n){const d=String(n||'').replace(/\D/g,'');if(!d)return '';const w=[3,7,13,17,19,23,29,37,41,43,47,53,59,67,71];let s=0;for(let i=0;i<d.length&&i<w.length;i++)s+=Number(d[d.length-1-i])*w[i];const r=s%11;return String(r>1?11-r:r)}
+const fmtNit=n=>{const d=String(n||'').replace(/\D/g,'');return d?grp(Number(d))+'-'+nitDV(d):''};
+function receiptHead(t){const b=bizOf(t.id);const L=[`<b>${esc(t.name)}</b>`];if(b.razon&&norm(b.razon)!==norm(t.name))L.push(esc(b.razon));if(b.nit)L.push('NIT '+esc(fmtNit(b.nit)));if(b.regimen)L.push(esc(b.regimen));if(b.dir)L.push(esc(b.dir));const city=b.city||t.city,tel=b.tel||t.phone;L.push(esc(city)+(tel?' · Tel. '+esc(tel):''));if(b.email)L.push(esc(b.email));return `<div class="c">${L.join('<br>')}</div>`}
+function receiptFoot(t){const b=bizOf(t.id);return `<div class="c">${b.pie?esc(b.pie)+'<br>':''}Gracias por tu compra · natara${b.nit?'<br><span style="font-size:11px">Documento de control interno. No es factura electrónica.</span>':''}</div>`}
 const catKey=n=>norm(n);
 const catsOf=(tid=tenant()?.id)=>(S.cats||[]).filter(c=>c.tid===tid).sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name));
 const catOfProd=(p,cs=catsOf())=>{const k=catKey(p?.cat);return k?cs.find(c=>catKey(c.name)===k)||null:null};
@@ -840,7 +858,7 @@ const SCAN_FORMATS=['ean_13','ean_8','upc_a','upc_e','code_128','code_39','code_
 const ZXING_URL='https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
 const scan={on:false,target:null,stream:null,det:null,zx:null,timer:0,last:'',lastAt:0,n:0,busy:false};
 const camOK=()=>!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)&&window.isSecureContext!==false;
-const scanBtn=t=>has('lector')&&camOK()?`<button type="button" class="scan-btn" data-a="scan" data-v="${t}" aria-label="Escanear con la cámara">${ic('camera',16)}<span>Cámara</span></button>`:'';
+const scanBtn=t=>lectorOn()&&camOK()?`<button type="button" class="scan-btn" data-a="scan" data-v="${t}" aria-label="Escanear con la cámara">${ic('camera',16)}<span>Cámara</span></button>`:'';
 let _zxP=null;
 function loadZXing(){if(window.ZXing)return Promise.resolve(window.ZXing);if(_zxP)return _zxP;
  _zxP=new Promise((ok,ko)=>{const sc=document.createElement('script');sc.src=ZXING_URL;sc.async=true;sc.onload=()=>window.ZXing?ok(window.ZXing):ko(new Error('zxing'));sc.onerror=()=>{_zxP=null;ko(new Error('zxing'))};document.head.appendChild(sc)});return _zxP}
@@ -935,7 +953,7 @@ function applyCode(code,where){
 // Lector USB/Bluetooth (modo teclado): llega como teclas muy seguidas que terminan en Enter
 const wedge={buf:'',t0:0,last:0};
 function wedgeWhere(){
- if(!has('lector')||scan.on)return null;
+ if(!lectorOn()||scan.on)return null;
  const mo=$('#modal-root').innerHTML;
  if(mo){if($('#pur-q'))return 'pur';return null}
  if(sess.view==='caja')return 'pos';
@@ -1039,7 +1057,8 @@ const NAV=[
  {v:'estadisticas',label:'Estadísticas',icon:'chart',mod:'estadisticas',roles:['dueno'],perm:'estadisticas'},
  {v:'proveedores',label:'Proveedores',icon:'truck',mod:'proveedores',roles:['dueno'],perm:'proveedores'},
  {v:'empleados',label:'Empleados',icon:'users',mod:'empleados',roles:['dueno']},
- {v:'plan',label:'Mi plan',icon:'star',mod:null,roles:['dueno'],sec:'Cuenta'},
+ {v:'negocio',label:'Mi negocio',icon:'store',mod:null,roles:['dueno'],sec:'Cuenta'},
+ {v:'plan',label:'Mi plan',icon:'star',mod:null,roles:['dueno']},
  {v:'mensajes',label:'Mensajes',icon:'bell',mod:null,roles:['dueno']},
  {v:'guia',label:'Guía de uso',icon:'info',mod:null,roles:['dueno','cajero'],sec:'Ayuda'},
 ];
@@ -1061,10 +1080,10 @@ function tenantView(){
  const u=me(),t=tenant();
  let v=sess.view;const n=NAV.find(x=>x.v===v);
  if(!n||!navAllowed(n,u)){v=sess.view=isMesero(u)||(u.role==='cajero'&&t.mods.includes('mesas')&&T('tables').length)?'mesas':u.role==='cajero'&&t.mods.includes('caja')?'caja':'inicio';saveSess()}
- if(v==='puntos'&&t.mods.includes('fidelizacion')&&!fidOn()){v=sess.view='plan';saveSess()}
+ if(v==='puntos'&&t.mods.includes('fidelizacion')&&!fidOn()){v=sess.view='negocio';saveSess()}
  const nn=NAV.find(x=>x.v===v);
  if(nn.mod&&!t.mods.includes(nn.mod))return viewUpsell(nn.mod);
- return ({inicio:viewInicio,mesas:viewMesas,caja:viewCaja,cierre:viewCierre,ventas:viewVentas,inventario:viewInventario,recetas:viewRecetas,guia:viewGuia,fiados:viewFiados,puntos:viewPuntos,finanzas:viewFinanzas,estadisticas:viewStats,proveedores:viewProveedores,empleados:viewEmpleados,plan:viewPlan,mensajes:viewMensajes})[v]();
+ return ({inicio:viewInicio,negocio:viewNegocio,mesas:viewMesas,caja:viewCaja,cierre:viewCierre,ventas:viewVentas,inventario:viewInventario,recetas:viewRecetas,guia:viewGuia,fiados:viewFiados,puntos:viewPuntos,finanzas:viewFinanzas,estadisticas:viewStats,proveedores:viewProveedores,empleados:viewEmpleados,plan:viewPlan,mensajes:viewMensajes})[v]();
 }
 function afterRender(){
  if(sess.view==='caja'&&!$('#modal-root').innerHTML){const q=$('#pos-q');if(q)q.focus()}
@@ -1419,11 +1438,11 @@ function viewCaja(){
  const u=me();
  const sess0=openSession();
  return `<div class="page-head"><div><h1>Caja</h1><p>${sess0?`Caja abierta desde las ${ftime(sess0.openedAt)} por ${esc(userName(sess0.openedBy))}`:'La caja está cerrada'}</p></div>
-  <div class="actions">${has('lector')?`<span class="pill good" title="Escanea con la cámara del celular o con un lector USB/Bluetooth, sin tocar el campo de búsqueda">${ic('barcode',14)} Lector listo · cámara o USB</span>`:false?`<button class="btn sm" data-a="go" data-v="plan">${ic('barcode',15)} ¿Tienes lector de barras?</button>`:''}</div></div>
+  <div class="actions">${lectorOn()?`<span class="pill good" title="Escanea con la cámara del celular o con un lector USB/Bluetooth, sin tocar el campo de búsqueda">${ic('barcode',14)} Lector listo · cámara o USB</span>`:false?`<button class="btn sm" data-a="go" data-v="plan">${ic('barcode',15)} ¿Tienes lector de barras?</button>`:''}</div></div>
   ${sess0?'':`<div class="banner">${ic('register')}<div class="grow">Abre la caja antes de cobrar. Así el cierre del día cuadra con lo que hay en el cajón.</div><button class="btn sm primary" data-a="go" data-v="cierre">Abrir caja</button></div>`}
   <div class="pos">
    <div class="stack">
-    <div class="search pos-search ${scanBtn('pos')?'has-scan':''}">${ic('search',20)}<input class="input" id="pos-q" placeholder="${has('lector')?'Escanea o escribe el nombre':'Escribe el nombre o la categoría del producto'}" autocomplete="off" value="${esc(pos.q)}" data-i="pos-q">${scanBtn('pos')}</div>
+    <div class="search pos-search ${scanBtn('pos')?'has-scan':''}">${ic('search',20)}<input class="input" id="pos-q" placeholder="${lectorOn()?'Escanea o escribe el nombre':'Escribe el nombre o la categoría del producto'}" autocomplete="off" value="${esc(pos.q)}" data-i="pos-q">${scanBtn('pos')}</div>
     <div id="pos-results">${posResults()}</div>
    </div>
    <div class="card cart" id="cart-panel">${cartPanel()}</div>
@@ -1435,7 +1454,7 @@ function posMatches(){
   if(catMode()&&pos.cat){const cs=catsOf();const inCat=pos.cat==='__none'?p=>!catOfProd(p,cs):p=>catOfProd(p,cs)?.id===pos.cat;return P.filter(inCat).sort((a,b)=>a.name.localeCompare(b.name))}
   return P.slice().sort((a,b)=>salesCount(b.id)-salesCount(a.id)).slice(0,12);
  }
- const L=has('lector');return P.filter(p=>norm(p.name).includes(q)||(L&&p.code.includes(q))||norm(p.cat).includes(q)).slice(0,24);
+ const L=lectorOn();return P.filter(p=>norm(p.name).includes(q)||(L&&p.code.includes(q))||norm(p.cat).includes(q)).slice(0,24);
 }
 let _sc=null;
 function salesCount(pid){if(!_sc){_sc={};okSales().forEach(s=>s.items.forEach(i=>_sc[i.pid]=(_sc[i.pid]||0)+i.qty))}return _sc[pid]||0}
@@ -1452,7 +1471,7 @@ function posResults(){
  const P=posMatches();
  if(!P.length)return bar+`<div class="card empty">${ic('search',26)}${pos.q?`No hay productos que coincidan con “${esc(pos.q)}”.`:'Aún no hay productos para vender.'}</div>`;
  const title=pos.q?`${P.length} resultado${P.length>1?'s':''}`:catMode()&&pos.cat?(pos.cat==='__none'?'Sin categoría':catsOf().find(c=>c.id===pos.cat)?.name||'')+` · ${P.length} producto${P.length>1?'s':''}`:'Más vendidos';
- return bar+`<div class="muted small" style="margin-bottom:8px">${esc(title)}</div><div class="tiles">${P.map(p=>`<button class="tile ${availOf(p)<=0?'out':''}" data-a="add" data-id="${p.id}"><strong>${esc(p.name)}</strong>${has('lector')?`<span class="st mono">${esc(p.code)}</span>`:`<span class="st">${esc(p.cat)}</span>`}<span class="spread"><span class="price">${money(p.price)}</span><span class="st">${recipeOf(p)?`alcanza ${num(availOf(p))}`:`${num(p.stock)} disp.`}</span></span></button>`).join('')}</div>`;
+ return bar+`<div class="muted small" style="margin-bottom:8px">${esc(title)}</div><div class="tiles">${P.map(p=>`<button class="tile ${availOf(p)<=0?'out':''}" data-a="add" data-id="${p.id}"><strong>${esc(p.name)}</strong>${lectorOn()?`<span class="st mono">${esc(p.code)}</span>`:`<span class="st">${esc(p.cat)}</span>`}<span class="spread"><span class="price">${money(p.price)}</span><span class="st">${recipeOf(p)?`alcanza ${num(availOf(p))}`:`${num(p.stock)} disp.`}</span></span></button>`).join('')}</div>`;
 }
 function cartTotal(){return sum(cart,i=>i.price*i.qty)}
 const payTotal=()=>{const s=cartTotal();return s-fidDisc(s)};
@@ -1474,7 +1493,7 @@ function cartPanel(){
   ${cart.length?`<div class="cart-items">${cart.map((i,ix)=>`<div class="ci"><div style="min-width:0"><div class="nm">${esc(i.name)}</div><div class="unit">${money(i.price)} c/u</div></div>
    ${pos.tab?`<span class="num muted">× ${num(i.qty)}</span>`:`<div class="qty"><button data-a="qty" data-ix="${ix}" data-d="-1" aria-label="Menos">−</button><input type="number" min="1" value="${i.qty}" data-c="qty-set" data-ix="${ix}" aria-label="Cantidad"><button data-a="qty" data-ix="${ix}" data-d="1" aria-label="Más">+</button></div>`}
    <div class="num" style="text-align:right;min-width:78px"><b>${money(i.price*i.qty)}</b>${pos.tab?'':`<br><button class="icon-btn" style="color:var(--ink-3);padding:2px" data-a="rm" data-ix="${ix}" aria-label="Quitar">${ic('trash',15)}</button>`}</div></div>`).join('')}</div>`
-  :pos.tab?`<div class="empty">${ic('cart',30)}Marca a la izquierda lo que va a pagar.</div>`:`<div class="empty">${ic(has('lector')?'barcode':'cart',30)}${has('lector')?'Escanea un producto o tócalo en la lista para agregarlo.':'Busca un producto o tócalo en la lista para agregarlo.'}</div>`}
+  :pos.tab?`<div class="empty">${ic('cart',30)}Marca a la izquierda lo que va a pagar.</div>`:`<div class="empty">${ic(lectorOn()?'barcode':'cart',30)}${lectorOn()?'Escanea un producto o tócalo en la lista para agregarlo.':'Busca un producto o tócalo en la lista para agregarlo.'}</div>`}
   ${disc?`<div class="spread small" style="margin-top:8px"><span class="muted">Subtotal</span><span class="num">${money(sub)}</span></div><div class="spread small" style="color:var(--good)"><span>Descuento con puntos</span><span class="num">− ${money(disc)}</span></div>`:''}
   <div class="total-row"><span class="muted">Total</span><span class="big">${money(total)}</span></div>
   <div class="stack" style="margin-top:14px">
@@ -1525,7 +1544,7 @@ function checkout(){
 function showReceipt(s,fresh=false){
  const t=S.tenants.find(x=>x.id===s.tid);
  const body=`${fresh?`<div class="banner info">${ic('check')}<div class="grow"><b>Venta registrada.</b> ${s.method==='efectivo'&&s.received>s.total?`Entrega ${money(s.received-s.total)} de cambio.`:''}${s.method==='transferencia'&&!s.confirmed?'Quedó por confirmar la transferencia.':''}</div></div>`:''}
-  <div class="receipt"><div class="c"><b>${esc(t.name)}</b><br>${esc(t.city)} · Tel. ${esc(t.phone)}</div><hr>
+  <div class="receipt">${receiptHead(t)}<hr>
   <div class="ln"><span>Venta #${s.num}</span><span>${fdt(s.at)}</span></div><div class="ln"><span>Atendió</span><span>${esc(userName(s.seller))}</span></div>${s.mesa?`<div class="ln"><span>Mesa</span><span>${esc(s.mesa)}${s.tab&&s.mesaN?` · pago ${s.mesaN}`:''}</span></div>`:''}<hr>
   ${s.items.map(i=>`<div class="ln"><span>${i.qty} × ${esc(i.name)}</span><span>${money(i.qty*i.price)}</span></div>`).join('')}<hr>
   ${s.disc?`<div class="ln"><span>Subtotal</span><span>${money(s.sub)}</span></div><div class="ln"><span>Descuento ${num(s.ptsUsed)} puntos</span><span>−${money(s.disc)}</span></div>`:''}
@@ -1534,7 +1553,7 @@ function showReceipt(s,fresh=false){
   ${s.method==='efectivo'?`<div class="ln"><span>Recibido</span><span>${money(s.received)}</span></div><div class="ln"><span>Cambio</span><span>${money(Math.max(0,s.received-s.total))}</span></div>`:''}
   ${s.mid?`<hr><div class="ln"><span>Cliente</span><span>${esc(S.members.find(m=>m.id===s.mid)?.name||'')}</span></div><div class="ln"><span>Puntos ganados</span><span>${num(s.ptsEarned||0)}</span></div><div class="ln"><span>Saldo de puntos</span><span>${num(s.ptsAfter||0)}</span></div>`:''}
   ${s.status==='anulada'?`<hr><div class="c"><b>VENTA ANULADA</b></div>`:''}
-  <hr><div class="c">Gracias por tu compra · natara</div></div>`;
+  <hr>${receiptFoot(t)}</div>`;
  const can=canDo('anular')&&s.status!=='anulada';
  const foot=`${s.method==='transferencia'&&!s.confirmed&&s.status!=='anulada'?`<button class="btn" data-a="confirm-tr" data-id="${s.id}">${ic('check',16)} Confirmar transferencia</button>`:''}${can&&!fresh?`<button class="btn danger" data-a="void-ask" data-id="${s.id}">Anular venta</button>`:''}<button class="btn primary" data-a="close-modal">${fresh?'Nueva venta':'Cerrar'}</button>`;
  openModal(fresh?'Venta registrada':`Venta #${s.num}`,body,foot);
@@ -1692,7 +1711,7 @@ function viewVentas(){
 let inv={q:'',cat:'',low:false,kind:'venta'};
 const UNITS=['und','kg','g','lb','L','ml','bulto','arroba','cubeta','paquete','caja'];
 function viewInventario(){
- const own=canDo('inv_edit');const costs=own||canDo('ver_costos');const L=has('lector');
+ const own=canDo('inv_edit');const costs=own||canDo('ver_costos');const L=lectorOn();
  const all=T('products');const ventas=all.filter(p=>p.kind!=='insumo'),insumos=all.filter(p=>p.kind==='insumo');
  if(!own)inv.kind='venta';const isIns=inv.kind==='insumo';
  let P=isIns?insumos:ventas;const CM=catMode()&&!isIns;const CS=CM?catsOf():[];const cats=CM?[...CS.map(c=>c.name),['__none','Sin categoría']]:[...new Set(P.map(p=>p.cat))].sort();
@@ -1775,7 +1794,7 @@ function rcRefresh(){const b=$('#rc-box');if(b)b.innerHTML=recipeBox();const sm=
 function productForm(p,kind){
  pfRecipe=[];pfSelf=p?.id||'';
  kind=p?.kind||kind||'venta';const ins=kind==='insumo';const edit=!!p?.id;
- const sup=has('proveedores')?T('suppliers'):[];const L=has('lector');
+ const sup=has('proveedores')?T('suppliers'):[];const L=lectorOn();
  const codeField=L&&!ins?field('Código de barras',`<div class="code-in">${inp('code',p?.code||'','text','required placeholder="Escanea o escribe" autocomplete="off"')}${camOK()?`<button type="button" class="icon-btn" data-a="scan" data-v="code" aria-label="Escanear el código con la cámara" title="Escanear con la cámara">${ic('camera',20)}</button>`:''}</div>`):field('Código interno (opcional)',inp('code',p?.code||'','text','placeholder="Se crea solo si lo dejas vacío" autocomplete="off"'));
  return `<form class="stack" data-f="prod-save" id="prod-form"><input type="hidden" name="id" value="${edit?p.id:''}"><div class="form-grid">
   ${field('Tipo',sel('kind',[['venta','Producto para vender (sale en la caja)'],['insumo','Insumo o materia prima (no sale en la caja)']],kind,'data-c="pf-kind"'+(edit?' disabled':'')),'full')}${edit?`<input type="hidden" name="kind" value="${kind}">`:''}
@@ -1970,7 +1989,8 @@ function guideSections(){
   'Para pagar tu cuota toca <b>Pagar mi cuota</b>: eliges 1 o 12 meses, pagas con la llave y tocas <b>Ya pagué</b>. Mientras Samanat revisa, tu cuenta no se bloquea.',
   'En <b>Mensajes</b> te llegan los avisos de Samanat: pagos, novedades y cambios de precio.',
   'Si la cuota se vence, tienes '+GRACE_DAYS+' días de gracia antes de que se bloquee el acceso. Tus datos nunca se pierden.']});
- if(own&&m('fidelizacion')&&!fidOn())S_.push({id:'puntos-off',icon:'gift',title:'Puntos y fidelización (apagado)',go:'plan',steps:['Tu plan incluye <b>Puntos y fidelización</b>, pero está apagado: por eso no lo ves en la caja ni en el menú.','Para usarlo entra a <b>Mi plan</b> y en la tarjeta de Puntos toca <b>Encender</b>. Lo puedes apagar cuando quieras sin perder los puntos de tus clientes.']});
+ if(own)S_.push({id:'negocio',icon:'store',title:'Mi negocio: datos del recibo y funciones',go:'negocio',steps:['En <b>Mi negocio</b> escribe tu razón social, NIT, dirección, teléfono y régimen. Salen arriba en cada recibo; el dígito de verificación del NIT se calcula solo.','En el pie del recibo puedes poner un mensaje para tus clientes (por ejemplo, tu horario o tus redes).','Ahí mismo enciendes o apagas la <b>caja por categorías</b> (sin costo, en cualquier plan) y, si los tienes en tu plan, <b>Puntos y fidelización</b> y el <b>lector de código de barras</b>.','El recibo de Natara es un documento de control interno: no es factura electrónica de la DIAN.']});
+ if(own&&m('fidelizacion')&&!fidOn())S_.push({id:'puntos-off',icon:'gift',title:'Puntos y fidelización (apagado)',go:'negocio',steps:['Tu plan incluye <b>Puntos y fidelización</b>, pero está apagado: por eso no lo ves en la caja ni en el menú.','Para usarlo entra a <b>Mi negocio</b> y enciende <b>Puntos y fidelización</b>. Lo puedes apagar cuando quieras sin perder los puntos de tus clientes.']});
  if(m('mesas')){S_.push({id:'mesas',icon:'table',title:'Mesas y cuentas divididas',go:'mesas',steps:[
   ...(own?['La primera vez entra a <b>Mesas</b> y escribe cuántas mesas tienes. Con <b>Configurar mesas</b> les cambias el nombre (Terraza 1, Barra…) o agregas y quitas mesas.']:[]),
   'Toca una mesa libre y luego <b>Abrir mesa</b>. Si quieres, escribe cuántas personas son.',
@@ -2057,7 +2077,7 @@ function importModal(){
 async function readImport(file){
  if(!window.XLSX){toast('No se pudo cargar el lector de Excel. Revisa tu conexión.','bad');return}
  try{const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];
-  const raw=XLSX.utils.sheet_to_json(ws,{defval:''});const L=has('lector');importRows=raw.map(mapRow).filter(r=>r.name&&(r.code||!L||r.kind==='insumo'));const used=new Set();importRows.forEach(r=>{if(!r.code){r.code=autoCode(used,r.kind==='insumo'?'INS':'P')}if(r.kind==='insumo')r.price=0;used.add(r.code)});
+  const raw=XLSX.utils.sheet_to_json(ws,{defval:''});const L=lectorOn();importRows=raw.map(mapRow).filter(r=>r.name&&(r.code||!L||r.kind==='insumo'));const used=new Set();importRows.forEach(r=>{if(!r.code){r.code=autoCode(used,r.kind==='insumo'?'INS':'P')}if(r.kind==='insumo')r.price=0;used.add(r.code)});
   const P=T('products');const upd=importRows.filter(r=>P.some(p=>p.code===r.code)).length;
   $('#imp-preview').innerHTML=importRows.length?`<p><b>${importRows.length}</b> productos encontrados · ${importRows.length-upd} nuevos · ${upd} para actualizar${raw.length>importRows.length?` · <span style="color:var(--warn)">${raw.length-importRows.length} filas sin código o nombre se omiten</span>`:''}</p>
    <div class="tbl-wrap"><table><thead><tr><th>Código</th><th>Nombre</th><th>Categoría</th><th class="r">Costo</th><th class="r">Precio</th><th class="r">Stock</th></tr></thead><tbody>${importRows.slice(0,8).map(r=>`<tr><td class="mono">${esc(r.code)}</td><td>${esc(r.name)}</td><td>${esc(r.cat)}</td><td class="r num">${money(r.cost)}</td><td class="r num">${money(r.price)}</td><td class="r num">${num(r.stock)}</td></tr>`).join('')}</tbody></table></div>${importRows.length>8?`<p class="muted small">…y ${importRows.length-8} más.</p>`:''}`
@@ -2256,10 +2276,46 @@ function viewPlan(){
    <div class="card kpi"><span class="lbl">Cuota mensual</span><span class="val">${money(fee(t))}</span>${(()=>{const nx=pendingChanges()[0];if(!nx)return'';const f2=feeAt(t,nx.from+1);return f2!==fee(t)?`<span class="foot" style="color:var(--warn)">Desde el ${fdate(nx.from)}: ${money(f2)}</span>`:''})()}<span class="foot">o ${money(fee(t)*ANNUAL_MONTHS)} al año (2 meses gratis)</span></div>
    <div class="card kpi"><span class="lbl">Próximo pago</span><span class="val">${fshort(t.due)}</span><span class="foot">${dd<0?`<span style="color:var(--bad)">Vencido</span>`:dd<=5?`<span style="color:var(--warn)">En ${dd} días</span>`:`En ${dd} días`}</span></div>
   </div>
-  <div class="grid g3">${MODS.filter(m=>(m.id!=='lector'||t.mods.includes('lector'))&&(m.id!=='mesas'||foodType(t)||t.mods.includes('mesas'))).map(m=>{const on=t.mods.includes(m.id);const asked=reqs.includes(m.id);const paying=modOrder(t,m.id);return`<div class="mod ${on?'has':''}"><div class="spread"><span class="row" style="gap:8px">${ic(m.icon)}<strong>${m.name}</strong></span>${on&&m.id==='fidelizacion'&&!fidOn()?'<span class="pill">Apagado</span>':on?'<span class="pill good">Activo</span>':paying?'<span class="pill warn">Pago en revisión</span>':asked?'<span class="pill warn">Solicitado</span>':''}</div><p>${m.desc}</p>${on&&m.id==='fidelizacion'&&!fidOn()?'<p class="small" style="margin:0;color:var(--accent)"><b>Lo tienes, pero está apagado.</b> Enciéndelo cuando quieras: mientras esté apagado no aparece en la caja ni en el menú.</p>':''}${m.id==='mesas'&&!on&&t.plan==='total'?`<p class="small" style="margin:0;color:var(--accent)">Con el plan <b>Restaurante</b> pagas ${money(planById('restaurante').price)} al mes por todo, menos que Premium + Mesas (${money(planById('total').price+m.price)}). <a class="linkish" href="${waLink(`Hola Samanat, quiero pasar ${t.name} al plan Restaurante de Natara.`)}" target="_blank" rel="noopener">Pídelo por WhatsApp</a></p>`:''}<div class="foot spread"><span class="small muted">${p.mods.includes(m.id)?'Incluido en tu plan':(m.addon?'Complemento · ':'')+'+ '+money(m.price)+'/mes'}</span>${on&&m.id==='fidelizacion'?(fidOn()?`<button class="btn sm" data-a="fid-off">Apagar</button>`:`<button class="btn sm primary" data-a="fid-on">${ic('gift',14)} Encender</button>`):on||asked||paying?'':`<button class="btn sm primary" data-a="mod-buy" data-v="${m.id}">Contratar</button>`}</div></div>`}).join('')}</div>
-  <div class="mod ${t.catPos?'has':''}" style="max-width:760px"><div class="spread"><span class="row" style="gap:8px">${ic('tag')}<strong>Caja por categorías</strong></span>${t.catPos?'<span class="pill good">Activa</span>':''}</div><p>Los productos salen en la caja agrupados por las categorías que tú creas (Panes, Bebidas, Lácteos…). Tocas una categoría y ves solo esos productos.</p><div class="foot spread"><span class="small muted">Sin costo · se activa si tú la pides</span>${t.catPos?`<button class="btn sm" data-a="cats">${ic('tag',14)} Mis categorías</button>`:`<a class="btn sm primary" href="${waLink(`Hola Samanat, quiero activar la caja por categorías en Natara para ${t.name}.`)}" target="_blank" rel="noopener">Pedirla por WhatsApp</a>`}</div></div>
+  <div class="grid g3">${MODS.filter(m=>(m.id!=='lector'||t.mods.includes('lector'))&&(m.id!=='mesas'||foodType(t)||t.mods.includes('mesas'))).map(m=>{const on=t.mods.includes(m.id);const asked=reqs.includes(m.id);const paying=modOrder(t,m.id);return`<div class="mod ${on?'has':''}"><div class="spread"><span class="row" style="gap:8px">${ic(m.icon)}<strong>${m.name}</strong></span>${on&&m.id==='fidelizacion'&&!fidOn()?'<span class="pill">Apagado</span>':on?'<span class="pill good">Activo</span>':paying?'<span class="pill warn">Pago en revisión</span>':asked?'<span class="pill warn">Solicitado</span>':''}</div><p>${m.desc}</p>${on&&m.id==='fidelizacion'&&!fidOn()?'<p class="small" style="margin:0;color:var(--accent)"><b>Lo tienes, pero está apagado.</b> Enciéndelo aquí o en <b>Mi negocio</b>: mientras esté apagado no aparece en la caja ni en el menú.</p>':''}${m.id==='mesas'&&!on&&t.plan==='total'?`<p class="small" style="margin:0;color:var(--accent)">Con el plan <b>Restaurante</b> pagas ${money(planById('restaurante').price)} al mes por todo, menos que Premium + Mesas (${money(planById('total').price+m.price)}). <a class="linkish" href="${waLink(`Hola Samanat, quiero pasar ${t.name} al plan Restaurante de Natara.`)}" target="_blank" rel="noopener">Pídelo por WhatsApp</a></p>`:''}<div class="foot spread"><span class="small muted">${p.mods.includes(m.id)?'Incluido en tu plan':(m.addon?'Complemento · ':'')+'+ '+money(m.price)+'/mes'}</span>${on&&m.id==='fidelizacion'?(fidOn()?`<button class="btn sm" data-a="fid-off">Apagar</button>`:`<button class="btn sm primary" data-a="fid-on">${ic('gift',14)} Encender</button>`):on||asked||paying?'':`<button class="btn sm primary" data-a="mod-buy" data-v="${m.id}">Contratar</button>`}</div></div>`}).join('')}</div>
+  <div class="mod ${catMode()?'has':''}" style="max-width:760px"><div class="spread"><span class="row" style="gap:8px">${ic('tag')}<strong>Caja por categorías</strong></span>${catMode()?'<span class="pill good">Activa</span>':''}</div><p>Los productos salen en la caja agrupados por las categorías que tú creas (Panes, Bebidas, Lácteos…). Tocas una categoría y ves solo esos productos.</p><div class="foot spread"><span class="small muted">Sin costo · en cualquier plan</span>${catMode()?`<button class="btn sm" data-a="cats">${ic('tag',14)} Mis categorías</button>`:`<button class="btn sm primary" data-a="go" data-v="negocio">Encenderla en Mi negocio</button>`}</div></div>
   <div class="mod ${t.setupPaid?'has':''}" style="max-width:760px"><div class="spread"><span class="row" style="gap:8px">${ic('users')}<strong>${SETUP.name}</strong></span>${t.setupPaid?'<span class="pill good">Incluida</span>':modOrder(t,'implementacion')?'<span class="pill warn">Pago en revisión</span>':reqs.includes('implementacion')?'<span class="pill warn">Solicitada</span>':''}</div><p>${SETUP.desc}</p><div class="foot spread"><span class="small muted">${money(SETUP.price)} · pago único</span>${t.setupPaid||reqs.includes('implementacion')||modOrder(t,'implementacion')?'':`<button class="btn sm primary" data-a="mod-buy" data-v="implementacion">Contratar</button>`}</div></div>
   <div class="card"><h2>Historial de pagos</h2><div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Medio</th><th class="r">Valor</th></tr></thead><tbody>${S.payments.filter(x=>x.tid===t.id).sort((a,b)=>b.at-a.at).map(x=>`<tr><td>${fdate(x.at)}</td><td>${esc(x.concept||'Mensualidad')}</td><td>${esc(x.method)}</td><td class="r num">${money(x.amount)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Sin pagos registrados</td></tr>'}</tbody></table></div></div>`;
+}
+function viewNegocio(){
+ const t=tenant();const b=bizOf(t.id);
+ const card=(on,label,icon,desc,ctrl,extra='')=>`<div class="mod ${on?'has':''}"><div class="spread" style="flex-wrap:nowrap"><span class="row" style="gap:8px;flex-wrap:nowrap">${ic(icon)}<strong>${label}</strong></span>${ctrl}</div><p>${desc}</p>${extra?`<div class="foot">${extra}</div>`:''}</div>`;
+ const sw=(on,a,label)=>`<button class="switch ${on?'on':''}" data-a="${a}" aria-pressed="${on}" aria-label="${on?'Apagar':'Encender'} ${esc(label)}"></button>`;
+ const F=[];
+ F.push(card(catMode(),'Caja por categorías','tag',(catMode()?'Encendida: en la caja salen tus categorías como botones (Panes, Bebidas…).':'Apagada: la caja muestra los más vendidos y la búsqueda, sin botones de categorías.')+' Sin costo, en cualquier plan.',sw(catMode(),'neg-cat','la caja por categorías'),catMode()?`<button class="btn sm" data-a="cats">${ic('tag',14)} Mis categorías</button>`:''));
+ if(t.mods.includes('fidelizacion'))F.push(card(fidOn(),'Puntos y fidelización','gift',fidOn()?'Encendido: la caja pide la cédula del cliente, suma puntos y deja usarlos como descuento.':'Apagado: no aparece en la caja ni en el menú. Tus clientes afiliados y sus puntos quedan guardados.',sw(fidOn(),fidOn()?'fid-off':'fid-on','Puntos y fidelización')));
+ else F.push(card(false,'Puntos y fidelización','gift','Tus clientes acumulan puntos con cada compra y los usan como descuento. No está en tu plan.',`<button class="btn sm" data-a="go" data-v="plan">Ver en Mi plan</button>`));
+ if(has('lector'))F.push(card(lectorOn(),'Lector de código de barras','barcode',lectorOn()?'Encendido: en la caja puedes escanear el código del producto.':'Apagado: la caja busca solo por nombre, como si no tuvieras lector.',sw(lectorOn(),'neg-lector','el lector de código de barras')));
+ const v=(k,d='')=>esc(b[k]??d);
+ return `<div class="page-head"><div><h1>Mi negocio</h1><p>Los datos que salen en tus recibos y las funciones que tú enciendes o apagas.</p></div></div>
+  <div class="grid g-main">
+   <div class="card"><h2>Datos para el recibo</h2>
+    <form class="stack" data-f="biz-save" id="biz-form" novalidate>
+     <div class="form-grid">
+      ${field('Razón social o nombre del titular',`<input class="input" name="razon" value="${v('razon')}" placeholder="${esc(t.name)} S.A.S." maxlength="120">`,'full')}
+      ${field('NIT o cédula (sin dígito de verificación)',`<input class="input" name="nit" value="${v('nit')}" inputmode="numeric" maxlength="15" placeholder="900123456" data-i="biz-nit">`)}
+      ${field('Dígito de verificación',`<div class="input" id="biz-dv" aria-live="polite" style="background:var(--surface-2)">${b.nit?esc(nitDV(b.nit)):'—'}</div>`)}
+      ${field('Dirección',`<input class="input" name="dir" value="${v('dir')}" placeholder="Calle 50 # 43-21, barrio" maxlength="120">`,'full')}
+      ${field('Ciudad',`<input class="input" name="city" value="${v('city',t.city)}" maxlength="60">`)}
+      ${field('Teléfono',`<input class="input" name="tel" value="${v('tel',t.phone)}" inputmode="tel" maxlength="30">`)}
+      ${field('Correo (opcional)',`<input class="input" name="email" type="email" value="${v('email')}" maxlength="120">`)}
+      ${field('Régimen',sel('regimen',[['','Sin especificar'],['No responsable de IVA','No responsable de IVA'],['Responsable de IVA','Responsable de IVA']],b.regimen||''))}
+      ${field('Mensaje al pie del recibo (opcional)',`<input class="input" name="pie" value="${v('pie')}" placeholder="Síguenos en Instagram @tunegocio" maxlength="120">`,'full')}
+     </div>
+     <div id="biz-err"></div>
+     <button class="btn primary" style="align-self:flex-start">${ic('check',16)} Guardar datos</button>
+    </form>
+   </div>
+   <div class="stack">
+    <div class="card"><h2>Así se ve en el recibo</h2><div class="receipt">${receiptHead(t)}<hr><div class="ln"><span>Venta #1234</span><span>${fdt(Date.now())}</span></div><div class="ln"><span>1 × Producto de ejemplo</span><span>${money(10000)}</span></div><hr>${receiptFoot(t)}</div></div>
+    <div class="hint">${ic('info',15)} <b>Importante:</b> el recibo de Natara es un documento de control interno para ti y tu cliente. <b>No es factura electrónica ni documento equivalente POS</b> ante la DIAN: para eso se necesita una resolución de numeración y un proveedor tecnológico autorizado.</div>
+   </div>
+  </div>
+  <div class="card"><h2>Funciones de tu negocio</h2><p class="muted small" style="margin:0 0 12px">Enciende o apaga lo que quieras usar. Al apagar no se borra nada.</p><div class="grid g3">${F.join('')}</div></div>`;
 }
 function viewMensajes(){
  const t=tenant();const M=inboxFor(t.id);
@@ -2459,9 +2515,11 @@ document.addEventListener('click',e=>{
   'fid-clear':()=>{pos.mid='';pos.fdoc='';pos.useP=false;pos.fmiss=false;refreshPOS()},
   'fid-new':()=>fidNewModal(sess.view==='caja'?docDigits(pos.fdoc):''),
   'fid-cfg':()=>fidCfgModal(),
+  'neg-lector':()=>{const on=!lectorOn();setOpt('lector',on);toast(on?'Lector encendido: ya puedes escanear en la caja':'Lector apagado: la caja busca solo por nombre')},
+  'neg-cat':()=>{const on=!catMode();setOpt('cat',on);toast(on?'Caja por categorías encendida. Crea tus categorías en Mis categorías':'Caja por categorías apagada')},
   'fid-on':()=>{setFid(true);toast('Puntos encendidos: ya aparecen en la caja y en el menú')},
   'fid-off':()=>openModal('Apagar puntos y fidelización',`<p style="margin:0">Mientras esté apagado, la caja no pide la cédula ni suma puntos, y <b>Puntos</b> sale del menú.</p><p class="muted small" style="margin:0">No se borra nada: los clientes afiliados y sus puntos quedan guardados para cuando lo vuelvas a encender.</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="fid-off-do">Apagar</button>`),
-  'fid-off-do':()=>{closeModal();setFid(false);toast('Puntos apagados. Los puedes encender en Mi plan')},
+  'fid-off-do':()=>{closeModal();setFid(false);toast('Puntos apagados. Los puedes encender en Mi negocio')},
   'fid-member':()=>fidMemberModal(T('members').find(m=>m.id===id)),
   checkout,
   'mz-open':()=>{mz.id=id;mz.q='';mz.cat='';render();$('#main')?.scrollTo(0,0)},
@@ -2600,6 +2658,7 @@ document.addEventListener('input',e=>{
  else if(k==='pos-rec'){pos.received=el.value;const c=$('#pos-change');if(c)c.textContent=money(Math.max(0,parseMoney(el.value)-payTotal()))}
  else if(k==='fid-doc'){pos.fdoc=el.value;if(pos.fmiss){pos.fmiss=false;const b=$('#fid-miss');if(b)b.remove()}}
  else if(k==='pos-ref')pos.ref=el.value;
+ else if(k==='biz-nit'){const o=$('#biz-dv');if(o)o.textContent=el.value.replace(/\D/g,'')?nitDV(el.value):'—'}
  else if(k==='mz-q'){mz.q=el.value;$('#mz-results').innerHTML=mzResults()}
  else if(k==='rc-price'){const sm=$('#rc-sum');if(sm)sm.innerHTML=rcSummary()}
  else if(k==='tm-email'){}
@@ -2646,12 +2705,12 @@ document.addEventListener('keydown',e=>{
  if(e.target.id==='pur-q'&&e.key==='Enter'){e.preventDefault();const q=e.target.value.trim().toLowerCase();if(!q)return;const ex=T('products').find(p=>p.code.toLowerCase()===q);const m=ex?[ex]:purMatches();if(m.length)purAdd(m[0]);return}
  if(e.target.id==='pos-q'&&e.key==='Enter'){
   e.preventDefault();const q=e.target.value.trim();if(!q)return;
-  const P=T('products').filter(p=>p.kind!=='insumo');const exact=has('lector')?(f=>f&&f.kind!=='insumo'?f:null)(findByCode(q)):null;
+  const P=T('products').filter(p=>p.kind!=='insumo');const exact=lectorOn()?(f=>f&&f.kind!=='insumo'?f:null)(findByCode(q)):null;
   if(exact){addToCart(exact);pos.q='';e.target.value='';$('#pos-results').innerHTML=posResults();return}
   const m=posMatches();if(m.length===1){addToCart(m[0]);pos.q='';e.target.value='';$('#pos-results').innerHTML=posResults()}
-  else if(!m.length)toast(has('lector')?`No encontramos el código ${q}`:`No encontramos “${q}”`,'bad');
+  else if(!m.length)toast(lectorOn()?`No encontramos el código ${q}`:`No encontramos “${q}”`,'bad');
  }
- if(e.target.id==='inv-q'&&e.key==='Enter'&&has('lector')){const p=T('products').find(x=>x.code===e.target.value.trim());if(p&&isOwner()){e.preventDefault();H_stock(p.id)}}
+ if(e.target.id==='inv-q'&&e.key==='Enter'&&lectorOn()){const p=T('products').find(x=>x.code===e.target.value.trim());if(p&&isOwner()){e.preventDefault();H_stock(p.id)}}
  if(e.target.id==='mz-q'&&e.key==='Enter'){e.preventDefault();const m=mzProducts();if(m.length===1){mzAdd(m[0].id);mz.q='';e.target.value='';$('#mz-results').innerHTML=mzResults()}else if(!m.length)toast(`No encontramos “${e.target.value.trim()}”`,'bad');return}
  if(e.key==='F2'&&sess.view==='caja'&&!$('#modal-root').innerHTML){e.preventDefault();checkout()}
 });
@@ -2661,6 +2720,11 @@ document.addEventListener('submit',e=>{
  const f=e.target,k=f.dataset.f;if(!k)return;e.preventDefault();
  const d=Object.fromEntries(new FormData(f).entries());const t=tenant();const u=me();
  const F={
+  'biz-save':()=>{const er=m=>{$('#biz-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};
+   const nit=(d.nit||'').replace(/\D/g,'');if(nit&&(nit.length<5||nit.length>12))return er('Revisa el NIT: escribe solo los números, sin el dígito de verificación.');
+   const email=(d.email||'').trim();if(email&&!EMAIL_RE.test(email))return er('Revisa el correo: debe tener la forma nombre@dominio.com.');
+   const id='biz_'+t.id;const data={razon:(d.razon||'').trim(),nit,dir:(d.dir||'').trim(),city:(d.city||'').trim(),tel:(d.tel||'').trim(),email,regimen:d.regimen||'',pie:(d.pie||'').trim()};
+   const r=S.settings.find(x=>x.id===id);if(r)Object.assign(r,data);else S.settings.push({id,tid:t.id,...data});save();render();toast('Datos del negocio guardados. Ya salen en tus recibos')},
   'mz-create':()=>{const n=Math.max(1,Math.min(200,Math.round(Number(d.count)||0)));mzMake(n);save();render();toast(`${n} mesa${n>1?'s':''} creada${n>1?'s':''}`)},
   'mz-more':()=>{const n=Math.max(1,Math.min(100,Math.round(Number(d.count)||0)));mzMake(n);save();render();mzCfgModal();toast(`${n} mesa${n>1?'s':''} agregada${n>1?'s':''}`)},
   'mz-start':()=>{const m=T('tables').find(x=>x.id===mz.id);if(!m||tabOf(m.id))return render();S.tabs.push({id:uid(),tid:t.id,table:m.id,openedAt:Date.now(),openedBy:u.id,guests:Math.max(0,Math.round(Number(d.guests)||0)),bill:false,open:true});liveEvent('mesa',`Abrió ${m.name}`);save();render();setTimeout(()=>$('#mz-q')?.focus(),30)},

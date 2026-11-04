@@ -107,9 +107,20 @@ Módulo de $29.900/mes para restaurantes, cafeterías y panaderías con mesas (i
 - **Datos en Firestore:** `tenants/{tid}/tables` (mesas), `tenants/{tid}/tabs` (cuenta de una mesa: `table`, `openedBy`, `guests`, `bill`, `open`) y `tenants/{tid}/tablines` (un documento por producto pedido: `tab`, `qty`, `paid`, `by`). Cada producto es un documento aparte para que el mesero agregue mientras la caja cobra sin pisarse. La app solo escucha las cuentas abiertas (`open == true`).
 - **Reglas:** `tabs` y `tablines` las escribe cualquier usuario del negocio que tenga el módulo; `tables`, solo el dueño. El mesero sigue siendo `role: 'cajero'` (con `puesto: 'mesero'`), así que no cambian las reglas de usuarios. Hay que volver a pegar `firestore.rules` en Firebase.
 
+## Mi negocio
+
+Sección nueva del menú, solo para el dueño (*Cuenta → Mi negocio*).
+
+- **Datos para el recibo:** razón social o nombre del titular, NIT o cédula (el dígito de verificación se calcula solo con el algoritmo de la DIAN), dirección, ciudad, teléfono, correo, régimen (responsable o no responsable de IVA) y un mensaje al pie. Salen arriba en todos los recibos, también en los pagos divididos de mesas, con una vista previa en vivo. Si hay NIT, el recibo aclara que es un *documento de control interno, no factura electrónica*. Se guardan en `tenants/{tid}/settings/biz_{tid}`.
+- **Funciones que el dueño enciende o apaga** (`tenants/{tid}/settings/opts_{tid}`; al apagar no se borra nada):
+  - *Caja por categorías:* sin costo y en cualquier plan; el dueño la enciende solo. Si nunca la ha tocado, vale lo que Samanat dejó en la consola.
+  - *Puntos y fidelización:* si está en su plan (arranca apagado).
+  - *Lector de código de barras:* si lo tiene; apagado, la caja busca solo por nombre.
+- No hay que cambiar las reglas de Firebase: el dueño ya podía escribir en `settings`.
+
 ## Caja por categorías
 
-Opción **sin costo** que Samanat activa por negocio, solo si el cliente la pide (no todos la quieren). Apagada, la caja sigue igual que siempre.
+Opción **sin costo** en cualquier plan. El dueño la enciende o apaga en *Mi negocio* (Samanat también puede dejarla encendida desde la consola). Apagada, la caja sigue igual que siempre.
 
 - **Activar:** consola → *Clientes* → columna *Caja por categorías*. Al encenderla, el dueño recibe un mensaje. El dueño la puede pedir desde *Mi plan* (botón de WhatsApp).
 - **Categorías:** el dueño (o un empleado con permiso de editar inventario) las crea en *Inventario → Categorías*: agregar, renombrar, ordenar con flechas y eliminar. Si los productos ya traían categoría (por ejemplo del Excel), *Agregarlas* las crea de una vez.
