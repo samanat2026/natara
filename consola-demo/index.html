@@ -1725,22 +1725,29 @@ function checkout(){
 function receiptHTML(s){
  const t=S.tenants.find(x=>x.id===s.tid);
  return `<div class="receipt">${receiptHead(t)}<hr>
-  <div class="ln"><span>Venta #${s.num}</span><span>${fdt(s.at)}</span></div><div class="ln"><span>Atendió</span><span>${esc(userName(s.seller))}</span></div>${s.mesa?`<div class="ln"><span>Mesa</span><span>${esc(s.mesa)}${s.tab&&s.mesaN?` · pago ${s.mesaN}`:''}</span></div>`:''}<hr>
+  <div class="ln"><span>Venta #${s.num}</span><span>${fdt(s.at)}</span></div><div class="ln"><span>Atendió</span><span>${esc(userName(s.seller))}</span></div>${s.mesa?`<div class="ln"><span>Mesa</span><span>${esc(s.mesa)}</span></div>`:''}<hr>
   ${s.split?`<div class="ln"><span>${splitTxt(s)} de la cuenta (partes iguales)</span><span>${money(s.sub||s.total)}</span></div>`:s.items.map(i=>`<div class="ln"><span>${num(i.qty)} × ${esc(i.name)}</span><span>${money(i.qty*i.price)}</span></div>`).join('')}<hr>
   ${s.disc?`<div class="ln"><span>Subtotal</span><span>${money(s.sub)}</span></div><div class="ln"><span>Descuento ${num(s.ptsUsed)} puntos</span><span>−${money(s.disc)}</span></div>`:''}
-  <div class="ln"><b>TOTAL</b><b>${money(s.total)}</b></div>${s.tab&&s.status!=='anulada'?(()=>{const P=mesaPays(s);const rest=s.mesaRest||0;return `${rest?`<div class="ln"><span>Queda pendiente en la mesa</span><span>${money(rest)}</span></div>`:`<div class="ln"><span>Con este pago la mesa quedó</span><span>saldada</span></div>`}${P.length>1?`<hr><div class="ln"><b>Pagos de ${esc(s.mesa)}</b><span></span></div>${P.map(x=>`<div class="ln"><span>${x.id===s.id?'▸ ':''}Pago ${x.mesaN||''} · #${x.num} · ${ftime(x.at)}</span><span>${money(x.total)}</span></div>`).join('')}<div class="ln"><span>Total pagado en la mesa</span><span>${money(sum(P,x=>x.total))}</span></div>`:''}`})():''}
-  <div class="ln"><span>Pago</span><span>${s.method==='efectivo'?'Efectivo':s.method==='datafono'?'Datáfono'+(s.card?' · '+esc(s.card):'')+(s.ref?' · aprob. '+esc(s.ref):''):s.method==='fiado'?'Fiado: '+esc(S.customers.find(c=>c.id===s.customer)?.name||''):esc(s.bank)+(s.ref?' · ref '+esc(s.ref):'')}</span></div>
+  <div class="ln"><b>TOTAL</b><b>${money(s.total)}</b></div><div class="ln"><span>Pago</span><span>${s.method==='efectivo'?'Efectivo':s.method==='datafono'?'Datáfono'+(s.card?' · '+esc(s.card):'')+(s.ref?' · aprob. '+esc(s.ref):''):s.method==='fiado'?'Fiado: '+esc(S.customers.find(c=>c.id===s.customer)?.name||''):esc(s.bank)+(s.ref?' · ref '+esc(s.ref):'')}</span></div>
   ${s.method==='efectivo'?`<div class="ln"><span>Recibido</span><span>${money(s.received)}</span></div><div class="ln"><span>Cambio</span><span>${money(Math.max(0,s.received-s.total))}</span></div>`:''}
   ${s.mid?`<hr><div class="ln"><span>Cliente</span><span>${esc(S.members.find(m=>m.id===s.mid)?.name||'')}</span></div><div class="ln"><span>Puntos ganados</span><span>${num(s.ptsEarned||0)}</span></div><div class="ln"><span>Saldo de puntos</span><span>${num(s.ptsAfter||0)}</span></div>`:''}
   ${s.status==='anulada'?`<hr><div class="c"><b>VENTA ANULADA</b></div>`:''}
   <hr>${receiptFoot(t)}</div>`;
 }
+// Solo para el cajero, no sale en el recibo: cómo quedó la mesa después de este pago
+function mesaNote(s,fresh){
+ if(!s.tab||s.status==='anulada')return '';
+ const t=S.tabs.find(x=>x.id===s.tab);const open=t&&t.open;const rest=open?tabPend(t.id):0;
+ const P=mesaPays(s).filter(x=>x.id!==s.id);
+ const head=open?`<b>${esc(s.mesa)} sigue abierta</b> con ${money(rest)} por cobrar.`:`<b>${esc(s.mesa)} quedó libre:</b> ya pagaron todo.`;
+ return `<div class="banner ${open?'':'info'}">${ic('table')}<div class="grow">${head}${!fresh&&P.length?`<div class="small" style="margin-top:6px">Otros pagos de esta mesa: ${P.map(x=>`#${x.num} (${money(x.total)})`).join(', ')}</div>`:''}</div></div>`;
+}
 function showReceipt(s,fresh=false){
  const t=S.tenants.find(x=>x.id===s.tid);
  const body=`${fresh?`<div class="banner info">${ic('check')}<div class="grow"><b>Venta registrada.</b> ${s.method==='efectivo'&&s.received>s.total?`Entrega ${money(s.received-s.total)} de cambio.`:''}${s.method==='transferencia'&&!s.confirmed?'Quedó por confirmar la transferencia.':''}</div></div>`:''}
-${receiptHTML(s)}${printOn()?`<p class="small muted prn-under">${ic('printer',14)} ${esc(prnLabel())} · <button class="linkish" data-a="prn-setup">Configurar impresora</button></p>`:''}`;
+${mesaNote(s,fresh)}${receiptHTML(s)}${printOn()?`<p class="small muted prn-under">${ic('printer',14)} ${esc(prnLabel())} · <button class="linkish" data-a="prn-setup">Configurar impresora</button></p>`:''}`;
  const can=canDo('anular')&&s.status!=='anulada';
- const foot=`${s.method==='transferencia'&&!s.confirmed&&s.status!=='anulada'?`<button class="btn" data-a="confirm-tr" data-id="${s.id}">${ic('check',16)} Confirmar transferencia</button>`:''}${can&&!fresh?`<button class="btn danger" data-a="void-ask" data-id="${s.id}">Anular venta</button>`:''}${printOn()?`<button class="btn" data-a="prn-sale" data-id="${s.id}">${ic('printer',16)} Imprimir</button>`:''}<button class="btn primary" data-a="close-modal">${fresh?'Nueva venta':'Cerrar'}</button>`;
+ const foot=`${s.method==='transferencia'&&!s.confirmed&&s.status!=='anulada'?`<button class="btn" data-a="confirm-tr" data-id="${s.id}">${ic('check',16)} Confirmar transferencia</button>`:''}${can&&!fresh?`<button class="btn danger" data-a="void-ask" data-id="${s.id}">Anular venta</button>`:''}${printOn()?`<button class="btn" data-a="prn-sale" data-id="${s.id}">${ic('printer',16)} Imprimir</button>`:''}<button class="btn primary" data-a="close-modal">${fresh?(s.tab?'Listo':'Nueva venta'):'Cerrar'}</button>`;
  openModal(fresh?'Venta registrada':`Venta #${s.num}`,body,foot);
  if(fresh&&printOn()&&prnCfg().auto)printSale(s);
 }
