@@ -380,6 +380,9 @@ details.guide[open] summary{margin-bottom:10px}
 .mzp-chips{display:flex;flex-wrap:wrap;gap:6px}.mzp-chips .pill{background:var(--surface);color:var(--ink)}
 .mzp-bar{display:none}
 .mzp-bar[hidden]{display:none!important}
+.scan-qty{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;margin:0 0 10px;border-radius:12px;background:var(--accent-soft,rgba(15,107,87,.1));border:1px solid var(--accent)}
+.scan-qty .grow{flex:1;min-width:140px}.scan-qty input{width:84px;text-align:center;font-size:18px;font-weight:600}
+.scan-q{flex:none}.scan-q input{width:52px;text-align:center;background:#fff;color:#111}
 @media (max-width:1000px){.mzp-bar{display:flex;align-items:center;gap:10px;position:sticky;bottom:12px;z-index:5;width:100%;margin-top:4px;padding:14px 16px;border:0;border-radius:12px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}.mzp-bar b{margin-left:auto;font-size:17px}.mzp-bar:disabled{background:var(--ink-3);opacity:.85;cursor:default}}
 .tile.added{animation:mz-flash .5s ease}
 @keyframes mz-flash{0%{border-color:var(--accent);background:var(--accent-soft);transform:scale(.97)}100%{transform:none}}
@@ -1011,9 +1014,12 @@ function scanClose(fromBack){
  $('#scan-root')?.remove();
  if(!fromBack&&history.state&&history.state.scan){scanSkipPop=true;try{history.back()}catch(_){scanSkipPop=false}}
  const t=scan.target;scan.target=null;
- if(t==='pos'){$('#pos-results')&&($('#pos-results').innerHTML=posResults())}
+ if(t==='pos'){$('#pos-results')&&($('#pos-results').innerHTML=posResults());$('#pos-qbar')&&($('#pos-qbar').innerHTML=posQBar())}
 }
 let scanSkipPop=false;
+// Cantidad del último producto leído con la cámara, en la misma pantalla del lector
+function scanQtyCtl(pid){const it=cart.find(i=>i.pid===pid);if(!it)return '';return `<div class="qty scan-q"><button data-a="scan-q" data-v="${pid}" data-d="-1" aria-label="Uno menos">−</button><input type="text" inputmode="numeric" value="${it.qty}" data-c="scan-qn" data-v="${pid}" aria-label="Cantidad"><button data-a="scan-q" data-v="${pid}" data-d="1" aria-label="Uno más">+</button></div>`}
+function scanQtyRefresh(pid){const c=document.querySelector('#scan-last .scan-q');if(c)c.outerHTML=scanQtyCtl(pid)}
 function scanFlash(ok,html){const f=$('#scan-frame');if(f){f.classList.remove('ok','bad');void f.offsetWidth;f.classList.add(ok?'ok':'bad');setTimeout(()=>f.classList.remove('ok','bad'),600)}const l=$('#scan-last');if(l&&html)l.innerHTML=html}
 function findByCode(code){const c=String(code).trim();if(!c)return null;const P=T('products');
  return P.find(p=>p.code===c)||P.find(p=>String(p.code).toLowerCase()===c.toLowerCase())
@@ -1028,14 +1034,15 @@ function scanHit(raw){
  if(t==='code'){scanBeep();const i=$('#prod-form [name=code]');if(i){i.value=code;i.dispatchEvent(new Event('input',{bubbles:true}))}scanClose();toast(`Código ${code} listo`);const n=$('#prod-form [name=name]');if(n&&!n.value)setTimeout(()=>n.focus(),40);return}
  if(t==='inv'){scanBeep();scanClose();applyCode(code,'inv');return}
  const ok=applyCode(code,t);
- if(ok){scan.n++;scanBeep(true);scanFlash(true,`<span class="pill good">${ic('check',14)} ${scan.n}</span><span class="grow"><b>${esc(ok.name)}</b>${ok.extra?` · ${esc(ok.extra)}`:''}</span>`)}
+ if(ok&&ok.bad){scanBeep(false);scanFlash(false,`<span class="pill bad">${ic('alert',14)}</span><span class="grow"><b>${esc(ok.name)}</b> · ${esc(ok.extra)}</span>`)}
+ else if(ok){scan.n++;scanBeep(true);scanFlash(true,`<span class="pill good">${ic('check',14)} ${scan.n}</span><span class="grow"><b>${esc(ok.name)}</b>${ok.extra?` · ${esc(ok.extra)}`:''}</span>${ok.pid?scanQtyCtl(ok.pid):''}`)}
  else{scanBeep(false);const mk=canDo('inv_edit')&&has('inventario');scanFlash(false,`<span class="pill bad">${ic('alert',14)}</span><span class="grow">No encontramos el código <b class="mono">${esc(code)}</b>.</span>${mk?`<button class="btn sm" data-a="scan-newprod" data-v="${esc(code)}">${ic('plus',14)} Crearlo</button>`:''}`)}
 }
 // Lleva un código (de la cámara o del lector USB) a la pantalla donde está la persona
 function applyCode(code,where){
  const p=findByCode(code);
- if(where==='pos'){if(!p||p.kind==='insumo')return null;addToCart(p);const it=cart.find(i=>i.pid===p.id);return{name:p.name,extra:`${num(it?.qty||1)} en la venta · ${money(p.price)}`}}
- if(where==='mz'){if(!p||p.kind==='insumo'||!mz.id)return null;mzAdd(p.id);return{name:p.name,extra:money(p.price)}}
+ if(where==='pos'){if(!p||p.kind==='insumo')return null;if(!addToCart(p))return{name:p.name,extra:'no hay más en inventario',bad:true};pos.last=p.id;return{name:p.name,extra:money(p.price),pid:p.id}}
+ if(where==='mz'){if(!p||p.kind==='insumo'||!mz.id)return null;if(mzAdd(p.id)===false)return{name:p.name,extra:'no hay más en inventario',bad:true};return{name:p.name,extra:money(p.price)}}
  if(where==='pur'){if(!p)return null;purAdd(p);return{name:p.name,extra:'escribe cantidad y costo'}}
  if(where==='inv'){inv.q=code;if(p){inv.kind=p.kind==='insumo'?'insumo':'venta'}render();if(p&&isOwner())setTimeout(()=>H_stock(p.id),30);else if(!p)toast(`No encontramos el código ${code}`,'bad');return p}
  return null;
@@ -1059,7 +1066,8 @@ document.addEventListener('keydown',e=>{
   const b=wedge.buf,fast=b.length>=4&&(wedge.last-wedge.t0)/(b.length-1||1)<45&&now-wedge.last<120;wedge.buf='';
   if(!fast)return;const w=wedgeWhere();if(!w)return;e.preventDefault();
   if(w==='inv'){applyCode(b,'inv');return}
-  const ok=applyCode(b,w);if(ok)scanBeep(true);else{scanBeep(false);toast(`No encontramos el código ${b}`,'bad')}
+  if(w==='pos'){posCode(b);return}
+  const ok=applyCode(b,w);if(ok&&!ok.bad)scanBeep(true);else if(ok&&ok.bad)scanBeep(false);else{scanBeep(false);toast(`No encontramos el código ${b}`,'bad')}
   return;
  }
  if(e.key.length!==1||e.ctrlKey||e.metaKey||e.altKey)return;
@@ -1500,13 +1508,14 @@ function mzJump(t){const n=sum(linesOf(t.id),l=>l.qty);return `${ic('receipt',17
 function mzRefresh(){const t=tabOf(mz.id);const b=$('#mz-bill');if(t&&b){b.innerHTML=mzBill(t);const j=$('#mz-jump');if(j)j.innerHTML=mzJump(t)}else render()}
 function mzAdd(pid){
  const t=tabOf(mz.id);const p=S.products.find(x=>x.id===pid);if(!t||!p)return;
- const L=linesOf(t.id);const want=sum(L.filter(l=>l.pid===p.id),l=>pendQty(l))+1;
- if(has('inventario')&&availOf(p)<want)toast(recipeOf(p)?`Ojo: con los ingredientes que hay solo alcanza para ${num(availOf(p))} de ${p.name}`:`Ojo: solo hay ${num(p.stock)} de ${p.name} en inventario`,'bad');
+ const L=linesOf(t.id);const want=sum(L.filter(l=>l.pid===p.id),l=>pendQty(l))+1;const can=sellable(p,t.id);
+ if(want>can){noStock(p,can);return false}
  const ex=L.find(l=>l.pid===p.id&&!l.paid&&l.by===me().id);
  if(ex)ex.qty++;else S.tablines.push({id:uid(),tid:t.tid,tab:t.id,pid:p.id,name:p.name,price:p.price,cost:effCost(p),qty:1,paid:0,by:me().id,at:Date.now(),open:true});
  save();mzRefresh();const tl=document.querySelector(`[data-a="mz-add"][data-id="${p.id}"]`);if(tl){tl.classList.remove('added');void tl.offsetWidth;tl.classList.add('added')}
 }
-function mzQty(id,d){const l=S.tablines.find(x=>x.id===id);if(!l)return;const q=l.qty+d;if(q<(l.paid||0))return;if(q<=0)S.tablines=S.tablines.filter(x=>x.id!==id);else l.qty=q;save();mzRefresh()}
+function mzQty(id,d){const l=S.tablines.find(x=>x.id===id);if(!l)return;const q=l.qty+d;if(q<(l.paid||0))return;
+ if(d>0){const p=S.products.find(x=>x.id===l.pid);const can=sellable(p,l.tab);const want=sum(linesOf(l.tab).filter(x=>x.pid===l.pid),x=>pendQty(x))+d;if(want>can)return noStock(p,can)}if(q<=0)S.tablines=S.tablines.filter(x=>x.id!==id);else l.qty=q;save();mzRefresh()}
 function mzCloseTab(t){t.open=false;t.bill=false;t.closedAt=Date.now();S.tablines.filter(l=>l.tab===t.id).forEach(l=>l.open=false);S.tablines=S.tablines.filter(l=>!(l.tab===t.id&&l.qty<=0))}
 // ---- cobro por persona ----
 function mzSyncCart(){const t=tabOf(mz.id);if(!t){cart=[];return}
@@ -1664,12 +1673,21 @@ function viewCaja(){
   <div class="pos">
    <div class="stack">
     <div class="search pos-search ${scanBtn('pos')?'has-scan':''}">${ic('search',20)}<input class="input" id="pos-q" placeholder="${lectorOn()?'Escanea o escribe el nombre':'Escribe el nombre o la categoría del producto'}" autocomplete="off" value="${esc(pos.q)}" data-i="pos-q">${scanBtn('pos')}</div>
+    <div id="pos-qbar">${posQBar()}</div>
     <div id="pos-results">${posResults()}</div>
     <button class="mzp-bar" id="pos-bar" data-a="mzp-go" ${cart.length?'':'hidden'}>${posBar()}</button>
    </div>
    <div class="card cart" id="cart-panel">${cartPanel()}</div>
   </div>`;
 }
+// Después de leer un producto con el lector: escribe cuántos y Enter. Si en vez de eso se lee otro código, sigue con ese.
+function posQBar(){const it=pos.last&&cart.find(i=>i.pid===pos.last);if(!it)return '';
+ return `<div class="scan-qty"><span class="grow"><b>${esc(it.name)}</b><span class="muted small"> · ${money(it.price)} c/u</span></span><label for="pos-qn" class="small">¿Cuántos?</label><input class="input num" id="pos-qn" type="text" inputmode="numeric" autocomplete="off" value="${it.qty}" aria-label="Cantidad de ${esc(it.name)}"><button class="btn sm primary" data-a="qn-ok">Listo</button></div>`}
+function posQShow(pid,focus){pos.last=pid;const b=$('#pos-qbar');if(!b)return;b.innerHTML=posQBar();if(focus){const q=$('#pos-qn');if(q){q.focus();q.select()}}}
+function posQDone(){const q=$('#pos-qn');if(q&&pos.last)setCartQty(pos.last,q.value);pos.last=null;const b=$('#pos-qbar');if(b)b.innerHTML='';$('#pos-q')?.focus()}
+// Un código leído en cualquier campo de la caja: se agrega y queda lista la cantidad
+function posCode(code){const p=findByCode(code);if(!p||p.kind==='insumo'){scanBeep(false);toast(`No encontramos el código ${code}`,'bad');return false}
+ if(!addToCart(p)){scanBeep(false);return false}scanBeep(true);posQShow(p.id,true);return true}
 // En el celular la venta queda debajo de los productos: esta barra muestra el total y lleva a cobrar
 function posBar(){const n=sum(cart,i=>i.qty);return `${ic('cart',17)}<span>Ver venta · ${num(n)} producto${n===1?'':'s'}</span><b class="num">${money(cartTotal())}</b>`}
 function posMatches(){
@@ -1730,14 +1748,24 @@ function cartPanel(){
    ${cart.length&&!pos.tab?`<button class="btn ghost sm" data-a="clear-cart" style="align-self:center">Vaciar venta</button>`:''}
   </div>`;
 }
-function refreshPOS(){const c=$('#cart-panel');if(c)c.innerHTML=cartPanel();const b=$('#pos-bar');if(b){b.hidden=!cart.length;b.innerHTML=posBar()}}
+function refreshPOS(){const c=$('#cart-panel');if(c)c.innerHTML=cartPanel();const b=$('#pos-bar');if(b){b.hidden=!cart.length;b.innerHTML=posBar()}const qb=$('#pos-qbar');if(qb&&document.activeElement?.id!=='pos-qn')qb.innerHTML=posQBar()}
+// No se vende lo que no hay: lo disponible es el inventario (o lo que alcanzan los ingredientes de una receta)
+// menos lo que ya está pedido y sin cobrar en las mesas abiertas. Sin el módulo de inventario no hay límite.
+function sellable(p,tabId){if(!p||!has('inventario'))return Infinity;
+ const held=sum((S.tablines||[]).filter(l=>l.tid===p.tid&&l.pid===p.id&&l.open!==false&&l.tab!==tabId),l=>pendQty(l));
+ return Math.max(0,r6(availOf(p)-held))}
+function noStock(p,can){toast(can<=0?`No hay ${p.name} en inventario. Agrega más en Inventario → Ajustar.`:recipeOf(p)?`Con los ingredientes que hay solo alcanzan ${num(can)} de ${p.name}.`:`Solo quedan ${num(can)} de ${p.name} en inventario.`,'bad')}
 function addToCart(p,qty=1){
- if(!p)return;
- const ex=cart.find(i=>i.pid===p.id);const want=(ex?ex.qty:0)+qty;
- if(availOf(p)<want&&has('inventario'))toast(recipeOf(p)?`Ojo: con los ingredientes que hay solo alcanza para ${num(availOf(p))} de ${p.name}`:`Ojo: solo hay ${num(p.stock)} de ${p.name} en inventario`,'bad');
+ if(!p)return false;
+ const ex=cart.find(i=>i.pid===p.id);const want=(ex?ex.qty:0)+qty;const can=sellable(p,null);
+ if(want>can){noStock(p,can);return false}
  if(ex)ex.qty=want;else cart.push({pid:p.id,name:p.name,price:p.price,cost:effCost(p),qty});
- refreshPOS();
+ refreshPOS();return true;
 }
+// Pone la cantidad de un producto de la venta, sin pasar de lo que hay. Devuelve la cantidad que quedó.
+function setCartQty(pid,q){const i=cart.find(x=>x.pid===pid);if(!i)return 0;const p=S.products.find(x=>x.id===pid);
+ q=Math.max(1,Math.floor(Number(q)||1));const can=sellable(p,null);if(q>can){noStock(p,can);q=Math.max(1,Math.floor(can))}
+ i.qty=q;refreshPOS();return q}
 function checkout(){
  if(!cart.length)return;
  if(pos.tab&&!mzCheck())return;
@@ -1745,6 +1773,7 @@ function checkout(){
  const used=fm&&pos.useP?maxRedeem(fm,sub,cfg):0;const disc=used*cfg.valorPunto;const total=sub-disc;
  if(!openSession()){toast('Abre la caja antes de cobrar','bad');return}
  if(pos.method==='efectivo'&&pos.received!==''&&parseMoney(pos.received)<total){toast('El dinero recibido no alcanza para el total','bad');return}
+ {const short=cart.map(i=>({i,p:S.products.find(x=>x.id===i.pid)})).find(({i,p})=>p&&i.qty>sellable(p,pos.tab)+1e-6);if(short){noStock(short.p,sellable(short.p,pos.tab));return}}
  if(pos.method==='fiado'&&!pos.customer){toast('Selecciona el cliente que se lleva fiado','bad');return}
  if(pos.method==='fiado'){const c=S.customers.find(x=>x.id===pos.customer);const debe=balanceOf(pos.customer);if(c&&c.limit>0&&debe+total>c.limit){toast(`${c.name} tiene un cupo de ${money(c.limit)} y ya debe ${money(debe)}. Solo se le puede fiar ${money(Math.max(0,c.limit-debe))} más.`,'bad');return}}
  const t=tenant();const last=Math.max(1000,RB.lastNum||0,...T('sales').map(s=>s.num||0));
@@ -1762,7 +1791,7 @@ function checkout(){
  sale.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,-1,`Venta #${saleNo(sale)}`,sale.at,t.id)});
  if(sale.method==='fiado')S.ledger.push({id:uid(),tid:t.id,cid:sale.customer,type:'cargo',amount:total,at:sale.at,note:`Venta fiada #${saleNo(sale)}`,sid:sale.id});
  save();_sc=null;
- cart=[];pos={...pos,tab:null,q:'',received:'',ref:'',verified:false,customer:'',fdoc:'',mid:'',useP:false,fmiss:false};
+ cart=[];pos={...pos,last:null,tab:null,q:'',received:'',ref:'',verified:false,customer:'',fdoc:'',mid:'',useP:false,fmiss:false};
  if(tabPay){cart=mz.bak||[];mz.bak=null;mz.pay=false;mz.sel={};if(tabPay.closed)mz.id=null;render();toast(tabPay.closed?`Ya pagaron todo: ${tabPay.name} quedó libre`:`Pago registrado. ${tabPay.name} sigue abierta con lo pendiente`)}
  showReceipt(sale,true);
  const pr=$('#pos-results');if(pr)pr.innerHTML=posResults();const q=$('#pos-q');if(q)q.value='';
@@ -2865,11 +2894,13 @@ document.addEventListener('click',e=>{
   'cat-back':()=>{catUI.pick=null;catsRefresh(false)},
   'cat-pick-save':()=>{const c=S.cats.find(x=>x.id===catUI.pick);if(!c)return;const k=catKey(c.name);const on=new Set([...document.querySelectorAll('#cat-picks input[name=cp]:checked')].map(x=>x.value));let n=0;T('products').filter(p=>p.kind!=='insumo').forEach(p=>{const was=catKey(p.cat)===k;if(on.has(p.id)&&!was){p.cat=c.name;n++}else if(!on.has(p.id)&&was){p.cat='';n++}});catUI.pick=null;save();catsRefresh();toast(n?`“${c.name}” actualizada (${n} cambio${n>1?'s':''})`:'Sin cambios')},
   'catpos-toggle':()=>{const t=S.tenants.find(x=>x.id===id);t.catPos=!t.catPos;if(t.catPos)S.messages.push({id:uid(),to:t.id,kind:'promo',title:'Activamos la caja por categorías',body:'Ahora puedes crear tus propias categorías (por ejemplo Panes, Bebidas, Lácteos) en Inventario → Categorías y asignarles los productos. En la caja verás los productos agrupados: tocas una categoría y te salen solo esos.',at:Date.now(),readBy:[]});save();render();toast(t.catPos?`Caja por categorías activada para ${t.name}`:`Caja por categorías desactivada para ${t.name}`)},
-  qty:()=>{const i=cart[+el.dataset.ix];i.qty=Math.max(1,i.qty+Number(el.dataset.d));refreshPOS()},
+  qty:()=>{const i=cart[+el.dataset.ix];if(i)setCartQty(i.pid,i.qty+Number(el.dataset.d))},
   rm:()=>{cart.splice(+el.dataset.ix,1);refreshPOS()},
   pay:()=>{pos.method=v;refreshPOS()},
   'quick-rec':()=>{pos.received=v;refreshPOS()},
-  'clear-cart':()=>{cart=[];refreshPOS()},
+  'clear-cart':()=>{cart=[];pos.last=null;refreshPOS();const b=$('#pos-qbar');if(b)b.innerHTML=''},
+  'qn-ok':()=>posQDone(),
+  'scan-q':()=>{const it=cart.find(i=>i.pid===v);if(it){setCartQty(v,it.qty+Number(el.dataset.d));scanQtyRefresh(v)}},
   'fid-find':()=>fidFind(),
   'fid-clear':()=>{pos.mid='';pos.fdoc='';pos.useP=false;pos.fmiss=false;refreshPOS()},
   'fid-new':()=>fidNewModal(sess.view==='caja'?docDigits(pos.fdoc):''),
@@ -3048,7 +3079,8 @@ document.addEventListener('change',e=>{
  const M={
 'prn-mode':()=>{setPrn('mode',el.value);if(el.value==='bt'&&prnCfg().paper==='carta')setPrn('paper','58');prnSetup()},'prn-paper':()=>setPrn('paper',el.value),'prn-copies':()=>setPrn('copies',Number(el.value)||1),'prn-auto':()=>setPrn('auto',el.checked),
 'pos-bank':()=>pos.bank=el.value,'pos-card':()=>pos.card=el.value,'pos-ver':()=>pos.verified=el.checked,'pos-cust':()=>pos.customer=el.value,'fid-use':()=>{pos.useP=el.checked;refreshPOS()},
-  'qty-set':()=>{cart[+el.dataset.ix].qty=Math.max(1,Number(el.value)||1);refreshPOS()},
+  'scan-qn':()=>{setCartQty(el.dataset.v,el.value);scanQtyRefresh(el.dataset.v)},
+  'qty-set':()=>{const i=cart[+el.dataset.ix];if(i)setCartQty(i.pid,el.value)},
   'vf-range':()=>{vf.range=el.value;render()},'vf-method':()=>{vf.method=el.value;render()},'vf-origin':()=>{vf.origin=el.value;render()},'vf-seller':()=>{vf.seller=el.value;render()},
   'inv-cat':()=>{inv.cat=el.value;render()},'inv-low':()=>{inv.low=el.checked;render()},
   'fin-type':()=>{fin.type=el.value;render()},
@@ -3078,10 +3110,16 @@ document.addEventListener('keydown',e=>{
  if(e.key==='Escape'&&scan.on){scanClose();return}
  if(e.key==='Escape'&&$('#modal-root').innerHTML){closeModal();return}
  if(e.target.id==='pur-q'&&e.key==='Enter'){e.preventDefault();const q=e.target.value.trim().toLowerCase();if(!q)return;const ex=T('products').find(p=>p.code.toLowerCase()===q);const m=ex?[ex]:purMatches();if(m.length)purAdd(m[0]);return}
+ if(e.target.id==='pos-qn'&&e.key==='Enter'){
+  e.preventDefault();const v=e.target.value.trim();
+  if(v.length>=5&&lectorOn()&&findByCode(v)){const it=cart.find(i=>i.pid===pos.last);if(it)e.target.value=it.qty;posCode(v);return}
+  if(!/^\d{1,4}$/.test(v)){toast('Escribe la cantidad en números, por ejemplo 6','bad');e.target.select();return}
+  posQDone();return;
+ }
  if(e.target.id==='pos-q'&&e.key==='Enter'){
   e.preventDefault();const q=e.target.value.trim();if(!q)return;
   const P=T('products').filter(p=>p.kind!=='insumo');const exact=lectorOn()?(f=>f&&f.kind!=='insumo'?f:null)(findByCode(q)):null;
-  if(exact){addToCart(exact);pos.q='';e.target.value='';$('#pos-results').innerHTML=posResults();return}
+  if(exact){pos.q='';e.target.value='';$('#pos-results').innerHTML=posResults();posCode(q);return}
   const m=posMatches();if(m.length===1){addToCart(m[0]);pos.q='';e.target.value='';$('#pos-results').innerHTML=posResults()}
   else if(!m.length)toast(lectorOn()?`No encontramos el código ${q}`:`No encontramos “${q}”`,'bad');
  }

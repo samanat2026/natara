@@ -98,9 +98,14 @@ Complemento de $14.900/mes (incluido en Premium y Restaurante). Samanat lo activ
 - **Cámara del celular o del computador (gratis):** botón *Cámara* en la búsqueda de la Caja, las Mesas, el Inventario y las compras a proveedores, y botón de cámara junto al campo *Código de barras* del producto. En la caja y las mesas el escáner se queda abierto: cada producto que se lee entra solo a la venta, con pitido y vibración. Mientras el mismo código siga frente a la cámara no se suma dos veces; para otro igual se retira y se vuelve a apuntar. Si el código no existe, el dueño lo puede crear ahí mismo.
   - Motor: el `BarcodeDetector` del navegador (Chrome en Android) y, donde no existe (iPhone, Firefox, computador), ZXing (`@zxing/library` 0.21.3 desde jsDelivr), que solo se descarga la primera vez que se abre la cámara. Lee EAN-13, EAN-8, UPC, Code 128, Code 39, ITF y QR.
   - Necesita HTTPS (GitHub Pages ya lo es) y que la persona dé permiso de cámara.
+- **Cantidad al leer un producto:** en la Caja, al leer un código con el lector USB aparece arriba *Pan de bono · ¿Cuántos?* con el número listo para escribir: se escribe la cantidad y Enter. Si en vez de eso se lee otro producto, el primero queda con 1 y sigue el nuevo. Con la cámara, el último producto leído trae − y + y un campo para escribir la cantidad en la misma pantalla del lector.
 - **Lector USB o Bluetooth:** funciona como un teclado. En la Caja, las Mesas (dentro de una mesa) y el Inventario no hace falta tocar el campo de búsqueda: Natara reconoce las teclas rápidas que terminan en Enter y agrega el producto. Si el cursor está en un campo (por ejemplo *Código* del producto), el código se escribe ahí.
 
 Los códigos de la demo son inventados y no tienen dígito de control válido, así que con la cámara solo se leen productos reales; en la demo se puede probar escaneando cualquier producto empacado y creándolo con *Crearlo*.
+
+## Sin vender lo que no hay
+
+Si el negocio tiene el módulo de Inventario, la caja y las mesas no dejan vender más de lo que hay: el inventario (o lo que alcanzan los ingredientes de una receta) menos lo que ya está pedido y sin cobrar en las mesas abiertas. Se revisa al agregar el producto, al subir la cantidad y otra vez al cobrar. El aviso dice cuántos quedan.
 
 ## Botón Atrás
 
