@@ -135,6 +135,7 @@ h1,h2,h3{margin:0;text-wrap:balance}
 @media (max-width:1000px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g3,.g-main{grid-template-columns:1fr}}
 @media (max-width:640px){.g2{grid-template-columns:1fr}}
 .kpi{display:flex;flex-direction:column;gap:4px}
+.vis-badge{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;padding:6px 12px;border-radius:999px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--ink);font-size:13px;margin:4px 0 10px}
 .kpi .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);font-weight:600}
 .kpi .val{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 .kpi .foot{font-size:13px;color:var(--ink-2)}
@@ -1121,10 +1122,65 @@ function afterRender(){
    ========================================================= */
 let lg={mode:MODE==='real'?'form':'pick',email:'',pass:'',err:{},fails:{},lockUntil:0,banner:null,step:1,code:'',resetEmail:''};
 const DEMO_PASS='Natara2026*';
+/* =========================================================
+   VISITAS A LA DEMO — contador público en Firestore (colección demovisits)
+   Solo cuenta en samanat2026.github.io/natara/demo/ (no en la app real,
+   ni en la consola de demo, ni en vistas previas).
+   personas = navegadores distintos · visitas = sesiones (pestaña abierta)
+   ========================================================= */
+const VIS_MIN=10; // la demo muestra el contador desde esta cantidad de personas
+const VIS={total:null,days:[],loaded:0,busy:false};
+function visDay(t){return new Date(t||Date.now()).toLocaleDateString('en-CA',{timeZone:'America/Bogota'})}
+function visShouldCount(){return !REAL&&!DEMO_ADMIN&&location.hostname==='samanat2026.github.io'&&/\/demo\/?/.test(location.pathname)}
+async function visCount(){
+ if(!visShouldCount())return;
+ let newSes=false,newPer=false;
+ try{newSes=!sessionStorage.getItem('nt_vis_s');newPer=!localStorage.getItem('nt_vis_p')}catch(_){return}
+ if(newSes){
+  const {db,doc,setDoc,increment}=FB;const at=Date.now();const d={visitas:increment(1),personas:increment(newPer?1:0),ultima:at};
+  try{await Promise.all([setDoc(doc(db,'demovisits','total'),d,{merge:true}),setDoc(doc(db,'demovisits','d_'+visDay(at)),d,{merge:true})]);
+   try{sessionStorage.setItem('nt_vis_s','1');if(newPer)localStorage.setItem('nt_vis_p',String(at))}catch(_){}}
+  catch(e){console.warn('visitas',e.code)}
+ }
+ visLoad(false);
+}
+async function visLoad(withDays){
+ if(!window.FB||VIS.busy)return;VIS.busy=true;
+ const {db,doc,getDoc}=FB;
+ try{
+  const t=await getDoc(doc(db,'demovisits','total'));VIS.total=t.exists()?t.data():{personas:0,visitas:0};
+  if(withDays){const ks=[];for(let i=13;i>=0;i--)ks.push(visDay(Date.now()-i*864e5));
+   const ds=await Promise.all(ks.map(k=>getDoc(doc(db,'demovisits','d_'+k))));
+   VIS.days=ks.map((k,i)=>({k,...(ds[i].exists()?ds[i].data():{personas:0,visitas:0})}))}
+ }catch(e){console.warn('visitas',e.code);VIS.total=VIS.total||{error:true}}
+ VIS.loaded=Date.now();VIS.busy=false;
+ if(!$('#modal-root')?.innerHTML&&(!me()||(me().role==='superadmin'&&sess.view==='resumen')))render();
+}
+function visBadge(){
+ if(REAL||!VIS.total||VIS.total.error)return '';const n=VIS.total.personas||0;if(!DEMO_ADMIN&&n<VIS_MIN)return '';
+ return `<div class="vis-badge">${ic('users',15)} <b class="num">${n.toLocaleString('es-CO')}</b> ${n===1?'persona ha':'personas han'} probado Natara</div>`}
+function visCard(){
+ if(!VIS.loaded||Date.now()-VIS.loaded>60000)setTimeout(()=>visLoad(true),0);
+ const T=VIS.total;
+ if(!T)return `<div class="card"><h2>Visitas a la demo</h2><p class="muted small">Cargando…</p></div>`;
+ if(T.error)return `<div class="card"><h2>Visitas a la demo</h2><p class="muted small">No se pudieron leer las visitas. Revisa que pegaste las reglas nuevas de Firestore (colección <b>demovisits</b>).</p></div>`;
+ const today=VIS.days.find(d=>d.k===visDay())||{personas:0,visitas:0};
+ const wk=VIS.days.slice(-7);const p7=wk.reduce((a,d)=>a+(d.personas||0),0);
+ const nf=v=>Number(v||0).toLocaleString('es-CO');
+ const chart=VIS.days.length?barChart(VIS.days.map(d=>({l:d.k.slice(8)+'/'+d.k.slice(5,7),v:d.personas||0})),{h:160,fmt:v=>nf(v)+' personas',axis:nf}):'';
+ return `<div class="card"><h2>Visitas a la demo <span class="sub">personas nuevas · últimos 14 días</span></h2>
+  <div class="grid g4" style="margin-bottom:12px">
+   <div class="kpi"><span class="lbl">Personas en total</span><span class="val">${nf(T.personas)}</span><span class="foot">navegadores distintos</span></div>
+   <div class="kpi"><span class="lbl">Visitas en total</span><span class="val">${nf(T.visitas)}</span><span class="foot">veces que abrieron la demo</span></div>
+   <div class="kpi"><span class="lbl">Hoy</span><span class="val">${nf(today.personas)}</span><span class="foot">${nf(today.visitas)} visitas</span></div>
+   <div class="kpi"><span class="lbl">Últimos 7 días</span><span class="val">${nf(p7)}</span><span class="foot">personas nuevas</span></div>
+  </div>${chart}
+  <p class="muted small" style="margin-top:8px">${T.ultima?'Última visita: '+new Date(T.ultima).toLocaleString('es-CO',{dateStyle:'medium',timeStyle:'short'})+' · ':''}En la demo se muestra a los clientes desde ${VIS_MIN} personas. Tus visitas desde la consola no cuentan.</p></div>`}
 function loginBrand(){return `<section class="login-brand">
    <div class="logo">${mark(44)}<b>natara</b></div>
    <h1>Tu caja, tu inventario y tus cuentas, <em>en balance.</em></h1>
    <div class="feat">${['Inventario siempre al día','Caja rápida y sencilla','Efectivo, transferencias y datáfono','Apertura y cierre de caja','Ingresos y egresos','Estadísticas de ventas','Fiados y abonos','Empleados con permisos','Mesas y meseros para restaurantes','Puntos y fidelización'].map(f=>`<div>${ic('check',16)} ${f}</div>`).join('')}</div>
+   ${visBadge()}
    <span class="by">Un producto de Samanat · <a href="${waLink('Hola, quiero saber más de Natara')}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">WhatsApp ${WA_TXT}</a></span>
   </section>`}
 function viewLogin(){
@@ -2286,10 +2342,10 @@ function viewFinanzas(){
    ESTADÍSTICAS
    ========================================================= */
 let st={days:14};
-function barChart(data,{h=220,fmt=money,alt=false}={}){
+function barChart(data,{h=220,fmt=money,alt=false,axis=shortMoney}={}){
  const W=720,H=h,pl=58,pr=8,pt=12,pb=28;const max=Math.max(1,...data.map(d=>d.v));
  const step=niceStep(max/4);const top=Math.ceil(max/step)*step;const iw=W-pl-pr,ih=H-pt-pb;const bw=iw/data.length;
- let g='';for(let v=0;v<=top+1e-9;v+=step){const y=pt+ih-(v/top)*ih;g+=`<line class="grid-l" x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}"/><text class="axis" x="${pl-8}" y="${y+4}" text-anchor="end">${shortMoney(v)}</text>`}
+ let g='';for(let v=0;v<=top+1e-9;v+=step){const y=pt+ih-(v/top)*ih;g+=`<line class="grid-l" x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}"/><text class="axis" x="${pl-8}" y="${y+4}" text-anchor="end">${axis(v)}</text>`}
  const every=Math.ceil(data.length/10);
  const bars=data.map((d,i)=>{const bh=(d.v/top)*ih;const x=pl+i*bw+bw*.18;return`<rect class="bar ${alt?'alt':''}" x="${x}" y="${pt+ih-bh}" width="${bw*.64}" height="${Math.max(0,bh)}" rx="3"><title>${esc(d.l)}: ${fmt(d.v)}</title></rect>${i%every===0?`<text class="axis" x="${x+bw*.32}" y="${H-8}" text-anchor="middle">${esc(d.l)}</text>`:''}`}).join('');
  return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img">${g}${bars}</svg></div>`;
@@ -2490,6 +2546,7 @@ function aResumen(){
    <div class="card kpi"><span class="lbl">Por vencer (7 días)</span><span class="val" style="color:var(${soon.length?'--warn':'--good'})">${soon.length}</span><span class="foot">${money(sum(soon,fee))} por cobrar</span></div>
    <div class="card kpi"><span class="lbl">Suspendidos</span><span class="val" style="color:var(${susp.length?'--bad':'--good'})">${susp.length}</span><span class="foot">${money(sum(susp,fee))} detenidos</span></div>
   </div>
+  ${visCard()}
   <div class="grid g-main">
    <div class="card"><h2>Pagos recibidos <span class="sub">últimos 6 meses</span></h2>${barChart(months,{h:200})}</div>
    <div class="card"><h2>Atención hoy</h2><div class="stack">${[...soon,...susp].map(t=>`<div class="spread"><div style="min-width:0"><b class="small">${esc(t.name)}</b><div class="muted small">${money(fee(t))} · vence ${fshort(t.due)}</div></div><div class="row" style="gap:6px">${pillDue(t)}<button class="btn sm" data-a="tenant" data-id="${t.id}">Gestionar</button></div></div>`).join('')||'<p class="muted small">Todo al día.</p>'}</div></div>
@@ -3181,6 +3238,7 @@ function rLive(u,type,text,v,amount){
 }
 function rBeat(u,force){if(!RB.profileReady)return;if(!force&&Date.now()-RB.lastBeat<150000)return;RB.lastBeat=Date.now();FB.setDoc(FB.doc(FB.db,'presence',u.id),{tid:u.tid,at:Date.now()}).catch(e=>console.warn('presence',e.code))}
 if(REAL){const go=()=>fbBoot();if(window.FB)go();else window.addEventListener('fb-ready',go,{once:true})}
+else{const go=()=>visCount().then(()=>{if(DEMO_ADMIN)visLoad(true)});if(window.FB)go();else window.addEventListener('fb-ready',go,{once:true})}
 
 setInterval(()=>{const u=me();if(u&&u.tid&&isLocked()&&!document.querySelector('.lock-card'))render()},60000);
 render();
@@ -3188,9 +3246,10 @@ render();
 
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {getFirestore,doc,getDoc,setDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {getFirestore,doc,getDoc,setDoc,increment} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 const app=initializeApp({apiKey:"AIzaSyDKv_qgOpQXSRElNl41tbGctHzf1_Qq9Hk",authDomain:"natara-96555.firebaseapp.com",projectId:"natara-96555",storageBucket:"natara-96555.firebasestorage.app",messagingSenderId:"673119474930",appId:"1:673119474930:web:22a50b2948b06f5c8b6c6b"});
-window.FB={app,db:getFirestore(app),doc,getDoc,setDoc};
+window.FB={app,db:getFirestore(app),doc,getDoc,setDoc,increment};
+window.dispatchEvent(new Event('fb-ready'));
 </script>
 
 </body>

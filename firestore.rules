@@ -180,5 +180,21 @@ service cloud.firestore {
       allow read, delete: if isAdmin();
       allow write: if inTenant(tid);
     }
+    // Visitas a la demo: cualquiera lee; cada visita solo suma 1 (y máximo 1 persona nueva)
+    function visitOk(d) {
+      return d.keys().hasOnly(['visitas','personas','ultima'])
+        && d.ultima is int && d.ultima <= request.time.toMillis() + 600000;
+    }
+    match /demovisits/{id} {
+      allow read: if true;
+      allow create: if (id == 'total' || id.matches('d_[0-9]{4}-[0-9]{2}-[0-9]{2}'))
+        && visitOk(request.resource.data)
+        && request.resource.data.visitas == 1
+        && request.resource.data.personas in [0, 1];
+      allow update: if visitOk(request.resource.data)
+        && request.resource.data.visitas == resource.data.visitas + 1
+        && request.resource.data.personas in [resource.data.personas, resource.data.personas + 1];
+      allow delete: if isAdmin();
+    }
   }
 }

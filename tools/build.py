@@ -28,9 +28,10 @@ mod_start = real_fb.index('<script type="module">') if '<script type="module">' 
 head = real_fb[real_fb.index('</script>')+len('</script>\n'):]
 head = head[:head.index('import ')]
 demo_fb = (head + 'import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";\n'
-           'import {getFirestore,doc,getDoc,setDoc} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";\n'
+           'import {getFirestore,doc,getDoc,setDoc,increment} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";\n'
            'const app=initializeApp(' + cfg + ');\n'
-           'window.FB={app,db:getFirestore(app),doc,getDoc,setDoc};\n')
+           'window.FB={app,db:getFirestore(app),doc,getDoc,setDoc,increment};\n'
+           'window.dispatchEvent(new Event(\'fb-ready\'));\n')
 
 def demo_common(s, title, extra_meta=''):
     s = must(s, DESC_R, DESC_D + extra_meta)
