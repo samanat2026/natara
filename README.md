@@ -46,7 +46,7 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 | camila@elfogon.co | Mesera · El Fogón | Solo ve las mesas: abre, agrega productos y pide la cuenta. No cobra |
 | sebastian@elfogon.co | Mesero · El Fogón | Igual que Camila, pero con el permiso *Cobrar las mesas* |
 
-## Planes (COP, IVA no incluido)
+## Planes (COP, precio final: Samanat no cobra IVA)
 
 | Plan | Mensual | Anual (12 meses por 10) | Módulos |
 |---|---|---|---|
