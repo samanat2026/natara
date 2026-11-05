@@ -11,6 +11,12 @@ Software de gestión para pequeños negocios (panaderías, farmacias, minimercad
 
 Los datos de la demo se guardan en el navegador (`localStorage`). La app real usa **Firebase** (proyecto `natara-96555`): Authentication con correo y contraseña, y Firestore en `southamerica-east1`. Las reglas de seguridad están en [`firestore.rules`](firestore.rules) y se pegan en Firebase → Firestore → Reglas.
 
+### Consumo de Firestore (plan gratis)
+
+Para no gastar la cuota diaria, la app real solo escucha en vivo lo de hoy: ventas, gastos, compras, cajas y puntos del día, más mesas abiertas, productos, clientes y fiados. Lo anterior se pide una sola vez al abrir la pantalla que lo usa (Ventas, Estadísticas, Ingresos y egresos, Cierre, Proveedores, Puntos). El kardex ya no se escucha: se consultan los últimos 30 movimientos al abrir *Ajustar stock*. Los meseros sin permiso de cobro solo escuchan mesas, productos y ventas del día. La presencia se actualiza cada 10 minutos.
+
+El kardex necesita un índice compuesto, definido en [`firestore.indexes.json`](firestore.indexes.json): Firebase → Firestore → Índices → Compuesto → Crear índice, colección `kardex`, campos `pid` Ascendente y `at` Descendente, ámbito Colección. Mientras no exista, la app trae los movimientos de los últimos 60 días y los filtra.
+
 ### Cuentas de ejemplo
 
 Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadmin) no existe en la demo; solo en la app real.

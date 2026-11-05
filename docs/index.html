@@ -895,7 +895,7 @@ function autoCode(used,pre='P'){const P=T('products');let n=P.length+1,c;do{c=pr
 const balanceOf=cid=>sum(S.ledger.filter(l=>l.cid===cid),l=>l.type==='cargo'?l.amount:-l.amount);
 
 /* ---------- actividad en vivo (clave aparte para no re-renderizar a los negocios) ---------- */
-const LIVE=MODE==='real'?'natara-live-prod':'natara-live';const ONLINE_MS=MODE==='real'?360000:45000;let L0;
+const LIVE=MODE==='real'?'natara-live-prod':'natara-live';const ONLINE_MS=MODE==='real'?720000:45000;let L0;
 function seedLive(){
  if(MODE==='real')return {presence:{},views:{},feed:[]};
  const r=mulberry32(77),ri=(a,b)=>a+Math.floor(r()*(b-a+1));const today=sod(Date.now()),now=Date.now();
@@ -1367,6 +1367,7 @@ function viewLock(){
    INICIO (negocio)
    ========================================================= */
 function viewInicio(){
+ need(2,['sales']);
  const t=tenant(),u=me(),today=sod(Date.now());
  const allV=canDo('ver_todas');const sales=okSales().filter(s=>allV||s.seller===u.id);const tdy=sales.filter(s=>s.at>=today);const yst=sales.filter(s=>s.at>=today-DAY&&s.at<today);
  const tot=sum(tdy,s=>s.total),ytot=sum(yst,s=>s.total);
@@ -1726,7 +1727,7 @@ function checkout(){
  if(!openSession()){toast('Abre la caja antes de cobrar','bad');return}
  if(pos.method==='efectivo'&&pos.received!==''&&parseMoney(pos.received)<total){toast('El dinero recibido no alcanza para el total','bad');return}
  if(pos.method==='fiado'&&!pos.customer){toast('Selecciona el cliente que se lleva fiado','bad');return}
- const t=tenant();const last=Math.max(1000,...T('sales').map(s=>s.num));
+ const t=tenant();const last=Math.max(1000,RB.lastNum||0,...T('sales').map(s=>s.num||0));
  const sale={id:uid(),tid:t.id,at:Date.now(),items:cart.map(i=>({...i})),total,method:pos.method,bank:pos.method==='transferencia'?pos.bank:'',card:pos.method==='datafono'?pos.card:'',ref:pos.method==='transferencia'||pos.method==='datafono'?pos.ref:'',confirmed:pos.method!=='transferencia'||pos.verified,received:pos.method==='efectivo'?(parseMoney(pos.received)||total):0,seller:me().id,customer:pos.method==='fiado'?pos.customer:'',status:'ok',num:last+1};
  if(fm)Object.assign(sale,{mid:fm.id,sub,disc,ptsUsed:used});else if(pos.tab)sale.sub=sub;
  {const tk=taxKind(t.id);sale.tax=tk;if(tk)sale.items.forEach(i=>{i.tx=txOf(S.products.find(x=>x.id===i.pid),t.id)})}
@@ -1737,7 +1738,7 @@ function checkout(){
   sale.ptsEarned=earned;sale.ptsAfter=ptsOf(fm);fm.last=Date.now();
  }
  const tabPay=pos.tab?mzApplyPay(sale):null;
- S.sales.push(sale);liveEvent('venta',`Venta #${sale.num} por ${money(total)}`,null,total);
+ RB.lastNum=Math.max(RB.lastNum||0,sale.num);S.sales.push(sale);liveEvent('venta',`Venta #${sale.num} por ${money(total)}`,null,total);
  sale.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,-1,`Venta #${sale.num}`,sale.at,t.id)});
  if(sale.method==='fiado')S.ledger.push({id:uid(),tid:t.id,cid:sale.customer,type:'cargo',amount:total,at:sale.at,note:`Venta fiada #${sale.num}`,sid:sale.id});
  save();_sc=null;
@@ -1946,7 +1947,7 @@ function fidCfgModal(){
 }
 const PM_LBL={afiliacion:'Afiliación',acumula:'Ganó',redime:'Usó',anula:'Anulación',devuelve:'Devueltos',vence:'Vencieron'};
 function fidMemberModal(m){
- if(!m)return;const cfg=fidCfg();const p=ptsOf(m);
+ if(!m)return;need(120,['pmoves']).then(ok=>{if(ok&&$('#modal-root').innerHTML)fidMemberModal(m)});const cfg=fidCfg();const p=ptsOf(m);
  const L=S.pmoves.filter(x=>x.mid===m.id).sort((a,b)=>b.at-a.at).slice(0,60);
  openModal(m.name,`<div class="spread"><span class="muted">C.C. ${esc(m.doc)}${m.phone?' · '+esc(m.phone):''}</span><span class="pill good">${num(p)} pts · ${money(p*cfg.valorPunto)}</span></div>
   ${lotesVig(m).length?`<div class="small muted">Vencimientos: ${lotesVig(m).map(l=>`${num(l.p)} el ${fdate(l.v)}`).join(' · ')}</div>`:''}
@@ -1954,6 +1955,7 @@ function fidMemberModal(m){
   `<button class="btn primary" data-a="close-modal">Cerrar</button>`);
 }
 function viewPuntos(){
+ need(new Date().getDate(),['pmoves']);
  const cfg=fidCfg();const M=T('members').map(m=>({...m,p:ptsOf(m),soon:ptsSoon(m)})).sort((a,b)=>b.p-a.p);
  const tot=sum(M,m=>m.p);const mv=T('pmoves');const m0=new Date();m0.setDate(1);const from=sod(m0);
  const earn=sum(mv.filter(x=>x.type==='acumula'&&x.at>=from),x=>x.pts);const red=-sum(mv.filter(x=>x.type==='redime'&&x.at>=from),x=>x.pts);
@@ -1984,6 +1986,7 @@ function sessionTotals(s){
  return {count:sales.length,cash,tr,df,fi,inC:inC,outC,abonos,expected:s.base+cash+inC+abonos-outC};
 }
 function viewCierre(){
+ need(30,['sessions']);{const o=openSession();if(o)need((sod(Date.now())-sod(o.openedAt))/DAY+1,['sales','moves'])}
  const s=openSession();const hist=T('sessions').filter(x=>x.closedAt).sort((a,b)=>b.openedAt-a.openedAt).slice(0,8);
  let main;
  if(!s)main=`<div class="card" style="max-width:520px"><h2>Abrir caja</h2><form class="stack" data-f="open-cash">${field('Base en efectivo con la que inicias',minp('base',150000,'required'))}<p class="muted small">Es el dinero que dejas en el cajón para dar cambio.</p><button class="btn primary" type="submit">${ic('register')} Abrir caja</button></form></div>`;
@@ -2008,6 +2011,7 @@ function viewCierre(){
    ========================================================= */
 let vf={range:'7',method:'',seller:'',q:'',origin:''};
 function viewVentas(){
+ need(vf.range==='hoy'?1:Number(vf.range)||7,['sales']);
  const u=me();const emps=S.users.filter(x=>x.tid===u.tid);
  const from=vf.range==='hoy'?sod(Date.now()):sod(Date.now())-(Number(vf.range)-1)*DAY;
  const allV=canDo('ver_todas');let list=T('sales').filter(s=>s.at>=from&&(allV||s.seller===u.id));
@@ -2440,7 +2444,7 @@ function custModal(c){
 let fin={range:'mes',type:''};
 function finRange(){const now=Date.now();if(fin.range==='hoy')return sod(now);if(fin.range==='7')return sod(now)-6*DAY;const d=new Date(now);d.setDate(1);return sod(d)}
 function viewFinanzas(){
- const from=finRange();
+ const from=finRange();need(Math.round((sod(Date.now())-from)/DAY)+1,['sales','moves']);
  const sales=okSales().filter(s=>s.at>=from&&s.method!=='fiado');
  const mv=T('moves').filter(m=>m.at>=from);
  const abonos=T('ledger').filter(l=>l.type==='abono'&&l.at>=from);
@@ -2484,7 +2488,7 @@ function barChart(data,{h=220,fmt=money,alt=false,axis=shortMoney}={}){
 function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x||1)));const n=x/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p}
 function shortMoney(v){if(v>=1e6)return'$'+(v/1e6).toFixed(v%1e6?1:0).replace('.',',')+' M';if(v>=1e3)return'$'+Math.round(v/1e3)+' mil';return'$'+v}
 function viewStats(){
- const days=st.days,from=sod(Date.now())-(days-1)*DAY;
+ need(st.days*2,['sales']);const days=st.days,from=sod(Date.now())-(days-1)*DAY;
  const sales=okSales().filter(s=>s.at>=from);const tot=sum(sales,s=>s.total);
  const prevFrom=from-days*DAY;const prev=sum(okSales().filter(s=>s.at>=prevFrom&&s.at<from),s=>s.total);
  const daily=[];for(let i=0;i<days;i++){const d0=from+i*DAY;daily.push({l:fshort(d0),v:sum(sales.filter(s=>s.at>=d0&&s.at<d0+DAY),s=>s.total)})}
@@ -2517,6 +2521,7 @@ function viewStats(){
    PROVEEDORES
    ========================================================= */
 function viewProveedores(){
+ need(120,['purchases']);
  const Sp=T('suppliers');const Pu=T('purchases').slice().sort((a,b)=>b.at-a.at);
  const linked=id=>T('products').filter(p=>p.supplier===id).length;
  return `<div class="page-head"><div><h1>Proveedores</h1><p>${Sp.length} proveedores · lo que compras sube el inventario y queda como egreso</p></div><div class="actions"><button class="btn primary" data-a="sup-new">${ic('plus',16)} Nuevo proveedor</button></div></div>
@@ -2882,7 +2887,7 @@ document.addEventListener('click',e=>{
   'confirm-tr':()=>{const s=S.sales.find(x=>x.id===id);s.confirmed=true;save();closeModal();render();toast('Transferencia confirmada')},
   'void-ask':()=>{const s=S.sales.find(x=>x.id===id);openModal(`Anular venta #${s.num}`,`<p>El stock de los productos vuelve al inventario y la venta deja de contar en los reportes.</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="void-do" data-id="${id}">Anular venta</button>`)},
   'void-do':()=>{const s=S.sales.find(x=>x.id===id);s.status='anulada';s.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,1,`Anulación venta #${s.num}`,Date.now(),s.tid)});S.ledger=S.ledger.filter(l=>l.sid!==s.id);fidVoid(s);mzVoid(s);save();_sc=null;closeModal();render();toast('Venta anulada')},
-  'export-sales':()=>saveFile(`ventas-${dkey(Date.now())}.xlsx`,T('sales').map(s=>({Numero:s.num,Fecha:new Date(s.at).toLocaleString('es-CO'),Productos:itemsTxt(s,'x '),Vendedor:userName(s.seller),Pago:({efectivo:'Efectivo',transferencia:'Transferencia',datafono:'Datáfono',fiado:'Fiado'})[s.method]||s.method,Banco:s.bank,Tarjeta:s.card||'',Referencia:s.ref,Confirmada:s.confirmed?'Sí':'No',Estado:s.status,Mesa:s.mesa||'',Total:s.total})),'Ventas'),
+  'export-sales':()=>need(120,['sales']).then(()=>saveFile(`ventas-${dkey(Date.now())}.xlsx`,T('sales').map(s=>({Numero:s.num,Fecha:new Date(s.at).toLocaleString('es-CO'),Productos:itemsTxt(s,'x '),Vendedor:userName(s.seller),Pago:({efectivo:'Efectivo',transferencia:'Transferencia',datafono:'Datáfono',fiado:'Fiado'})[s.method]||s.method,Banco:s.bank,Tarjeta:s.card||'',Referencia:s.ref,Confirmada:s.confirmed?'Sí':'No',Estado:s.status,Mesa:s.mesa||'',Total:s.total})),'Ventas')),
   // inventario
   'rc-new':()=>recipeModal(null),
   'rc-edit':()=>recipeModal(S.products.find(x=>x.id===id)),
@@ -2898,7 +2903,7 @@ document.addEventListener('click',e=>{
   'prod-new':()=>openModal(inv.kind==='insumo'?'Nuevo insumo':'Nuevo producto',productForm(null,inv.kind),`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="prod-form">Guardar producto</button>`),
   'prod-edit':()=>{const p=S.products.find(x=>x.id===id);if(recipeOf(p))return recipeModal(p);openModal('Editar producto',productForm(p),`<button class="btn danger" data-a="prod-del" data-id="${id}">Eliminar</button><button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="prod-form">Guardar</button>`)},
   'prod-del':()=>{S.products=S.products.filter(p=>p.id!==id);save();closeModal();render();toast('Producto eliminado')},
-  'stock-adj':()=>{const p=S.products.find(x=>x.id===id);const K=S.kardex.filter(k=>k.pid===id).sort((a,b)=>b.at-a.at).slice(0,6);const ins=p.kind==='insumo';const OPTS=ins?[['salida','Consumo en producción'],['entrada','Entrada'],['ajuste','Conteo físico (dejar en)']]:[['entrada','Entrada (llegó mercancía)'],['salida','Salida (daño, vencido, consumo)'],['ajuste','Conteo físico (dejar en)']];openModal(`${ins?'Registrar consumo':'Ajustar stock'} · ${p.name}`,`<p>Hay: <b>${num(p.stock)} ${esc(p.unit||'und')}</b></p><form class="stack" data-f="stock-adj" id="adj-form"><input type="hidden" name="id" value="${id}"><div class="form-grid">${field('Movimiento',sel('type',OPTS,OPTS[0][0]))}${field(`Cantidad (${esc(p.unit||'und')})`,inp('qty','','number','min="0" step="any" required'))}${field('Nota',inp('note','','text',`placeholder="${ins?'Ej: producción de la mañana':'Ej: se vencieron 3'}"`),'full')}</div></form>${K.length?`<div><b class="small">Últimos movimientos (kardex)</b><div class="tbl-wrap"><table><tbody>${K.map(k=>`<tr><td class="small">${fdt(k.at)}</td><td class="small">${esc(k.note)}</td><td class="r num">${k.type==='salida'?'−':k.type==='ajuste'?'=':'+'}${num(k.qty)}</td></tr>`).join('')}</tbody></table></div></div>`:''}`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="adj-form">Guardar ajuste</button>`)},
+  'stock-adj':()=>{loadKdx(id).then(ok=>{if(ok&&$('#adj-form'))H['stock-adj']()});const p=S.products.find(x=>x.id===id);const K=S.kardex.filter(k=>k.pid===id).sort((a,b)=>b.at-a.at).slice(0,6);const ins=p.kind==='insumo';const OPTS=ins?[['salida','Consumo en producción'],['entrada','Entrada'],['ajuste','Conteo físico (dejar en)']]:[['entrada','Entrada (llegó mercancía)'],['salida','Salida (daño, vencido, consumo)'],['ajuste','Conteo físico (dejar en)']];openModal(`${ins?'Registrar consumo':'Ajustar stock'} · ${p.name}`,`<p>Hay: <b>${num(p.stock)} ${esc(p.unit||'und')}</b></p><form class="stack" data-f="stock-adj" id="adj-form"><input type="hidden" name="id" value="${id}"><div class="form-grid">${field('Movimiento',sel('type',OPTS,OPTS[0][0]))}${field(`Cantidad (${esc(p.unit||'und')})`,inp('qty','','number','min="0" step="any" required'))}${field('Nota',inp('note','','text',`placeholder="${ins?'Ej: producción de la mañana':'Ej: se vencieron 3'}"`),'full')}</div></form>${K.length?`<div><b class="small">Últimos movimientos (kardex)</b><div class="tbl-wrap"><table><tbody>${K.map(k=>`<tr><td class="small">${fdt(k.at)}</td><td class="small">${esc(k.note)}</td><td class="r num">${k.type==='salida'?'−':k.type==='ajuste'?'=':'+'}${num(k.qty)}</td></tr>`).join('')}</tbody></table></div></div>`:''}`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="adj-form">Guardar ajuste</button>`)},
   import:importModal,
   'import-go':doImport,
   template:()=>saveFile('plantilla-inventario-natara.xlsx',[{codigo:'7701234567890',nombre:'Leche entera 1 L',categoria:'Lácteos',costo:3300,precio:4600,stock:24,minimo:10},{codigo:'PAN01',nombre:'Pan francés',categoria:'Panes',costo:350,precio:700,stock:100,minimo:30},{codigo:'',nombre:'Harina de trigo',categoria:'Harinas',costo:3200,precio:'',stock:50,minimo:20,tipo:'insumo',unidad:'kg'}],'Inventario'),
@@ -3213,7 +3218,33 @@ ${REAL_URL}`)},
    ========================================================= */
 const TCOLLS=['products','sales','moves','customers','ledger','suppliers','sessions','kardex','purchases','members','pmoves','settings','cats','tables','tabs','tablines'];
 const SYNC_COLLS=[...TCOLLS,'tenants','users','payments','requests','messages','orders'];
-const RB={authReady:false,profileReady:false,user:null,unsubs:[],synced:{},needVerify:false,noProfile:false,pendingRender:false,lastBeat:0,renderT:null};
+const RB={authReady:false,profileReady:false,user:null,unsubs:[],synced:{},needVerify:false,noProfile:false,pendingRender:false,lastBeat:0,renderT:null,tid:null,colls:new Set(),histFrom:{},histP:{},lastNum:0,kdx:new Set()};
+// Historial bajo demanda: en vivo solo se escucha lo de hoy; lo anterior se pide al abrir la pantalla que lo usa
+const HIST={sales:'at',moves:'at',purchases:'at',sessions:'openedAt',pmoves:'at'};
+function need(days,cols){
+ if(!REAL||!RB.profileReady||!RB.tid||!window.FB)return Promise.resolve(false);
+ const from=sod(Date.now())-(Math.max(1,Math.ceil(days))-1)*DAY,tid=RB.tid;const {db,collection,query,where,getDocs}=FB;
+ const todo=(cols||Object.keys(HIST)).filter(c=>HIST[c]&&RB.colls.has(c)&&from<(RB.histFrom[c]||0));
+ if(!todo.length)return Promise.resolve(false);
+ return Promise.all(todo.map(c=>{
+  if(RB.histP[c])return RB.histP[c].then(()=>need(days,[c]));
+  const to=RB.histFrom[c];
+  return RB.histP[c]=getDocs(query(collection(db,'tenants',tid,c),where(HIST[c],'>=',from),where(HIST[c],'<',to)))
+   .then(sn=>{RB.histP[c]=null;if(RB.tid!==tid)return false;sn.forEach(d=>upsert(c,d.id,d.data(),d.ref.path));RB.histFrom[c]=from;return true})
+   .catch(e=>{RB.histP[c]=null;console.warn('historial',c,e.code);return false});
+ })).then(r=>{const ok=r.some(Boolean);if(ok)scheduleRender();return ok});
+}
+// Kardex de un producto: se consulta al abrirlo (ya no se escucha en vivo)
+function loadKdx(pid){
+ if(!REAL||!RB.tid||RB.kdx.has(pid))return Promise.resolve(false);RB.kdx.add(pid);
+ const {db,collection,query,where,orderBy,limit,getDocs}=FB;
+ const col=collection(db,'tenants',RB.tid,'kardex');const put=sn=>{sn.forEach(d=>upsert('kardex',d.id,d.data(),d.ref.path));return true};
+ // Solo los últimos 30 movimientos. Usa el índice compuesto kardex (pid ↑, at ↓); si todavía no existe, trae los del producto en los últimos 60 días
+ return getDocs(query(col,where('pid','==',pid),orderBy('at','desc'),limit(30))).then(put)
+  .catch(e=>{if(e.code!=='failed-precondition')throw e;console.warn('Falta el índice de kardex (pid, at). Créalo con el enlace de este error:',e.message);
+   return getDocs(query(col,where('at','>=',Date.now()-60*DAY))).then(sn=>put({forEach:f=>sn.docs.filter(d=>d.data().pid===pid).forEach(f)}))})
+  .catch(e=>{RB.kdx.delete(pid);console.warn('kardex',e.code);return false});
+}
 function emptyState(){return {v:1,config:{contact:'WhatsApp 314 661 9135 · samanat2026@gmail.com',brand:'Samanat',priceChanges:[]},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[],members:[],pmoves:[],settings:[],cats:[],tables:[],tabs:[],tablines:[]}}
 const stable=o=>JSON.stringify(o,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((a,x)=>(a[x]=v[x],a),{}):v);
 const pathOf=(c,r)=>TCOLLS.includes(c)?`tenants/${r.tid}/${c}/${r.id}`:c==='tenants'?`tenants/${r.id}`:`${c}/${r.id}`;
@@ -3224,7 +3255,7 @@ function syncDiff(){
   if(TCOLLS.includes(c)&&!r.tid)continue;const k=pathOf(c,r);seen.add(k);
   const rec=JSON.parse(JSON.stringify(r));delete rec.pass;const j=stable(rec);if(RB.synced[k]===j)continue;
   const prev=RB.synced[k]?JSON.parse(RB.synced[k]):null;
-  if(c==='products'&&prev&&prev.stock!==rec.stock){const delta=Math.round((rec.stock-prev.stock)*100)/100;const rest={...rec};delete rest.stock;ops.push(b=>{b.set(doc(db,k),rest,{merge:true});b.update(doc(db,k),{stock:increment(delta)})})}
+  if(c==='products'&&prev&&prev.stock!==rec.stock){const delta=Math.round((rec.stock-prev.stock)*1000)/1000;const upd={stock:increment(delta)};for(const f of Object.keys(rec))if(f!=='stock'&&stable(rec[f])!==stable(prev[f]))upd[f]=rec[f];ops.push(b=>b.update(doc(db,k),upd))}
   else ops.push(b=>b.set(doc(db,k),rec));
   RB.synced[k]=j;
  }
@@ -3239,6 +3270,7 @@ function scheduleRender(adminOnly){
 document.addEventListener('focusout',()=>{if(RB.pendingRender){RB.pendingRender=false;setTimeout(()=>scheduleRender(),150)}});
 function upsert(coll,id,data,k){const rec={...data,id};if(coll==='tenants')normTenant(rec);const j=stable(rec);const arr=S[coll];const i=arr.findIndex(x=>x.id===id);if(RB.synced[k]===j&&i>=0)return false;RB.synced[k]=j;if(i>=0)arr[i]=rec;else arr.push(rec);return true}
 function applySnap(coll,snap){let ch=false;snap.docChanges().forEach(c=>{const k=c.doc.ref.path;if(c.type==='removed'){const arr=S[coll];const i=arr.findIndex(x=>x.id===c.doc.id);if(i>=0){arr.splice(i,1);ch=true}delete RB.synced[k];return}if(upsert(coll,c.doc.id,c.doc.data(),k))ch=true});if(ch)scheduleRender()}
+function applyKeep(coll,snap){let ch=false;snap.docChanges().forEach(c=>{const k=c.doc.ref.path;if(c.type==='removed'){FB.getDoc(c.doc.ref).then(d=>applyDoc(coll,d)).catch(()=>{});return}if(upsert(coll,c.doc.id,c.doc.data(),k))ch=true});if(ch)scheduleRender()}
 function applyDoc(coll,d){const k=d.ref.path;if(!d.exists()){const arr=S[coll];const i=arr.findIndex(x=>x.id===d.id);if(i>=0){arr.splice(i,1);delete RB.synced[k];scheduleRender()}return}if(upsert(coll,d.id,d.data(),k))scheduleRender()}
 function subscribe(p){
  const {db,collection,doc,query,where,orderBy,limit,onSnapshot}=FB;const warn=c=>e=>console.warn('listener',c,e.code);
@@ -3251,10 +3283,20 @@ function subscribe(p){
   RB.unsubs.push(onSnapshot(query(collection(db,'activity'),orderBy('at','desc'),limit(120)),s=>{L0.feed=s.docs.map(d=>d.data()).reverse();scheduleRender(true)},warn('activity')));
   return;
  }
- const tid=p.tid;
+ const tid=p.tid;const today=sod(Date.now());RB.tid=tid;RB.histFrom=Object.fromEntries(Object.keys(HIST).map(c=>[c,today]));RB.histP={};RB.colls=new Set();
+ const keep=(q,c)=>RB.unsubs.push(onSnapshot(q,s=>applyKeep(c,s),warn(c)));
  RB.unsubs.push(onSnapshot(doc(db,'tenants',tid),d=>{const was=isLocked();applyDoc('tenants',d);if(!RB.tenantReady){RB.tenantReady=true;scheduleRender()}if(!was&&isLocked())toast('Samanat suspendió el acceso de este negocio','bad')},warn('tenant')));
  on(query(collection(db,'users'),where('tid','==',tid)),'users');
- TCOLLS.forEach(c=>{const col=collection(db,'tenants',tid,c);on(c==='sales'?query(col,where('at','>=',Date.now()-120*DAY)):c==='tabs'||c==='tablines'?query(col,where('open','==',true)):c==='kardex'?query(col,where('at','>=',Date.now()-60*DAY)):col,c)});
+ // El mesero que no cobra solo usa las mesas: no escucha caja, gastos, fiados ni proveedores
+ const soloMesas=p.role==='cajero'&&p.puesto==='mesero'&&!(p.perms||[]).includes('mesa_cobrar');
+ const MESERO=['products','cats','settings','tables','tabs','tablines','sales'];
+ TCOLLS.filter(c=>c!=='kardex'&&(!soloMesas||MESERO.includes(c))).forEach(c=>{RB.colls.add(c);const col=collection(db,'tenants',tid,c);
+  on(HIST[c]?query(col,where(HIST[c],'>=',today)):c==='tabs'||c==='tablines'?query(col,where('open','==',true)):col,c)});
+ // Lo que sigue pendiente aunque sea de días anteriores
+ if(RB.colls.has('sessions'))keep(query(collection(db,'tenants',tid,'sessions'),where('closedAt','==',null)),'sessions');
+ if(RB.colls.has('sales')&&!soloMesas)keep(query(collection(db,'tenants',tid,'sales'),where('confirmed','==',false)),'sales');
+ // Número de la última venta, para que la numeración siga aunque no se carguen ventas viejas
+ if(RB.colls.has('sales'))FB.getDocs(query(collection(db,'tenants',tid,'sales'),orderBy('num','desc'),limit(1))).then(sn=>sn.forEach(d=>{RB.lastNum=Math.max(RB.lastNum,d.data().num||0)})).catch(e=>console.warn('num',e.code));
  on(query(collection(db,'orders'),where('tid','==',tid)),'orders');on(query(collection(db,'messages'),where('to','==',tid)),'messages');on(query(collection(db,'messages'),where('to','==','all')),'messages');
  if(p.role==='dueno'){on(query(collection(db,'payments'),where('tid','==',tid)),'payments');on(query(collection(db,'requests'),where('tid','==',tid)),'requests')}
 }
@@ -3277,7 +3319,7 @@ async function fbAfterAuth(u){
 function fbBoot(){
  FB.onAuthStateChanged(FB.auth,u=>{
   RB.unsubs.forEach(f=>{try{f()}catch(_){}});RB.unsubs=[];RB.synced={};S=emptyState();L0={presence:{},views:{},feed:[]};
-  RB.user=u;RB.profileReady=false;RB.tenantReady=false;RB.noProfile=false;RB.needVerify=false;
+  RB.user=u;RB.profileReady=false;RB.tenantReady=false;RB.tid=null;RB.colls=new Set();RB.histFrom={};RB.histP={};RB.lastNum=0;RB.kdx=new Set();RB.noProfile=false;RB.needVerify=false;
   if(!u){sess={uid:null,view:null};saveSess();RB.authReady=true;cart=[];render();return}
   RB.authReady=false;render();fbAfterAuth(u);
  });
@@ -3372,9 +3414,9 @@ function rLive(u,type,text,v,amount){
  const {db,doc,setDoc,addDoc,collection,increment}=FB;if(!RB.profileReady)return;
  if(type!=='view')addDoc(collection(db,'activity'),{tid:u.tid,uid:u.id,type,text:text||'',amount:amount||0,at:Date.now()}).catch(e=>console.warn('activity',e.code));
  if(v)setDoc(doc(db,'stats',u.tid),{views:{[v]:increment(1)}},{merge:true}).catch(e=>console.warn('stats',e.code));
- rBeat(u,true);
+ rBeat(u);
 }
-function rBeat(u,force){if(!RB.profileReady)return;if(!force&&Date.now()-RB.lastBeat<150000)return;RB.lastBeat=Date.now();FB.setDoc(FB.doc(FB.db,'presence',u.id),{tid:u.tid,at:Date.now()}).catch(e=>console.warn('presence',e.code))}
+function rBeat(u,force){if(!RB.profileReady)return;if(!force&&Date.now()-RB.lastBeat<600000)return;RB.lastBeat=Date.now();FB.setDoc(FB.doc(FB.db,'presence',u.id),{tid:u.tid,at:Date.now()}).catch(e=>console.warn('presence',e.code))}
 if(REAL){const go=()=>fbBoot();if(window.FB)go();else window.addEventListener('fb-ready',go,{once:true})}
 else{const go=()=>visCount().then(()=>{if(DEMO_ADMIN)visLoad(true)});if(window.FB)go();else window.addEventListener('fb-ready',go,{once:true})}
 
