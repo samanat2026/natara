@@ -89,6 +89,9 @@ def main():
     if simular:
         i = sys.argv.index('--simular')
         usado = dict(zip(LIMITES, (int(x) for x in sys.argv[i + 1:i + 4])))
+    elif not os.environ.get('GCP_SA_KEY') or not os.environ.get('CALLMEBOT_APIKEY'):
+        print('Faltan los secretos GCP_SA_KEY o CALLMEBOT_APIKEY en GitHub: todavía no se revisa nada.')
+        return
     else:
         usado = medir(os.environ.get('GCP_PROJECT', 'natara-96555'), os.environ['GCP_SA_KEY'])
     dia = inicio_del_dia().date().isoformat()
