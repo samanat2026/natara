@@ -2628,7 +2628,7 @@ function viewNegocio(){
       ${field('Ciudad',`<input class="input" name="city" value="${v('city',t.city)}" maxlength="60">`)}
       ${field('Teléfono',`<input class="input" name="tel" value="${v('tel',t.phone)}" inputmode="tel" maxlength="30">`)}
       ${field('Correo (opcional)',`<input class="input" name="email" type="email" value="${v('email')}" maxlength="120">`)}
-      ${field('Régimen',sel('regimen',[['','Sin especificar'],['No responsable de IVA','No responsable de IVA'],['Responsable de IVA','Responsable de IVA'],[INC_REG,'Responsable de impuesto al consumo (restaurantes, bares)']],b.regimen||''))}
+      ${field('Régimen',sel('regimen',[['','Sin especificar'],['No responsable de IVA','No responsable de IVA'],['Responsable de IVA','Responsable de IVA'],[INC_REG,'Responsable de impuesto al consumo (restaurantes, bares)']],b.regimen||'')+`<p class="muted small" style="margin:2px 0 0">${ic('info',13)} Si no sabes, déjalo en <b>No responsable de IVA</b> o pregúntale a tu contador. La mayoría de tiendas pequeñas de una sola sede no son responsables.</p>`)}
       ${field('Mensaje al pie del recibo (opcional)',`<input class="input" name="pie" value="${v('pie')}" placeholder="Síguenos en Instagram @tunegocio" maxlength="120">`,'full')}
      </div>
      <div id="biz-err"></div>
