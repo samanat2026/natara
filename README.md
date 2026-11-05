@@ -17,6 +17,17 @@ Para no gastar la cuota diaria, la app real solo escucha en vivo lo de hoy: vent
 
 El kardex necesita un índice compuesto, definido en [`firestore.indexes.json`](firestore.indexes.json): Firebase → Firestore → Índices → Compuesto → Crear índice, colección `kardex`, campos `pid` Ascendente y `at` Descendente, ámbito Colección. Mientras no exista, la app trae los movimientos de los últimos 60 días y los filtra.
 
+### Reglas: qué puede hacer cada quien (actualizado el 5 de noviembre de 2026)
+
+**Hay que volver a pegar [`firestore.rules`](firestore.rules) en Firebase → Firestore → Reglas → Publicar.**
+
+- **Ventas, cajas y kardex:** cualquier usuario del negocio los crea, pero solo el dueño los cambia o los borra. Un empleado solo puede confirmar una transferencia, anular una venta si tiene el permiso *Anular ventas* (queda guardado quién, cuándo y por qué) y cerrar una caja abierta.
+- **Pago reportado ("Ya pagué"):** la fecha del reporte tiene que ser la de ese momento, y la cuenta sigue activa como máximo 10 días después del vencimiento (3 de gracia + 7 de revisión), aunque el dueño reporte varias veces.
+
+### Revisión automática
+
+`python3 tools/check.py` revisa que el JavaScript de las páginas no tenga errores de sintaxis y que `demo/`, `consola-demo/` y `docs/` estén generados desde `index.html`. GitHub lo corre solo en cada push (`.github/workflows/revisar.yml`).
+
 ### Cuentas de ejemplo
 
 Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadmin) no existe en la demo; solo en la app real.

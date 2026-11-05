@@ -25,11 +25,15 @@ service cloud.firestore {
       let t = get(/databases/$(database)/documents/tenants/$(tid)).data;
       return t.status == 'activo' && (t.due + 259200000 > request.time.toMillis() || payReported(tid));
     }
-    // Si el dueño reportó un pago, la cuenta sigue activa 7 días (604800000 ms) mientras Samanat lo revisa
+    // Si el dueño reportó un pago, la cuenta sigue activa 7 días (604800000 ms) mientras Samanat lo revisa,
+    // pero nunca más de 10 días después del vencimiento (3 de gracia + 7 de revisión = 864000000 ms),
+    // así reportar el pago varias veces no alarga el acceso.
     function payReported(tid) {
       let path = /databases/$(database)/documents/orders/$('pend_' + tid);
+      let t = get(/databases/$(database)/documents/tenants/$(tid)).data;
       return exists(path) && get(path).data.status == 'pendiente'
-        && get(path).data.at + 604800000 > request.time.toMillis();
+        && get(path).data.at + 604800000 > request.time.toMillis()
+        && t.due + 864000000 > request.time.toMillis();
     }
     function hasPerm(p) { return p in profile().get('perms', []); }
     // Recetas y combos: un cajero con el permiso 'recetas' solo toca productos que tienen receta
@@ -44,9 +48,23 @@ service cloud.firestore {
         || t.get('plan', '') == 'restaurante'
         || (t.get('plan', '') == 'total' && m != 'mesas');
     }
+    // Ventas, cajas y kardex: cualquier usuario del negocio los CREA, pero solo el dueño los cambia o borra.
+    // Los empleados solo pueden: confirmar una transferencia, anular una venta (con el permiso 'anular')
+    // y cerrar una caja que sigue abierta.
+    function canCreateLog(coll) { return coll in ['sales', 'sessions', 'kardex']; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function empUpdateLog(coll) {
+      return (coll == 'sales' && changed().hasOnly(['confirmed']) && request.resource.data.confirmed == true)
+        || (coll == 'sales' && hasPerm('anular') && resource.data.status == 'ok'
+            && request.resource.data.status == 'anulada'
+            && changed().hasOnly(['status', 'voidBy', 'voidAt', 'voidWhy'])
+            && request.resource.data.voidBy == request.auth.uid)
+        || (coll == 'sessions' && resource.data.closedAt == null
+            && changed().hasOnly(['closedAt', 'closedBy', 'counted', 'expected', 'diff'])
+            && request.resource.data.closedBy == request.auth.uid);
+    }
     function canWrite(tid, coll) {
       return isOwnerOf(tid)
-        || coll in ['sales', 'sessions', 'kardex']
         || (coll in ['members', 'pmoves'] && hasMod(tid, 'fidelizacion'))
         // Mesas y meseros: cualquier usuario del negocio abre mesas, agrega productos y cobra lo pendiente
         // (las mesas en sí, colección 'tables', solo las crea y renombra el dueño)
@@ -90,7 +108,7 @@ service cloud.firestore {
         allow read: if isAdmin() || inTenant(tid);
         allow create: if isAdmin()
           || (inTenant(tid) && tenantActive(tid) && request.resource.data.tid == tid
-              && (canWrite(tid, coll) || isRecipe(coll, request.resource.data))
+              && (canWrite(tid, coll) || canCreateLog(coll) || isRecipe(coll, request.resource.data))
               // una venta siempre queda a nombre de quien la registra
               && (coll != 'sales' || request.resource.data.seller == request.auth.uid));
         allow update: if isAdmin()
@@ -98,6 +116,7 @@ service cloud.firestore {
               // nadie puede cambiar quién hizo una venta
               && (coll != 'sales' || request.resource.data.seller == resource.data.seller)
               && (canWrite(tid, coll)
+                  || (canCreateLog(coll) && empUpdateLog(coll))
                   || (isRecipe(coll, request.resource.data) && isRecipe(coll, resource.data))
                   || (coll == 'products' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']))));
         allow delete: if isAdmin() || (inTenant(tid) && tenantActive(tid) && (canWrite(tid, coll) || isRecipe(coll, resource.data)));
@@ -118,7 +137,9 @@ service cloud.firestore {
 
     // Pago reportado por el dueño: cuota (pend_<negocio>) o módulo (mod_<negocio>_<módulo>)
     function ownOrder(id, d) {
+      // La fecha del reporte es la de ahora (máximo 5 minutos de diferencia con el reloj del servidor)
       return isOwnerOf(d.tid) && d.status == 'pendiente'
+        && d.at is int && d.at > request.time.toMillis() - 300000 && d.at < request.time.toMillis() + 300000
         && ((d.type == 'renovacion' && id == 'pend_' + d.tid)
             || (d.type == 'modulo' && id == 'mod_' + d.tid + '_' + d.mod
                 && d.mod in ['inventario','caja','finanzas','estadisticas','empleados','fiados','proveedores','mesas','recetas','lector','fidelizacion','implementacion']));

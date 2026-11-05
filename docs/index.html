@@ -156,6 +156,7 @@ h1,h2,h3{margin:0;text-wrap:balance}
 
 /* tables */
 .tbl-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
+@media (max-width:600px){.hs{display:none}}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
 td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
@@ -201,6 +202,8 @@ tbody tr.click:hover{background:var(--surface-2)}
 /* ---------- login ---------- */
 .login{min-height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr)}
 .login-brand{background:var(--side);color:var(--side-ink)}
+.lb-try{display:none;align-self:flex-start;margin:4px 0 18px}
+@media (max-width:880px){.lb-try{display:inline-flex}}
 .lb-in{position:sticky;top:0;min-height:100vh;min-height:100dvh;box-sizing:border-box;padding:48px max(40px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:26px;justify-content:center}
 .login-brand .logo{display:flex;align-items:center;gap:12px;color:#fff}
 .login-brand .logo b{font-family:var(--f-display);font-size:34px;letter-spacing:-.03em}
@@ -376,6 +379,7 @@ details.guide[open] summary{margin-bottom:10px}
 .mzp-sum .left{color:var(--ink-2)}
 .mzp-chips{display:flex;flex-wrap:wrap;gap:6px}.mzp-chips .pill{background:var(--surface);color:var(--ink)}
 .mzp-bar{display:none}
+.mzp-bar[hidden]{display:none!important}
 @media (max-width:1000px){.mzp-bar{display:flex;align-items:center;gap:10px;position:sticky;bottom:12px;z-index:5;width:100%;margin-top:4px;padding:14px 16px;border:0;border-radius:12px;background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}.mzp-bar b{margin-left:auto;font-size:17px}.mzp-bar:disabled{background:var(--ink-3);opacity:.85;cursor:default}}
 .tile.added{animation:mz-flash .5s ease}
 @keyframes mz-flash{0%{border-color:var(--accent);background:var(--accent-soft);transform:scale(.97)}100%{transform:none}}
@@ -623,7 +627,7 @@ const PLANS=[
  {id:'basico',name:'Básico',price:59900,mods:['inventario','caja'],pitch:'Para empezar a controlar el inventario y la caja.'},
  {id:'pro',name:'Pro',price:109900,mods:['inventario','caja','finanzas','estadisticas','empleados'],pitch:'Para el negocio con empleados que quiere ver sus números.'},
  // Premium (id 'total' por compatibilidad): todo para tiendas, sin mesas. Incluye también los módulos que se agreguen después, salvo los de restaurante.
- {id:'total',name:'Premium',price:159900,mods:MODS.filter(m=>!m.food).map(m=>m.id),pitch:'Todo para tu tienda: fiados, proveedores, recetas y combos, puntos y fidelización y lector de código de barras.'},
+ {id:'total',name:'Premium',price:159900,mods:MODS.filter(m=>!m.food).map(m=>m.id),pitch:'Todo para tu tienda: fiados, proveedores, recetas y combos, y puntos y fidelización.'},
  // Restaurante: todo lo de Premium más mesas y meseros
  {id:'restaurante',name:'Restaurante',price:179900,food:true,mods:MODS.map(m=>m.id),pitch:'Todo lo de Premium más mesas y meseros: cada mesero toma el pedido desde su celular y en la caja cada persona paga lo suyo.'},
 ];
@@ -642,6 +646,8 @@ const itemName=(kind,id)=>kind==='plan'?'plan '+planById(id).name:kind==='mod'?'
 function affected(kind,id){if(kind==='plan')return S.tenants.filter(t=>t.plan===id);if(kind==='mod')return S.tenants.filter(t=>t.mods.includes(id)&&!planById(t.plan).mods.includes(id));return []}
 function fee(t){const p=planById(t.plan);const extra=t.mods.filter(m=>!p.mods.includes(m));return p.price+sum(extra,m=>modById(m)?.price||0)}
 const SETUP_FEE=180000;const SETUP={id:'implementacion',name:'Implementación asistida',price:SETUP_FEE,once:true,desc:'Cargamos tu inventario desde tu lista, cuaderno o fotos, configuramos tus empleados y te damos 1 hora de capacitación.'};
+// El lector de código de barras no se promociona: no aparece en las listas de planes que ven los clientes
+const promoMod=m=>m!=='lector';
 const reqItem=id=>id==='implementacion'?SETUP:modById(id);
 const ANNUAL_MONTHS=10; // pago anual: 12 meses por el precio de 10
 const BANKS=['Nequi','Daviplata','Bancolombia','Bre-B','Otro banco'];
@@ -809,7 +815,8 @@ const me=()=>S.users.find(u=>u.id===sess.uid)||null;
 const tenant=()=>{const u=me();return u&&u.tid?S.tenants.find(t=>t.id===u.tid):null};
 const GRACE_DAYS=3; // días de gracia después del vencimiento antes del bloqueo automático
 const lockDate=t=>t.due+GRACE_DAYS*DAY;
-const pendingPay=t=>(S.orders||[]).find(o=>o.id==='pend_'+t.id&&o.status==='pendiente'&&Date.now()<o.at+7*DAY);
+// El pago reportado da 7 días mientras Samanat lo revisa, pero nunca más de 10 días después del vencimiento (igual que las reglas)
+const pendingPay=t=>(S.orders||[]).find(o=>o.id==='pend_'+t.id&&o.status==='pendiente'&&Date.now()<o.at+7*DAY&&Date.now()<t.due+(GRACE_DAYS+7)*DAY);
 const overdueLocked=t=>!!t&&t.status==='activo'&&Date.now()>lockDate(t)&&!pendingPay(t);
 const tenantLocked=t=>!!t&&(t.status!=='activo'||overdueLocked(t));
 const isLocked=()=>tenantLocked(tenant());
@@ -887,6 +894,10 @@ const fmtPhone=v=>{const d=phoneDigits(v);return d.length===10?(d[0]==='3'?`${d.
 const passErrors=p=>PASS_RULES.filter(([,f])=>!f(p||'')).map(([l])=>l);
 const T=k=>S[k].filter(x=>x.tid===tenant()?.id);
 const userName=id=>S.users.find(u=>u.id===id)?.name||'—';
+// Marca corta de este equipo (se guarda en el navegador). Si dos cajas sacan el mismo número de venta al mismo tiempo,
+// en pantalla se distinguen así: #1380·K7
+const DEV=(()=>{try{let d=localStorage.getItem('natara_dev');if(!d){d=Math.random().toString(36).slice(2,4).toUpperCase();localStorage.setItem('natara_dev',d)}return d}catch(e){return ''}})();
+const saleNo=s=>s?(s.dev&&(S.sales||[]).some(x=>x!==s&&x.tid===s.tid&&x.num===s.num)?`${s.num}·${s.dev}`:String(s.num)):'';
 const okSales=()=>T('sales').filter(s=>s.status!=='anulada');
 const openSession=()=>T('sessions').find(s=>!s.closedAt);
 const inboxFor=tid=>S.messages.filter(m=>m.to==='all'||m.to===tid).sort((a,b)=>b.at-a.at);
@@ -902,7 +913,7 @@ function seedLive(){
  const L={presence:{},views:{t1:{caja:420,inventario:96,ventas:80,estadisticas:35,finanzas:28,fiados:22,proveedores:14,cierre:30},t2:{caja:260,inventario:70,ventas:45,estadisticas:10,cierre:24},t3:{caja:60,inventario:12},t4:{caja:24,inventario:9,ventas:4},t5:{mesas:380,caja:90,ventas:60,inventario:40,estadisticas:25,cierre:20}},feed:[]};
  const plan={t1:['u1','u2','u3'],t2:['u4','u5'],t3:['u6'],t4:['u7'],t5:['u9','u10','u11','u12']};const stop={t4:5};
  for(const tid in plan)for(let d=13;d>=0;d--){if(stop[tid]&&d<stop[tid])continue;plan[tid].forEach(u=>{if(r()<.15)return;const at=today-d*DAY+ri(6,9)*3600e3+ri(0,59)*6e4;if(at<now)L.feed.push({tid,uid:u,type:'login',text:'Inició sesión',at})})}
- S.sales.filter(s=>s.at>=today&&s.status!=='anulada').forEach(s=>L.feed.push({tid:s.tid,uid:s.seller,type:'venta',text:`Venta #${s.num} por ${money(s.total)}`,amount:s.total,at:s.at}));
+ S.sales.filter(s=>s.at>=today&&s.status!=='anulada').forEach(s=>L.feed.push({tid:s.tid,uid:s.seller,type:'venta',text:`Venta #${saleNo(s)} por ${money(s.total)}`,amount:s.total,at:s.at}));
  S.purchases.filter(x=>x.at>now-3*DAY).forEach(x=>L.feed.push({tid:x.tid,uid:'u1',type:'compra',text:`Compra a ${S.suppliers.find(s=>s.id===x.sid)?.name} por ${money(x.total)}`,at:x.at}));
  L.feed.sort((a,b)=>a.at-b.at);return L;
 }
@@ -1143,7 +1154,9 @@ const NAV=[
  {v:'guia',label:'Guía de uso',icon:'info',mod:null,roles:['dueno','cajero'],sec:'Ayuda'},
 ];
 function tenantNav(){
- const u=me(),t=tenant();let out='',sec='',printed='';
+ // Los módulos que el negocio no tiene no llenan el menú: se agrupan en "Más módulos", que lleva a Mi plan
+ const u=me(),t=tenant();let out='',sec='',printed='',nLocked=0,moreDone=false;
+ const more=()=>{moreDone=true;return nLocked?`<button class="nav-btn ${sess.view==='plan-more'?'on':''}" data-a="go" data-v="plan">${ic('plus')} Más módulos<span class="count">${nLocked}</span></button>`:''};
  for(const n of NAV){
   if(n.sec)sec=n.sec;
   if(!navAllowed(n,u))continue;
@@ -1151,9 +1164,12 @@ function tenantNav(){
   if(locked&&u.role!=='dueno')continue;
   if(n.v==='mesas'&&locked&&!foodType(t))continue;
   if(n.v==='puntos'&&!locked&&!fidOn())continue;
+  if(locked&&sess.view!==n.v){nLocked++;continue}
+  if(sec==='Cuenta'&&!moreDone)out+=more();
   if(sec!==printed){out+=`<div class="nav-label">${sec}</div>`;printed=sec}
   out+=navBtn(n.v,n.label,n.icon,{locked,count:n.v==='mensajes'?unreadFor(t.id):0});
  }
+ if(!moreDone)out+=more();
  return out;
 }
 function tenantView(){
@@ -1231,6 +1247,7 @@ function visCard(){
 function loginBrand(){return `<section class="login-brand"><div class="lb-in">
    <div class="logo">${mark(44)}<b>natara</b></div>
    <h1>Tu caja, tu inventario y tus cuentas, <em>en balance.</em></h1>
+   ${MODE==='real'?'':`<button class="btn primary lb-try" data-a="lg-try">${ic('arrow',16)} Probar la demo ahora</button>`}
    <div class="feat">${['Inventario siempre al día','Caja rápida y sencilla','Efectivo, transferencias y datáfono','Apertura y cierre de caja','Ingresos y egresos','Estadísticas de ventas','Fiados y abonos','Empleados con permisos','Mesas y meseros para restaurantes','Puntos y fidelización'].map(f=>`<div>${ic('check',16)} ${f}</div>`).join('')}</div>
    ${visBadge()}
    <span class="by">Un producto de Samanat · <a href="${waLink('Hola, quiero saber más de Natara')}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">WhatsApp ${WA_TXT}</a></span>
@@ -1239,11 +1256,11 @@ function viewLogin(){
  if(MODE==='real'||lg.mode!=='pick')return viewLoginReal();
  const acc=u=>{const t=S.tenants.find(x=>x.id===u.tid);return`<button class="acc" data-a="login" data-id="${u.id}"><div class="avatar">${initials(u.name)}</div><div class="who"><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin · Samanat':u.role==='dueno'?'Dueño(a) · ve todo el negocio':isMesero(u)?(meseroCobra(u)?'Mesero(a) · atiende mesas y también cobra':'Mesero(a) · atiende mesas, no cobra'):(()=>{const ps=(u.perms||[]).map(id=>PERMS.find(p=>p.id===id)).filter(p=>p&&t&&t.mods.includes(p.mod));return ps.length?'Cajero(a) · vende y además puede: '+ps.map(p=>p.short).join(', '):'Cajero(a) sin permisos extra · solo vende y ve sus ventas'})()}</span></div>${t?pillDue(t):`<span class="pill ac">Admin</span>`}</button>`};
  const rank={basico:0,pro:1,total:2,restaurante:3};
- const ideal={basico:'Para empezar: controla tu inventario y tu caja.',pro:'Para el negocio con empleados que quiere ver sus números.',total:'Todo para tu tienda: fiados, proveedores, recetas, puntos y lector de código.',restaurante:'Para restaurantes: todo lo de Premium más mesas, meseros y cuentas divididas.'};
+ const ideal={basico:'Para empezar: controla tu inventario y tu caja.',pro:'Para el negocio con empleados que quiere ver sus números.',total:'Todo para tu tienda: fiados, proveedores, recetas y puntos.',restaurante:'Para restaurantes: todo lo de Premium más mesas, meseros y cuentas divididas.'};
  // La cuenta suspendida solo se muestra en la consola de demo de Samanat, no a los clientes
  const byT=S.tenants.filter(t=>DEMO_ADMIN||t.status==='activo').sort((a,b)=>(a.status!=='activo')-(b.status!=='activo')||rank[a.plan]-rank[b.plan]).map(t=>{const p=planById(t.plan);const extras=t.mods.filter(m=>!p.mods.includes(m));const susp=t.status!=='activo';
   return `<div class="plan-demo ${susp?'susp':''}"><div class="pd-head">${susp?`<div><span class="pd-kicker">Así se ve una cuenta suspendida</span><strong>${esc(t.name)}</strong><span class="muted small">${esc(t.type)} · plan ${p.name} sin pagar</span></div><span class="pill bad">${ic('lock',12)} Suspendida</span>`:`<div><span class="pd-kicker">Ejemplo: ${esc(t.name)} · ${esc(t.type)}</span><strong>Plan ${p.name}</strong><span class="muted small">${ideal[t.plan]}</span></div><div class="pd-price"><b>${money(fee(t))}</b><span class="muted small">al mes${extras.length?` · plan ${money(p.price)} + ${extras.map(m=>modById(m).name.toLowerCase()).join(', ')}`:''}</span></div>`}</div>
-  ${susp?'':`<div class="chips">${t.mods.map(m=>`<span class="pill ${p.mods.includes(m)?'':'ac'}">${modById(m).name}</span>`).join('')}</div>`}
+  ${susp?'':`<div class="chips">${t.mods.filter(promoMod).map(m=>`<span class="pill ${p.mods.includes(m)?'':'ac'}">${modById(m).name}</span>`).join('')}</div>`}
   <div class="acc-group">${S.users.filter(u=>u.tid===t.id&&u.active).map(acc).join('')}</div>${susp?'':`<button class="btn primary" data-a="co-open" data-v="${t.plan}" style="align-self:flex-start">${ic('cart',16)} Contratar el plan ${p.name}</button>`}</div>`}).join('');
  return `<div class="login">${loginBrand()}
   <section class="login-pick">
@@ -1369,7 +1386,7 @@ function viewLock(){
 function viewInicio(){
  need(2,['sales']);
  const t=tenant(),u=me(),today=sod(Date.now());
- const allV=canDo('ver_todas');const sales=okSales().filter(s=>allV||s.seller===u.id);const tdy=sales.filter(s=>s.at>=today);const yst=sales.filter(s=>s.at>=today-DAY&&s.at<today);
+ const allV=canDo('ver_todas');const sales=okSales().filter(s=>allV||s.seller===u.id);const tdy=sales.filter(s=>s.at>=today);const yst=sales.filter(s=>s.at>=today-DAY&&s.at<Date.now()-DAY);
  const tot=sum(tdy,s=>s.total),ytot=sum(yst,s=>s.total);
  const cash=sum(tdy.filter(s=>s.method==='efectivo'),s=>s.total),tr=sum(tdy.filter(s=>s.method==='transferencia'),s=>s.total),df=sum(tdy.filter(s=>s.method==='datafono'),s=>s.total);
  const low=has('inventario')&&(canDo('ver_inventario')||canDo('inv_edit'))?T('products').filter(p=>p.min>0&&p.stock<=p.min):[];
@@ -1388,13 +1405,13 @@ function viewInicio(){
   <div class="actions"><button class="btn" data-a="go" data-v="guia">${ic('info',16)} ¿Cómo se usa?</button>${has('caja')?`<button class="btn primary" data-a="go" data-v="caja">${ic('cart')} Nueva venta</button>`:''}</div></div>
   ${banners.join('')}
   <div class="grid g4">
-   <div class="card kpi"><span class="lbl">${allV?'Ventas de hoy':'Mis ventas de hoy'}</span><span class="val">${money(tot)}</span><span class="foot">${tdy.length} ventas ${ytot?`· <span style="color:var(${delta>=0?'--good':'--bad'})">${delta>=0?'+':''}${delta}% vs ayer</span>`:''}</span></div>
+   <div class="card kpi"><span class="lbl">${allV?'Ventas de hoy':'Mis ventas de hoy'}</span><span class="val">${money(tot)}</span><span class="foot">${tdy.length} ventas ${ytot&&tdy.length?`· <span style="color:var(${delta>=0?'--good':'--bad'})">${delta>=0?'+':''}${delta}% vs ayer a esta hora</span>`:''}</span></div>
    <div class="card kpi"><span class="lbl">Efectivo</span><span class="val">${money(cash)}</span><span class="foot">${tot?Math.round(cash/tot*100):0}% del día</span></div>
    <div class="card kpi"><span class="lbl">${df?'Transferencias y datáfono':'Transferencias'}</span><span class="val">${money(tr+df)}</span><span class="foot">${df?`Datáfono ${money(df)} · `:''}${pend.length?`<span style="color:var(--warn)">${pend.length} por confirmar</span>`:'Todas confirmadas'}</span></div>
    ${u.role==='cajero'&&allV?`<div class="card kpi"><span class="lbl">Mis ventas hoy</span><span class="val">${money(sum(myToday,s=>s.total))}</span><span class="foot">${myToday.length} ventas</span></div>`:`<div class="card kpi"><span class="lbl">Ticket promedio</span><span class="val">${money(tdy.length?tot/tdy.length:0)}</span><span class="foot">por venta hoy</span></div>`}
   </div>
   <div class="grid g-main">
-   <div class="card"><h2>Últimas ventas <span class="sub">hoy</span></h2>${recent.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Hora</th><th>Vendedor</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${recent.map(s=>`<tr class="click" data-a="sale" data-id="${s.id}"><td class="mono">${s.num}</td><td>${ftime(s.at)}</td><td>${esc(userName(s.seller))}</td><td>${payPill(s)}</td><td class="r num"><b>${money(s.total)}</b></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">${ic('receipt',26)}Aún no hay ventas hoy.</div>`}</div>
+   <div class="card"><h2>Últimas ventas <span class="sub">hoy</span></h2>${recent.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Hora</th><th class="hs">Vendedor</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${recent.map(s=>`<tr class="click" data-a="sale" data-id="${s.id}"><td class="mono">${saleNo(s)}</td><td>${ftime(s.at)}</td><td class="hs">${esc(userName(s.seller))}</td><td>${payPill(s)}</td><td class="r num"><b>${money(s.total)}</b></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">${ic('receipt',26)}Aún no hay ventas hoy.</div>`}</div>
    <div class="card"><h2>Stock bajo <span class="sub">${low.length} productos</span></h2>${!has('inventario')?`<p class="muted small">Activa el módulo de inventario para ver alertas de stock.</p>`:!(canDo('ver_inventario')||canDo('inv_edit'))?`<p class="muted small">Tu usuario no tiene acceso al inventario. Si lo necesitas, pídeselo al dueño.</p>`:low.length?`<div class="stack">${low.slice(0,7).map(p=>`<div class="spread"><div style="min-width:0"><b class="small">${esc(p.name)}</b>${p.kind==='insumo'?' <span class="pill">Insumo</span>':''}<div class="muted small">Mínimo ${num(p.min)} ${esc(p.unit||'und')}</div></div><span class="pill ${p.stock<=0?'bad':'warn'}">${num(p.stock)} ${esc(p.unit||'und')}</span></div>`).join('')}</div>`:`<div class="empty">${ic('check',26)}Todo el inventario está sobre el mínimo.</div>`}</div>
   </div>`;
 }
@@ -1433,7 +1450,7 @@ function viewMesas(){
  if(!M.length)return head+(own?`<div class="card" style="max-width:560px"><form class="stack" data-f="mz-create" id="mz-create"><h2 style="margin:0">¿Cuántas mesas tiene tu negocio?</h2><p class="muted small" style="margin:0">Las creamos como Mesa 1, Mesa 2… Después les puedes cambiar el nombre (por ejemplo Terraza 1 o Barra) y agregar o quitar mesas cuando quieras.</p>${field('Número de mesas',inp('count','10','number','min="1" max="200" required inputmode="numeric"'))}<button class="btn primary" style="align-self:flex-start">${ic('plus',16)} Crear mesas</button></form></div>`:`<div class="card empty">${ic('table',28)}El dueño todavía no ha creado las mesas del negocio.</div>`);
  const card=m=>{const t=tabOf(m.id);const st=!t?'libre':t.bill?'cuenta':'ocupada';if(!t)return`<button class="mesa libre" data-a="mz-open" data-id="${m.id}"><span class="mesa-top"><b>${esc(m.name)}</b></span><span class="mesa-free">Libre</span></button>`;
   const L=linesOf(t.id);const n=sum(L,l=>l.qty);const pe=tabPend(t.id);const pa=tabPaid(t.id);
-  return`<button class="mesa ${st}" data-a="mz-open" data-id="${m.id}"><span class="mesa-top"><b>${esc(m.name)}</b><span class="mesa-time">${ic('clock',13)} ${mzLong(t.openedAt)}</span></span><span class="mesa-total num">${money(pe)}</span><span class="small muted">${n} producto${n===1?'':'s'}${t.guests?` · ${t.guests} persona${t.guests>1?'s':''}`:''}</span><span class="small muted">${esc(userName(t.openedBy).split(' ')[0])}</span>${t.bill?'<span class="pill warn">Pidió la cuenta</span>':pa?`<span class="pill ac">Pagado ${money(pa)}</span>`:''}</button>`};
+  return`<button class="mesa ${st}" data-a="mz-open" data-id="${m.id}"><span class="mesa-top"><b>${esc(m.name)}</b><span class="mesa-time">${ic('clock',13)} ${mzLong(t.openedAt)}</span></span><span class="small muted">${pa?'Falta':'Cuenta'}</span><span class="mesa-total num">${money(pe)}</span><span class="small muted">${n} producto${n===1?'':'s'}${t.guests?` · ${t.guests} persona${t.guests>1?'s':''}`:''}</span><span class="small muted">${esc(userName(t.openedBy).split(' ')[0])}</span>${t.bill?'<span class="pill warn">Pidió la cuenta</span>':''}${pa?`<span class="pill ac">Ya pagaron ${money(pa)}</span>`:''}</button>`};
  return head+`${canCobrar()&&!openSession()?`<div class="banner">${ic('register')}<div class="grow">La caja está cerrada. ${isMesero(me())?'Puedes atender las mesas. Para cobrar, pídele al cajero que abra la caja.':'Puedes atender las mesas, pero para cobrar primero abre la caja.'}</div>${isMesero(me())?'':`<button class="btn sm primary" data-a="go" data-v="cierre">Abrir caja</button>`}</div>`:''}
   ${bills.length?`<div class="banner info">${ic('bell')}<div class="grow"><b>${bills.map(m=>esc(M.find(x=>x.id===m.id)?.name||'')).join(', ')}</b> ${bills.length>1?'pidieron':'pidió'} la cuenta.</div></div>`:''}
   <div class="mz-legend"><span class="pill">${ic('table',12)} Libre</span><span class="pill ac">Ocupada</span><span class="pill warn">Pidió la cuenta</span></div>
@@ -1649,10 +1666,13 @@ function viewCaja(){
    <div class="stack">
     <div class="search pos-search ${scanBtn('pos')?'has-scan':''}">${ic('search',20)}<input class="input" id="pos-q" placeholder="${lectorOn()?'Escanea o escribe el nombre':'Escribe el nombre o la categoría del producto'}" autocomplete="off" value="${esc(pos.q)}" data-i="pos-q">${scanBtn('pos')}</div>
     <div id="pos-results">${posResults()}</div>
+    <button class="mzp-bar" id="pos-bar" data-a="mzp-go" ${cart.length?'':'hidden'}>${posBar()}</button>
    </div>
    <div class="card cart" id="cart-panel">${cartPanel()}</div>
   </div>`;
 }
+// En el celular la venta queda debajo de los productos: esta barra muestra el total y lleva a cobrar
+function posBar(){const n=sum(cart,i=>i.qty);return `${ic('cart',17)}<span>Ver venta · ${num(n)} producto${n===1?'':'s'}</span><b class="num">${money(cartTotal())}</b>`}
 function posMatches(){
  const q=norm(pos.q);const P=T('products').filter(p=>p.kind!=='insumo');
  if(!q){
@@ -1676,7 +1696,7 @@ function posResults(){
  const P=posMatches();
  if(!P.length)return bar+`<div class="card empty">${ic('search',26)}${pos.q?`No hay productos que coincidan con “${esc(pos.q)}”.`:'Aún no hay productos para vender.'}</div>`;
  const title=pos.q?`${P.length} resultado${P.length>1?'s':''}`:catMode()&&pos.cat?(pos.cat==='__none'?'Sin categoría':catsOf().find(c=>c.id===pos.cat)?.name||'')+` · ${P.length} producto${P.length>1?'s':''}`:'Más vendidos';
- return bar+`<div class="muted small" style="margin-bottom:8px">${esc(title)}</div><div class="tiles">${P.map(p=>`<button class="tile ${availOf(p)<=0?'out':''}" data-a="add" data-id="${p.id}"><strong>${esc(p.name)}</strong>${lectorOn()?`<span class="st mono">${esc(p.code)}</span>`:`<span class="st">${esc(p.cat)}</span>`}<span class="spread"><span class="price">${money(p.price)}</span><span class="st">${recipeOf(p)?`alcanza ${num(availOf(p))}`:`${num(p.stock)} disp.`}</span></span></button>`).join('')}</div>`;
+ return bar+`<div class="muted small" style="margin-bottom:8px">${esc(title)}</div><div class="tiles">${P.map(p=>`<button class="tile ${availOf(p)<=0?'out':''}" data-a="add" data-id="${p.id}"><strong>${esc(p.name)}</strong><span class="st">${esc(p.cat)}</span><span class="spread"><span class="price">${money(p.price)}</span><span class="st">${recipeOf(p)?`alcanza ${num(availOf(p))}`:`${num(p.stock)} disp.`}</span></span></button>`).join('')}</div>`;
 }
 function cartTotal(){return Math.round(sum(cart,i=>i.price*i.qty))}
 const payTotal=()=>{const s=cartTotal();return s-fidDisc(s)};
@@ -1711,7 +1731,7 @@ function cartPanel(){
    ${cart.length&&!pos.tab?`<button class="btn ghost sm" data-a="clear-cart" style="align-self:center">Vaciar venta</button>`:''}
   </div>`;
 }
-function refreshPOS(){const c=$('#cart-panel');if(c)c.innerHTML=cartPanel()}
+function refreshPOS(){const c=$('#cart-panel');if(c)c.innerHTML=cartPanel();const b=$('#pos-bar');if(b){b.hidden=!cart.length;b.innerHTML=posBar()}}
 function addToCart(p,qty=1){
  if(!p)return;
  const ex=cart.find(i=>i.pid===p.id);const want=(ex?ex.qty:0)+qty;
@@ -1727,20 +1747,21 @@ function checkout(){
  if(!openSession()){toast('Abre la caja antes de cobrar','bad');return}
  if(pos.method==='efectivo'&&pos.received!==''&&parseMoney(pos.received)<total){toast('El dinero recibido no alcanza para el total','bad');return}
  if(pos.method==='fiado'&&!pos.customer){toast('Selecciona el cliente que se lleva fiado','bad');return}
+ if(pos.method==='fiado'){const c=S.customers.find(x=>x.id===pos.customer);const debe=balanceOf(pos.customer);if(c&&c.limit>0&&debe+total>c.limit){toast(`${c.name} tiene un cupo de ${money(c.limit)} y ya debe ${money(debe)}. Solo se le puede fiar ${money(Math.max(0,c.limit-debe))} más.`,'bad');return}}
  const t=tenant();const last=Math.max(1000,RB.lastNum||0,...T('sales').map(s=>s.num||0));
- const sale={id:uid(),tid:t.id,at:Date.now(),items:cart.map(i=>({...i})),total,method:pos.method,bank:pos.method==='transferencia'?pos.bank:'',card:pos.method==='datafono'?pos.card:'',ref:pos.method==='transferencia'||pos.method==='datafono'?pos.ref:'',confirmed:pos.method!=='transferencia'||pos.verified,received:pos.method==='efectivo'?(parseMoney(pos.received)||total):0,seller:me().id,customer:pos.method==='fiado'?pos.customer:'',status:'ok',num:last+1};
+ const sale={id:uid(),tid:t.id,at:Date.now(),items:cart.map(i=>({...i})),total,method:pos.method,bank:pos.method==='transferencia'?pos.bank:'',card:pos.method==='datafono'?pos.card:'',ref:pos.method==='transferencia'||pos.method==='datafono'?pos.ref:'',confirmed:pos.method!=='transferencia'||pos.verified,received:pos.method==='efectivo'?(parseMoney(pos.received)||total):0,seller:me().id,customer:pos.method==='fiado'?pos.customer:'',status:'ok',num:last+1,dev:DEV};
  if(fm)Object.assign(sale,{mid:fm.id,sub,disc,ptsUsed:used});else if(pos.tab)sale.sub=sub;
  {const tk=taxKind(t.id);sale.tax=tk;if(tk)sale.items.forEach(i=>{i.tx=txOf(S.products.find(x=>x.id===i.pid),t.id)})}
  if(fm){
-  if(used){ptsConsume(fm,used);ptsMove(fm,'redime',-used,`Venta #${sale.num}`,sale.id)}
+  if(used){ptsConsume(fm,used);ptsMove(fm,'redime',-used,`Venta #${saleNo(sale)}`,sale.id)}
   const earned=sale.method==='fiado'?0:earnPts(total,cfg);
-  if(earned){fm.lotes=[...lotesVig(fm),{p:earned,v:addMonths(Date.now(),cfg.mesesVigencia),sid:sale.id}];ptsMove(fm,'acumula',earned,`Venta #${sale.num}`,sale.id)}
+  if(earned){fm.lotes=[...lotesVig(fm),{p:earned,v:addMonths(Date.now(),cfg.mesesVigencia),sid:sale.id}];ptsMove(fm,'acumula',earned,`Venta #${saleNo(sale)}`,sale.id)}
   sale.ptsEarned=earned;sale.ptsAfter=ptsOf(fm);fm.last=Date.now();
  }
  const tabPay=pos.tab?mzApplyPay(sale):null;
- RB.lastNum=Math.max(RB.lastNum||0,sale.num);S.sales.push(sale);liveEvent('venta',`Venta #${sale.num} por ${money(total)}`,null,total);
- sale.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,-1,`Venta #${sale.num}`,sale.at,t.id)});
- if(sale.method==='fiado')S.ledger.push({id:uid(),tid:t.id,cid:sale.customer,type:'cargo',amount:total,at:sale.at,note:`Venta fiada #${sale.num}`,sid:sale.id});
+ RB.lastNum=Math.max(RB.lastNum||0,sale.num);S.sales.push(sale);liveEvent('venta',`Venta #${saleNo(sale)} por ${money(total)}`,null,total);
+ sale.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,-1,`Venta #${saleNo(sale)}`,sale.at,t.id)});
+ if(sale.method==='fiado')S.ledger.push({id:uid(),tid:t.id,cid:sale.customer,type:'cargo',amount:total,at:sale.at,note:`Venta fiada #${saleNo(sale)}`,sid:sale.id});
  save();_sc=null;
  cart=[];pos={...pos,tab:null,q:'',received:'',ref:'',verified:false,customer:'',fdoc:'',mid:'',useP:false,fmiss:false};
  if(tabPay){cart=mz.bak||[];mz.bak=null;mz.pay=false;mz.sel={};if(tabPay.closed)mz.id=null;render();toast(tabPay.closed?`Ya pagaron todo: ${tabPay.name} quedó libre`:`Pago registrado. ${tabPay.name} sigue abierta con lo pendiente`)}
@@ -1751,13 +1772,13 @@ function checkout(){
 function receiptHTML(s){
  const t=S.tenants.find(x=>x.id===s.tid);
  return `<div class="receipt">${receiptHead(t)}<hr>
-  <div class="ln"><span>Venta #${s.num}</span><span>${fdt(s.at)}</span></div><div class="ln"><span>Atendió</span><span>${esc(userName(s.seller))}</span></div>${s.mesa?`<div class="ln"><span>Mesa</span><span>${esc(s.mesa)}</span></div>`:''}<hr>
+  <div class="ln"><span>Venta #${saleNo(s)}</span><span>${fdt(s.at)}</span></div><div class="ln"><span>Atendió</span><span>${esc(userName(s.seller))}</span></div>${s.mesa?`<div class="ln"><span>Mesa</span><span>${esc(s.mesa)}</span></div>`:''}<hr>
   ${s.split?`<div class="ln"><span>${splitTxt(s)} de la cuenta (partes iguales)</span><span>${money(s.sub||s.total)}</span></div>`:s.items.map(i=>`<div class="ln"><span>${num(i.qty)} × ${esc(i.name)}</span><span>${money(i.qty*i.price)}</span></div>`).join('')}<hr>
   ${s.disc?`<div class="ln"><span>Subtotal</span><span>${money(s.sub)}</span></div><div class="ln"><span>Descuento ${num(s.ptsUsed)} puntos</span><span>−${money(s.disc)}</span></div>`:''}
   ${taxLinesHTML(s)}<div class="ln"><b>TOTAL</b><b>${money(s.total)}</b></div><div class="ln"><span>Pago</span><span>${s.method==='efectivo'?'Efectivo':s.method==='datafono'?'Datáfono'+(s.card?' · '+esc(s.card):'')+(s.ref?' · aprob. '+esc(s.ref):''):s.method==='fiado'?'Fiado: '+esc(S.customers.find(c=>c.id===s.customer)?.name||''):esc(s.bank)+(s.ref?' · ref '+esc(s.ref):'')}</span></div>
   ${s.method==='efectivo'?`<div class="ln"><span>Recibido</span><span>${money(s.received)}</span></div><div class="ln"><span>Cambio</span><span>${money(Math.max(0,s.received-s.total))}</span></div>`:''}
   ${s.mid?`<hr><div class="ln"><span>Cliente</span><span>${esc(S.members.find(m=>m.id===s.mid)?.name||'')}</span></div><div class="ln"><span>Puntos ganados</span><span>${num(s.ptsEarned||0)}</span></div><div class="ln"><span>Saldo de puntos</span><span>${num(s.ptsAfter||0)}</span></div>`:''}
-  ${s.status==='anulada'?`<hr><div class="c"><b>VENTA ANULADA</b></div>`:''}
+  ${s.status==='anulada'?`<hr><div class="c"><b>VENTA ANULADA</b>${s.voidWhy?`<div class="small">${esc(s.voidWhy)}${s.voidBy?` · ${esc(userName(s.voidBy))}`:''}</div>`:''}</div>`:''}
   <hr>${receiptFoot(t)}</div>`;
 }
 // Solo para el cajero, no sale en el recibo: cómo quedó la mesa después de este pago
@@ -1766,7 +1787,7 @@ function mesaNote(s,fresh){
  const t=S.tabs.find(x=>x.id===s.tab);const open=t&&t.open;const rest=open?tabPend(t.id):0;
  const P=mesaPays(s).filter(x=>x.id!==s.id);
  const head=open?`<b>${esc(s.mesa)} sigue abierta</b> con ${money(rest)} por cobrar.`:`<b>${esc(s.mesa)} quedó libre:</b> ya pagaron todo.`;
- return `<div class="banner ${open?'':'info'}">${ic('table')}<div class="grow">${head}${!fresh&&P.length?`<div class="small" style="margin-top:6px">Otros pagos de esta mesa: ${P.map(x=>`#${x.num} (${money(x.total)})`).join(', ')}</div>`:''}</div></div>`;
+ return `<div class="banner ${open?'':'info'}">${ic('table')}<div class="grow">${head}${!fresh&&P.length?`<div class="small" style="margin-top:6px">Otros pagos de esta mesa: ${P.map(x=>`#${saleNo(x)} (${money(x.total)})`).join(', ')}</div>`:''}</div></div>`;
 }
 function showReceipt(s,fresh=false){
  const t=S.tenants.find(x=>x.id===s.tid);
@@ -1774,7 +1795,7 @@ function showReceipt(s,fresh=false){
 ${mesaNote(s,fresh)}${receiptHTML(s)}${printOn()?`<p class="small muted prn-under">${ic('printer',14)} ${esc(prnLabel())} · <button class="linkish" data-a="prn-setup">Configurar impresora</button></p>`:''}`;
  const can=canDo('anular')&&s.status!=='anulada';
  const foot=`${s.method==='transferencia'&&!s.confirmed&&s.status!=='anulada'?`<button class="btn" data-a="confirm-tr" data-id="${s.id}">${ic('check',16)} Confirmar transferencia</button>`:''}${can&&!fresh?`<button class="btn danger" data-a="void-ask" data-id="${s.id}">Anular venta</button>`:''}${printOn()?`<button class="btn" data-a="prn-sale" data-id="${s.id}">${ic('printer',16)} Imprimir</button>`:''}<button class="btn primary" data-a="close-modal">${fresh?(s.tab?'Listo':'Nueva venta'):'Cerrar'}</button>`;
- openModal(fresh?'Venta registrada':`Venta #${s.num}`,body,foot);
+ openModal(fresh?'Venta registrada':`Venta #${saleNo(s)}`,body,foot);
  if(fresh&&printOn()&&prnCfg().auto)printSale(s);
 }
 
@@ -1927,8 +1948,8 @@ function fidBox(total){
 }
 function fidVoid(s){
  if(!s.mid)return;const m=S.members.find(x=>x.id===s.mid);if(!m)return;const cfg=fidCfg();
- if(s.ptsEarned){let rest=s.ptsEarned;const l=(m.lotes||[]).find(x=>x.sid===s.id);if(l){const q=Math.min(l.p,rest);l.p-=q;rest-=q}m.lotes=lotesVig(m);if(rest>0)ptsConsume(m,Math.min(rest,ptsOf(m)));ptsMove(m,'anula',-s.ptsEarned,`Anulación venta #${s.num}`,s.id)}
- if(s.ptsUsed){m.lotes=[...lotesVig(m),{p:s.ptsUsed,v:addMonths(Date.now(),cfg.mesesVigencia)}];ptsMove(m,'devuelve',s.ptsUsed,`Anulación venta #${s.num}: puntos devueltos`,s.id)}
+ if(s.ptsEarned){let rest=s.ptsEarned;const l=(m.lotes||[]).find(x=>x.sid===s.id);if(l){const q=Math.min(l.p,rest);l.p-=q;rest-=q}m.lotes=lotesVig(m);if(rest>0)ptsConsume(m,Math.min(rest,ptsOf(m)));ptsMove(m,'anula',-s.ptsEarned,`Anulación venta #${saleNo(s)}`,s.id)}
+ if(s.ptsUsed){m.lotes=[...lotesVig(m),{p:s.ptsUsed,v:addMonths(Date.now(),cfg.mesesVigencia)}];ptsMove(m,'devuelve',s.ptsUsed,`Anulación venta #${saleNo(s)}: puntos devueltos`,s.id)}
 }
 function fidNewModal(dc=''){
  openModal('Afiliar cliente a puntos',`<form class="stack" data-f="fid-new" id="fn-form"><p class="muted small" style="margin:0">Afiliarse es <b>gratis</b> para el cliente. Desde hoy suma puntos con cada compra.</p><div class="form-grid">${field('Cédula',inp('doc',dc,'text','inputmode="numeric" required'))}${field('Celular (opcional)',inp('phone','','tel'))}${field('Nombre completo',inp('name','','text','required'),'full')}</div>
@@ -2018,7 +2039,7 @@ function viewVentas(){
  if(vf.method==='pendiente')list=list.filter(s=>s.method==='transferencia'&&!s.confirmed);else if(vf.method)list=list.filter(s=>s.method===vf.method);
  if(vf.seller&&allV)list=list.filter(s=>s.seller===vf.seller);
  if(vf.origin)list=list.filter(s=>vf.origin==='mesas'?!!s.mesa:!s.mesa);
- if(vf.q)list=list.filter(s=>String(s.num).includes(vf.q)||norm(s.mesa).includes(norm(vf.q))||s.items.some(i=>norm(i.name).includes(norm(vf.q))));
+ if(vf.q)list=list.filter(s=>saleNo(s).includes(vf.q)||norm(s.mesa).includes(norm(vf.q))||s.items.some(i=>norm(i.name).includes(norm(vf.q))));
  list=list.slice().sort((a,b)=>b.at-a.at);
  const ok=list.filter(s=>s.status!=='anulada');
  return `<div class="page-head"><div><h1>${allV?'Ventas':'Mis ventas'}</h1><p>${allV?'':'Solo ves las ventas que hiciste tú · '}${ok.length} ventas · ${money(sum(ok,s=>s.total))}</p></div>
@@ -2030,7 +2051,7 @@ function viewVentas(){
    ${sel('vf-method',[['','Todos los pagos'],['efectivo','Efectivo'],['transferencia','Transferencia'],['datafono','Datáfono'],['pendiente','Por confirmar'],['fiado','Fiado']],vf.method,'data-c="vf-method"')}
    ${allV?'':'<!--'}${sel('vf-seller',[['','Todos los vendedores'],...emps.map(e=>[e.id,e.name])],vf.seller,'data-c="vf-seller"')}${allV?'':'-->'}
   </div>
-  ${list.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Fecha</th><th>Productos</th><th>Vendedor</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${list.slice(0,150).map(s=>`<tr class="click" data-a="sale" data-id="${s.id}"><td class="mono">${s.num}</td><td style="white-space:nowrap">${fdt(s.at)}</td><td class="small">${esc(itemsTxt(s,'× '))}${mesaPill(s)}</td><td>${esc(userName(s.seller))}</td><td>${payPill(s)}</td><td class="r num"><b>${money(s.total)}</b></td></tr>`).join('')}</tbody></table></div>${list.length>150?`<p class="muted small">Mostrando 150 de ${list.length}. Exporta a Excel para ver todo.</p>`:''}`:`<div class="empty">${ic('receipt',26)}No hay ventas con estos filtros.</div>`}</div>`;
+  ${list.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Fecha</th><th>Productos</th><th class="hs">Vendedor</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${list.slice(0,150).map(s=>`<tr class="click" data-a="sale" data-id="${s.id}"><td class="mono">${saleNo(s)}</td><td style="white-space:nowrap">${fdt(s.at)}</td><td class="small">${esc(itemsTxt(s,'× '))}${mesaPill(s)}</td><td class="hs">${esc(userName(s.seller))}</td><td>${payPill(s)}</td><td class="r num"><b>${money(s.total)}</b></td></tr>`).join('')}</tbody></table></div>${list.length>150?`<p class="muted small">Mostrando 150 de ${list.length}. Exporta a Excel para ver todo.</p>`:''}`:`<div class="empty">${ic('receipt',26)}No hay ventas con estos filtros.</div>`}</div>`;
 }
 
 /* =========================================================
@@ -2184,6 +2205,12 @@ function payModal(){
 // ---- compra desde la demo
 let co=null;
 const coExtras=()=>MODS.filter(m=>m.id!=='lector'&&!planById(co.plan).mods.includes(m.id));
+// Lo que debería valer un pedido según los precios guardados: el valor del pedido lo escribe el navegador de quien compra
+function ordExpected(o){try{
+ if(o.type==='nuevo'){const p=planById(o.plan);if(!p)return null;return (p.price+sum(o.mods||[],m=>modById(m)?.price||0))*(o.months===12?ANNUAL_MONTHS:1)+(o.setup?SETUP.price:0)}
+ if(o.type==='renovacion'){const t=S.tenants.find(x=>x.id===o.tid);return t?fee(t)*(o.months===12?ANNUAL_MONTHS:1):null}
+ if(o.type==='modulo')return o.mod==='implementacion'?SETUP.price:(reqItem(o.mod)?.price??null);
+}catch(e){}return null}
 function coTotal(){const p=planById(co.plan);const monthly=p.price+sum(co.extra,m=>modById(m).price);return monthly*(co.months===12?ANNUAL_MONTHS:1)+(co.setup?SETUP.price:0)}
 function coCapture(){const f=$('#co-form');if(f)Object.assign(co.form,Object.fromEntries(new FormData(f).entries()))}
 function coOpen(plan){co={step:1,plan:plan||'basico',extra:[],months:1,setup:false,form:{},ref:genRef()};coRender();
@@ -2192,7 +2219,7 @@ function coRender(){
  const F=co.form;const v=k=>esc(F[k]||'');
  if(co.step===1){
   openModal('Contrata Natara',`<p class="muted small" style="margin:0">Elige tu plan, cuéntanos de tu negocio y paga con Bre-B. Cuando confirmemos el pago te llega un correo con tu usuario y contraseña.</p>
-  <div class="co-plans">${PLANS.map(p=>`<button type="button" class="co-plan ${co.plan===p.id?'on':''}" data-a="co-plan" data-v="${p.id}"><b>${p.name}</b><span class="co-price">${money(p.price)}<small>/mes</small></span><span class="small muted">${p.mods.map(m=>modById(m).name).join(' · ')}</span></button>`).join('')}</div>
+  <div class="co-plans">${PLANS.map(p=>`<button type="button" class="co-plan ${co.plan===p.id?'on':''}" data-a="co-plan" data-v="${p.id}"><b>${p.name}</b><span class="co-price">${money(p.price)}<small>/mes</small></span><span class="small muted">${p.mods.filter(promoMod).map(m=>modById(m).name).join(' · ')}</span></button>`).join('')}</div>
   ${coExtras().length?`<div class="stack" style="gap:6px"><b class="small">Agrega módulos a tu plan (opcional)</b><div class="co-extras">${coExtras().map(m=>`<label class="check"><input type="checkbox" data-c="co-extra" value="${m.id}" ${co.extra.includes(m.id)?'checked':''}><span>${m.name} <b class="num">+${money(m.price)}/mes</b><small>${m.desc}</small></span></label>`).join('')}</div></div>`:''}
   <div class="seg"><button type="button" class="${co.months===1?'on':''}" data-a="co-months" data-v="1">Pago mensual</button><button type="button" class="${co.months===12?'on':''}" data-a="co-months" data-v="12">Pago anual (2 meses gratis)</button></div>
   <label class="check"><input type="checkbox" data-c="co-setup" ${co.setup?'checked':''}><span>Implementación asistida (+${money(SETUP.price)}, una sola vez)<small>${SETUP.desc}</small></span></label>
@@ -2429,7 +2456,7 @@ function viewFiados(){
  const C=T('customers').map(c=>({...c,bal:balanceOf(c.id),last:Math.max(0,...S.ledger.filter(l=>l.cid===c.id).map(l=>l.at))})).sort((a,b)=>b.bal-a.bal);
  const totalDebt=sum(C,c=>Math.max(0,c.bal));
  return `<div class="page-head"><div><h1>Fiados</h1><p>Lo que te deben tus clientes: <b>${money(totalDebt)}</b></p></div><div class="actions"><button class="btn primary" data-a="cust-new">${ic('plus',16)} Nuevo cliente</button></div></div>
-  <div class="card">${C.length?`<div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th>Teléfono</th><th>Último movimiento</th><th class="r">Saldo</th><th></th></tr></thead><tbody>${C.map(c=>`<tr class="click" data-a="cust" data-id="${c.id}"><td><b>${esc(c.name)}</b></td><td class="mono">${esc(c.phone)}</td><td>${c.last?fdate(c.last):'—'}</td><td class="r"><span class="pill ${c.bal>0?'warn':'good'}">${money(c.bal)}</span></td><td class="r"><button class="btn sm" data-a="abono" data-id="${c.id}">Registrar abono</button></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">${ic('heart',26)}Crea tus clientes de confianza para venderles fiado desde la caja.</div>`}</div>`;
+  <div class="card">${C.length?`<div class="tbl-wrap"><table><thead><tr><th>Cliente</th><th>Teléfono</th><th>Último movimiento</th><th class="r">Saldo</th><th></th></tr></thead><tbody>${C.map(c=>`<tr class="click" data-a="cust" data-id="${c.id}"><td><b>${esc(c.name)}</b></td><td class="mono">${esc(c.phone)}</td><td>${c.last?fdate(c.last):'—'}</td><td class="r"><span class="pill ${c.bal>0?'warn':'good'}">${c.bal<0?'A favor '+money(-c.bal):money(c.bal)}</span>${c.limit>0?`<div class="muted small">cupo ${money(c.limit)}</div>`:''}</td><td class="r"><button class="btn sm" data-a="abono" data-id="${c.id}">Registrar abono</button></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">${ic('heart',26)}Crea tus clientes de confianza para venderles fiado desde la caja.</div>`}</div>`;
 }
 function custModal(c){
  const L=S.ledger.filter(l=>l.cid===c.id).sort((a,b)=>b.at-a.at);
@@ -2642,6 +2669,7 @@ function viewNegocio(){
    </div>
    <div class="stack">
     <div class="card"><h2>Así se ve en el recibo</h2><div class="receipt">${receiptHead(t)}<hr><div class="ln"><span>Venta #1234</span><span>${fdt(Date.now())}</span></div><div class="ln"><span>1 × Producto de ejemplo</span><span>${money(10000)}</span></div><hr>${(()=>{const k=taxKind(t.id);const ex={tid:t.id,total:10000,tax:k,items:[{price:10000,qty:1,tx:k?txDefault(k):null}]};return taxLinesHTML(ex)})()}<div class="ln"><b>TOTAL</b><b>${money(10000)}</b></div><hr>${receiptFoot(t)}</div>${taxKind(t.id)?`<p class="muted small" style="margin:8px 0 0">${ic('info',13)} Tus precios ya incluyen el impuesto. El recibo separa cuánto es base y cuánto es ${taxKind(t.id)==='iva'?'IVA':'impuesto al consumo'}. Si algún producto tiene otra tarifa (5%, exento o excluido), cámbialo en Inventario → editar producto.</p>`:''}</div>
+    ${(()=>{const k=taxKind(t.id);if(!k)return '';const P=T('products').filter(p=>p.kind!=='insumo'&&!(p.tx&&TX_OPTS[k].some(o=>o[0]===p.tx)));return P.length?`<div class="banner">${ic('alert')}<div class="grow"><b>${P.length} producto${P.length>1?'s':''} sin revisar la tarifa.</b> Natara les pone ${k==='iva'?'IVA 19%':'INC 8%'} mientras no los revises. Varios alimentos básicos son exentos o excluidos de IVA: confírmalo con tu contador y cámbialo en Inventario → editar producto.</div><button class="btn sm" data-a="go" data-v="inventario">Revisar</button></div>`:''})()}
     <div class="hint">${ic('info',15)} <b>Importante:</b> el recibo de Natara es un documento de control interno para ti y tu cliente. <b>No es factura electrónica ni documento equivalente POS</b> ante la DIAN: para eso se necesita una resolución de numeración y un proveedor tecnológico autorizado.</div>
    </div>
   </div>
@@ -2740,7 +2768,7 @@ function aSolicitudes(){
  const who=o=>o.type==='nuevo'?`<b>${esc(o.business)}</b><div class="muted small">${esc(o.owner)} · ${esc(o.email)} · ${esc(o.phone)}</div>`:`<b>${esc(S.tenants.find(x=>x.id===o.tid)?.name||o.business||'')}</b>`;
  return `<div class="page-head"><div><h1>Solicitudes y pagos</h1><p>Pagos con tu llave Bre-B por confirmar, y módulos que tus clientes quieren.</p></div></div>
   <div class="card"><h2>Pagos por confirmar <span class="sub">llave ${esc(payInfo().llave)} · <a href="#" data-a="go" data-v="planes">cambiar</a></span></h2>${O.length?`<div class="hint" style="margin-bottom:12px">${ic('info',15)} Busca en tu banco un pago por el <b>valor exacto</b> con la <b>referencia</b>. Al aprobar una renovación se extiende la cuenta; al aprobar un cliente nuevo se crea el negocio y le llega el correo con su acceso.</div>
-   <div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Quién</th><th>Qué paga</th><th>Referencia</th><th class="r">Valor</th><th></th></tr></thead><tbody>${O.map(o=>`<tr><td style="white-space:nowrap">${fdt(o.at)}</td><td>${o.type==='nuevo'?'<span class="pill ac">Cliente nuevo</span>':o.type==='modulo'?'<span class="pill warn">Módulo</span>':'<span class="pill">Renovación</span>'}</td><td>${who(o)}</td><td class="small">${what(o)}</td><td><span class="mono">${esc(o.ref)}</span>${o.comprobante?`<div class="muted small">Comp. ${esc(o.comprobante)}</div>`:''}</td><td class="r num"><b>${money(o.amount)}</b></td><td class="r" style="white-space:nowrap"><button class="btn sm" data-a="ord-no" data-id="${o.id}">Rechazar</button> <button class="btn sm primary" data-a="ord-ok" data-id="${o.id}">${ic('check',14)} Aprobar</button></td></tr>`).join('')}</tbody></table></div>`:`<p class="muted small" style="margin:0">No hay pagos pendientes. Cuando un cliente pague su cuota o alguien compre desde la demo, aparece aquí.</p>`}
+   <div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Quién</th><th>Qué paga</th><th>Referencia</th><th class="r">Valor</th><th></th></tr></thead><tbody>${O.map(o=>`<tr><td style="white-space:nowrap">${fdt(o.at)}</td><td>${o.type==='nuevo'?'<span class="pill ac">Cliente nuevo</span>':o.type==='modulo'?'<span class="pill warn">Módulo</span>':'<span class="pill">Renovación</span>'}</td><td>${who(o)}</td><td class="small">${what(o)}</td><td><span class="mono">${esc(o.ref)}</span>${o.comprobante?`<div class="muted small">Comp. ${esc(o.comprobante)}</div>`:''}</td><td class="r num"><b>${money(o.amount)}</b>${(()=>{const x=ordExpected(o);return x!=null&&Math.round(x)!==Math.round(o.amount)?`<div><span class="pill bad" title="El valor lo calculó el navegador del cliente. Revisa cuánto llegó a tu cuenta antes de aprobar.">Debería ser ${money(x)}</span></div>`:''})()}</td><td class="r" style="white-space:nowrap"><button class="btn sm" data-a="ord-no" data-id="${o.id}">Rechazar</button> <button class="btn sm primary" data-a="ord-ok" data-id="${o.id}">${ic('check',14)} Aprobar</button></td></tr>`).join('')}</tbody></table></div>`:`<p class="muted small" style="margin:0">No hay pagos pendientes. Cuando un cliente pague su cuota o alguien compre desde la demo, aparece aquí.</p>`}
    ${H.length?`<details style="margin-top:12px"><summary class="small"><b>Historial de pagos revisados</b></summary><div class="tbl-wrap"><table><tbody>${H.map(o=>`<tr><td class="small">${fdate(o.doneAt||o.at)}</td><td class="small">${o.type==='nuevo'?esc(o.business):esc(S.tenants.find(x=>x.id===o.tid)?.name||'')}</td><td class="mono small">${esc(o.ref)}</td><td class="r num small">${money(o.amount)}</td><td>${o.status==='aprobada'?'<span class="pill good">Aprobado</span>':'<span class="pill bad">Rechazado</span>'}</td></tr>`).join('')}</tbody></table></div></details>`:''}</div>
   <h2 style="font-size:16px;margin-top:4px">Módulos solicitados</h2>
   <div class="card">${R.length?`<div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Negocio</th><th>Módulo</th><th class="r">Valor</th><th>Estado</th><th></th></tr></thead><tbody>${R.map(r=>{const t=S.tenants.find(x=>x.id===r.tid);const m=reqItem(r.mod);return`<tr><td>${fdate(r.at)}</td><td><b>${esc(t?.name)}</b></td><td>${m.name}</td><td class="r num">${money(m.price)}${m.once?' una vez':'/mes'}</td><td>${r.status==='pendiente'?'<span class="pill warn">Pendiente</span>':r.status==='aprobada'?'<span class="pill good">Activado</span>':'<span class="pill">Rechazada</span>'}</td><td class="r" style="white-space:nowrap">${r.status==='pendiente'?`<button class="btn sm" data-a="req-no" data-id="${r.id}">Rechazar</button> <button class="btn sm primary" data-a="req-ok" data-id="${r.id}">Activar</button>`:''}</td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">${ic('inbox',26)}No hay solicitudes.</div>`}</div>`;
@@ -2815,6 +2843,7 @@ document.addEventListener('click',e=>{
   'admin-create':()=>rAdminCreate(),
   'verify-resend':async()=>{try{await FB.sendEmailVerification(FB.auth.currentUser,{url:REAL_URL});toast('Te enviamos el correo de nuevo')}catch(e){toast(authErr(e),'bad')}},
   'verify-done':async()=>{const u=FB.auth.currentUser;if(!u)return;await u.reload();if(!u.emailVerified)return toast('Todavía no aparece verificado. Abre el enlace del correo y vuelve a intentarlo.','bad');await u.getIdToken(true);RB.needVerify=false;RB.authReady=false;render();fbAfterAuth(u)},
+  'lg-try':()=>$('.login-pick')?.scrollIntoView({behavior:'smooth',block:'start'}),
   'lg-mode':()=>{lg.mode=v;lg.err={};lg.banner=null;if(v==='forgot')lg.step=1;render();setTimeout(()=>$('#lg-email,#lg-femail')?.focus(),20)},
   'lg-restart':()=>{lg.step=1;lg.err={};lg.banner=null;render()},
   'lg-fill':()=>{const f=$('#lg-email')||$('#lg-femail');if(f){f.value=v;lg.email=v;const pw=$('#lg-pass');if(pw){pw.focus()}else f.focus()}},
@@ -2874,7 +2903,7 @@ document.addEventListener('click',e=>{
   'mz-sel':()=>mzSel(id,Number(el.dataset.d)),
   'mz-sel-line':()=>{const l=S.tablines.find(x=>x.id===id);if(l){mz.sel[id]=pendQty(l);mzPayRefresh()}},
   'mz-sel-all':()=>{const t=tabOf(mz.id);if(!t)return;mz.sel={};if(el.dataset.v!=='none')linesOf(t.id).filter(l=>pendQty(l)>0).forEach(l=>mz.sel[l.id]=pendQty(l));mzPayRefresh()},
-  'mz-mode':()=>{const t=tabOf(mz.id);mz.mode=el.dataset.v;mz.sel={};mz.k=1;if(t&&!t.split)mz.n=Math.max(2,t.guests||mz.n||2);render()},
+  'mz-mode':()=>{const t=tabOf(mz.id);mz.mode=el.dataset.v;mz.sel={};mz.k=1;if(t&&!t.split)mz.n=Math.max(2,t.guests||mz.n||2);render();mzPayRefresh()},
   'mz-n':()=>{const t=tabOf(mz.id);if(!t)return;const d=t.split?t.split.done:0;mz.n=Math.max(Math.max(2,d+1),Math.min(40,mz.n+Number(el.dataset.d)));mz.k=Math.min(mz.k,mzLeft(t));if(t.split)t.split.n=mz.n,save();mzPayRefresh()},
   'mz-k':()=>{const t=tabOf(mz.id);if(!t)return;mz.k=Math.max(1,Math.min(mzLeft(t),mz.k+Number(el.dataset.d)));mzPayRefresh()},
   'mz-k-all':()=>{const t=tabOf(mz.id);if(t){mz.k=mzLeft(t);mzPayRefresh()}},
@@ -2885,8 +2914,10 @@ document.addEventListener('click',e=>{
   'mz-del':()=>{const m=S.tables.find(x=>x.id===id);if(!m)return;if(tabOf(m.id))return toast('Esa mesa está ocupada','bad');S.tables=S.tables.filter(x=>x.id!==id);mesasOf().forEach((x,i)=>x.order=i);save();render();mzCfgModal();toast(`${m.name} eliminada`)},
   sale:()=>showReceipt(S.sales.find(s=>s.id===id)),
   'confirm-tr':()=>{const s=S.sales.find(x=>x.id===id);s.confirmed=true;save();closeModal();render();toast('Transferencia confirmada')},
-  'void-ask':()=>{const s=S.sales.find(x=>x.id===id);openModal(`Anular venta #${s.num}`,`<p>El stock de los productos vuelve al inventario y la venta deja de contar en los reportes.</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="void-do" data-id="${id}">Anular venta</button>`)},
-  'void-do':()=>{const s=S.sales.find(x=>x.id===id);s.status='anulada';s.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,1,`Anulación venta #${s.num}`,Date.now(),s.tid)});S.ledger=S.ledger.filter(l=>l.sid!==s.id);fidVoid(s);mzVoid(s);save();_sc=null;closeModal();render();toast('Venta anulada')},
+  'void-ask':()=>{const s=S.sales.find(x=>x.id===id);openModal(`Anular venta #${saleNo(s)}`,`<p>El stock de los productos vuelve al inventario y la venta deja de contar en los reportes.</p>${field('¿Por qué la anulas?',inp('voidwhy','','text','maxlength="120" placeholder="Ej: el cliente devolvió el producto" autocomplete="off"'),'full')}<div id="void-err"></div>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="void-do" data-id="${id}">Anular venta</button>`)},
+  'void-do':()=>{const s=S.sales.find(x=>x.id===id);if(!s||s.status==='anulada')return;if(!canDo('anular'))return toast('No tienes permiso para anular ventas','bad');
+   const why=($('#f-voidwhy')?.value||'').trim();if(!why){const e=$('#void-err');if(e)e.innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">Escribe por qué anulas la venta. Queda guardado en la venta.</div></div>`;$('#f-voidwhy')?.focus();return}
+   s.status='anulada';s.voidBy=me().id;s.voidAt=Date.now();s.voidWhy=why.slice(0,120);s.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,1,`Anulación venta #${saleNo(s)}`,Date.now(),s.tid)});S.ledger=S.ledger.filter(l=>l.sid!==s.id);fidVoid(s);mzVoid(s);save();_sc=null;closeModal();render();toast('Venta anulada')},
   'export-sales':()=>need(120,['sales']).then(()=>saveFile(`ventas-${dkey(Date.now())}.xlsx`,T('sales').map(s=>({Numero:s.num,Fecha:new Date(s.at).toLocaleString('es-CO'),Productos:itemsTxt(s,'x '),Vendedor:userName(s.seller),Pago:({efectivo:'Efectivo',transferencia:'Transferencia',datafono:'Datáfono',fiado:'Fiado'})[s.method]||s.method,Banco:s.bank,Tarjeta:s.card||'',Referencia:s.ref,Confirmada:s.confirmed?'Sí':'No',Estado:s.status,Mesa:s.mesa||'',Total:s.total})),'Ventas')),
   // inventario
   'rc-new':()=>recipeModal(null),
@@ -3110,7 +3141,7 @@ document.addEventListener('submit',e=>{
    const id='fid_'+t.id;const r=S.settings.find(x=>x.id===id);if(r)Object.assign(r,c);else S.settings.push({id,tid:t.id,...c});
    save();closeModal();render();toast('Programa de puntos actualizado')},
   'cust-new':()=>{S.customers.push({id:uid(),tid:t.id,name:d.name,phone:d.phone,limit:parseMoney(d.limit)});save();closeModal();render();toast('Cliente creado')},
-  abono:()=>{const amt=parseMoney(d.amount);if(!amt){toast('Escribe el valor del abono','bad');return}S.ledger.push({id:uid(),tid:t.id,cid:d.cid,type:'abono',amount:amt,at:Date.now(),note:`Abono (${d.method})`,cash:d.method==='efectivo'});save();closeModal();render();toast(`Abono de ${money(amt)} registrado`)},
+  abono:()=>{const amt=parseMoney(d.amount);if(!amt){toast('Escribe el valor del abono','bad');return}const debe=balanceOf(d.cid);if(debe<=0){toast('Este cliente no debe nada','bad');return}if(amt>debe){toast(`El abono no puede ser mayor que lo que debe: ${money(debe)}`,'bad');return}S.ledger.push({id:uid(),tid:t.id,cid:d.cid,type:'abono',amount:amt,at:Date.now(),note:`Abono (${d.method})`,cash:d.method==='efectivo'});save();closeModal();render();toast(`Abono de ${money(amt)} registrado`)},
   move:()=>{if(!parseMoney(d.amount)){toast('Escribe el valor','bad');return}const at=new Date(d.date+'T12:00:00').getTime();const isToday=dkey(at)===dkey(Date.now());S.moves.push({id:uid(),tid:t.id,type:d.type,cat:d.cat,concept:d.concept,amount:parseMoney(d.amount),at:isToday?Date.now():at,method:d.method});save();closeModal();render();toast(d.type==='egreso'?'Egreso registrado':'Ingreso registrado')},
   'sup-new':()=>{S.suppliers.push({id:uid(),tid:t.id,name:d.name,what:d.what,phone:d.phone,days:d.days});save();closeModal();render();toast('Proveedor guardado')},
   'emp-new':()=>{const err=m=>{$('#emp-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};const email=(d.email||'').trim().toLowerCase();if(!(d.name||'').trim())return err('Escribe el nombre del empleado.');if(!EMAIL_RE.test(email))return err('Revisa el correo: debe tener la forma nombre@dominio.com.');const arch=S.users.find(x=>x.archived&&x.tid===t.id&&x.email.toLowerCase()===email);if(!arch&&S.users.some(x=>x.email.toLowerCase()===email))return err('Ya existe un usuario con ese correo.');const pe=passErrors(d.pass);if(pe.length)return err('A la contraseña le falta: '+pe.join(', ')+'.');if(arch){arch.archived=false;arch.active=true;arch.perms=[];arch.puesto=d.puesto==='mesero'?'mesero':'';if(arch.puesto&&d.cobra)arch.perms=['mesa_cobrar'];arch.name=d.name.trim();arch.mustChange=true;if(REAL){save();closeModal();render();return rEmpReset(arch,true)}arch.pass=d.pass;save();render();return sendWelcome(t,arch,d.pass,true)}if(REAL)return rEmpNew(d,t,email,err);const nu={id:uid(),tid:t.id,name:d.name.trim(),email,pass:d.pass,role:'cajero',puesto:d.puesto==='mesero'?'mesero':'',active:true,perms:d.puesto==='mesero'&&d.cobra?['mesa_cobrar']:[],mustChange:true};S.users.push(nu);save();render();sendWelcome(t,nu,d.pass,true)},
@@ -3255,13 +3286,20 @@ function syncDiff(){
   if(TCOLLS.includes(c)&&!r.tid)continue;const k=pathOf(c,r);seen.add(k);
   const rec=JSON.parse(JSON.stringify(r));delete rec.pass;const j=stable(rec);if(RB.synced[k]===j)continue;
   const prev=RB.synced[k]?JSON.parse(RB.synced[k]):null;
-  if(c==='products'&&prev&&prev.stock!==rec.stock){const delta=Math.round((rec.stock-prev.stock)*1000)/1000;const upd={stock:increment(delta)};for(const f of Object.keys(rec))if(f!=='stock'&&stable(rec[f])!==stable(prev[f]))upd[f]=rec[f];ops.push(b=>b.update(doc(db,k),upd))}
-  else ops.push(b=>b.set(doc(db,k),rec));
+  if(c==='products'&&prev&&prev.stock!==rec.stock){const delta=Math.round((rec.stock-prev.stock)*1000)/1000;const upd={stock:increment(delta)};for(const f of Object.keys(rec))if(f!=='stock'&&stable(rec[f])!==stable(prev[f]))upd[f]=rec[f];ops.push(Object.assign(b=>b.update(doc(db,k),upd),{k}))}
+  else ops.push(Object.assign(b=>b.set(doc(db,k),rec),{k}));
   RB.synced[k]=j;
  }
  if(me()?.role==='superadmin'){const cf=JSON.parse(JSON.stringify(S.config));const j=stable(cf);if(RB.synced['config/global']!==j){ops.push(b=>b.set(doc(db,'config/global'),cf));RB.synced['config/global']=j}}
- for(const k of Object.keys(RB.synced)){if(k==='config/global'||seen.has(k))continue;ops.push(b=>b.delete(doc(db,k)));delete RB.synced[k]}
- for(let i=0;i<ops.length;i+=400){const b=writeBatch(db);ops.slice(i,i+400).forEach(f=>f(b));b.commit().catch(e=>{console.error('sync',e);toast(e.code==='permission-denied'?'No tienes permiso para hacer ese cambio.':'No se pudo guardar en la nube. Revisa tu conexión.','bad')})}
+ for(const k of Object.keys(RB.synced)){if(k==='config/global'||seen.has(k))continue;ops.push(Object.assign(b=>b.delete(doc(db,k)),{k}));delete RB.synced[k]}
+ for(let i=0;i<ops.length;i+=400){const part=ops.slice(i,i+400);const b=writeBatch(db);part.forEach(f=>f(b));b.commit().catch(e=>{console.error('sync',e);syncFailed(part.map(f=>f.k).filter(Boolean),e)})}
+}
+// La nube rechazó un cambio: se vuelve a lo que quedó guardado y se avisa con una ventana que no se va sola
+function syncFailed(keys,e){
+ const {db,doc,getDoc}=FB;
+ Promise.all(keys.map(k=>{delete RB.synced[k];if(k==='config/global')return null;const parts=k.split('/');const coll=parts.length===4?parts[2]:parts[0];
+  return getDoc(doc(db,k)).then(d=>{if(d.exists())upsert(coll,d.id,d.data(),k);else{const arr=S[coll]||[];const i=arr.findIndex(x=>x.id===d.id);if(i>=0)arr.splice(i,1)}}).catch(()=>{})}))
+  .then(()=>{render();openModal('Este cambio no se guardó',`<p style="margin:0">${e&&e.code==='permission-denied'?'Natara no te dejó guardar el último cambio: tu usuario no tiene permiso para hacerlo o la cuenta del negocio no está activa.':'Natara no pudo guardar el último cambio en la nube.'} La pantalla ya muestra lo que sí quedó guardado.</p><p class="muted small" style="margin:8px 0 0">Si era una venta, no la entregues como registrada: revisa en Ventas y vuelve a cobrarla, o habla con el dueño del negocio.</p>`,`<button class="btn primary" data-a="close-modal">Entendido</button>`)});
 }
 function scheduleRender(adminOnly){
  if(adminOnly&&me()?.role!=='superadmin')return;
