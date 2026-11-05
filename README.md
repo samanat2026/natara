@@ -28,6 +28,10 @@ El kardex necesita un índice compuesto, definido en [`firestore.indexes.json`](
 
 `python3 tools/check.py` revisa que el JavaScript de las páginas no tenga errores de sintaxis y que `demo/`, `consola-demo/` y `docs/` estén generados desde `index.html`. GitHub lo corre solo en cada push (`.github/workflows/revisar.yml`).
 
+### Alerta de cuota por WhatsApp
+
+`tools/alerta_cuota.py` corre en GitHub cada 10 minutos (`.github/workflows/alerta-cuota.yml`). Consulta en Google Cloud Monitoring cuántas lecturas, escrituras y borrados lleva Firestore hoy y avisa por WhatsApp (CallMeBot) al pasar el 80 %, el 90 % y el 95 % de la cuota gratis (50.000 lecturas, 20.000 escrituras y 20.000 borrados al día). Cada aviso sale una vez al día; la cuota se reinicia a la medianoche del Pacífico (2 o 3 a. m. en Colombia). Necesita los secretos `GCP_SA_KEY`, `CALLMEBOT_PHONE` y `CALLMEBOT_APIKEY`. Para probarlo: Actions → *Alerta de cuota de Firebase* → *Run workflow*.
+
 ### Cuentas de ejemplo
 
 Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadmin) no existe en la demo; solo en la app real.

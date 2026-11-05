@@ -1,0 +1,37 @@
+name: Alerta de cuota de Firebase
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # cada 10 minutos (GitHub a veces se demora unos minutos más)
+  workflow_dispatch:
+    inputs:
+      prueba:
+        description: 'Mandar ahora el estado de hoy por WhatsApp'
+        type: boolean
+        default: true
+concurrency: alerta-cuota
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: dia
+        run: echo "dia=$(TZ=America/Los_Angeles date +%F)" >> "$GITHUB_OUTPUT"
+      # recuerda qué avisos ya salieron hoy, para no repetirlos
+      - uses: actions/cache/restore@v4
+        with:
+          path: .alertas
+          key: alertas-${{ steps.dia.outputs.dia }}-${{ github.run_id }}
+          restore-keys: alertas-${{ steps.dia.outputs.dia }}-
+      - run: pip install --quiet google-auth requests
+      - id: revisar
+        run: python3 tools/alerta_cuota.py
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          CALLMEBOT_PHONE: ${{ secrets.CALLMEBOT_PHONE }}
+          CALLMEBOT_APIKEY: ${{ secrets.CALLMEBOT_APIKEY }}
+          PRUEBA: ${{ github.event_name == 'workflow_dispatch' && inputs.prueba && '1' || '0' }}
+      - if: steps.revisar.outputs.cambio == 'si'
+        uses: actions/cache/save@v4
+        with:
+          path: .alertas
+          key: alertas-${{ steps.dia.outputs.dia }}-${{ github.run_id }}
