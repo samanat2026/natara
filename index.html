@@ -1387,13 +1387,14 @@ const roleLabel=u=>u.role==='superadmin'?'Superadmin':u.role==='dueno'?'Dueño(a
 const mesasOf=()=>T('tables').sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name,'es',{numeric:true}));
 const tabOf=tbId=>T('tabs').find(x=>x.table===tbId&&x.open);
 const linesOf=tabId=>T('tablines').filter(l=>l.tab===tabId&&l.qty>0).sort((a,b)=>a.at-b.at);
-const pendQty=l=>Math.max(0,l.qty-(l.paid||0));
+const r6=n=>Math.round(n*1e6)/1e6;
+const pendQty=l=>Math.max(0,r6(l.qty-(l.paid||0)));
 const tabPend=tabId=>sum(linesOf(tabId),l=>pendQty(l)*l.price);
 const tabPaid=tabId=>sum(linesOf(tabId),l=>(l.paid||0)*l.price);
 const meseroCobra=u=>isMesero(u)&&(u.perms||[]).includes('mesa_cobrar');
 const canCobrar=()=>has('caja')&&(!isMesero(me())||meseroCobra(me()));
 const mzLong=t=>{const m=Math.max(1,Math.round((Date.now()-t)/6e4));return m<60?`${m} min`:`${Math.floor(m/60)} h${m%60?' '+(m%60)+' min':''}`};
-let mz={id:null,pay:false,sel:{},q:'',cat:'',bak:null};
+let mz={id:null,pay:false,sel:{},q:'',cat:'',bak:null,mode:'items',n:2,k:1};
 function mzReset(){if(mz.pay)mzPayExit(true);mz={id:null,pay:false,sel:{},q:'',cat:'',bak:null}}
 
 function viewMesas(){
@@ -1427,8 +1428,8 @@ function mzResults(){
 function mzBill(t){
  const L=linesOf(t.id);const pe=tabPend(t.id),pa=tabPaid(t.id);const n=sum(L,l=>l.qty);
  return `<h2>Cuenta de la mesa <span class="sub">${n} producto${n===1?'':'s'}</span></h2>
-  ${L.length?`<div class="cart-items">${L.map(l=>`<div class="ci"><div style="min-width:0"><div class="nm">${esc(l.name)}</div><div class="unit">${money(l.price)} c/u · ${esc(userName(l.by).split(' ')[0])}${l.paid?` · <span style="color:var(--good)">${l.paid} pagado${l.paid>1?'s':''}</span>`:''}</div></div>
-   <div class="qty"><button data-a="mz-qty" data-id="${l.id}" data-d="-1" aria-label="Quitar uno" ${l.qty<=(l.paid||0)?'disabled':''}>−</button><input type="number" value="${l.qty}" readonly aria-label="Cantidad" tabindex="-1"><button data-a="mz-qty" data-id="${l.id}" data-d="1" aria-label="Agregar uno">+</button></div>
+  ${L.length?`<div class="cart-items">${L.map(l=>`<div class="ci"><div style="min-width:0"><div class="nm">${esc(l.name)}</div><div class="unit">${money(l.price)} c/u · ${esc(userName(l.by).split(' ')[0])}${l.paid?` · <span style="color:var(--good)">${l.paid%1?'pagado en parte':l.paid+' pagado'+(l.paid>1?'s':'')}</span>`:''}</div></div>
+   <div class="qty"><button data-a="mz-qty" data-id="${l.id}" data-d="-1" aria-label="Quitar uno" ${l.qty<=(l.paid||0)?'disabled':''}>−</button><input type="number" value="${num(l.qty)}" readonly aria-label="Cantidad" tabindex="-1"><button data-a="mz-qty" data-id="${l.id}" data-d="1" aria-label="Agregar uno">+</button></div>
    <div class="num" style="text-align:right;min-width:78px"><b>${money(pendQty(l)*l.price)}</b>${l.paid?`<div class="muted small">de ${money(l.qty*l.price)}</div>`:''}</div></div>`).join('')}</div>`
   :`<div class="empty">${ic('cart',28)}Toca los productos para agregarlos a la mesa.</div>`}
   ${pa?`<div class="spread small" style="margin-top:8px;color:var(--good)"><span>Ya pagaron</span><span class="num">${money(pa)}</span></div>`:''}
@@ -1466,8 +1467,20 @@ function mzAdd(pid){
 function mzQty(id,d){const l=S.tablines.find(x=>x.id===id);if(!l)return;const q=l.qty+d;if(q<(l.paid||0))return;if(q<=0)S.tablines=S.tablines.filter(x=>x.id!==id);else l.qty=q;save();mzRefresh()}
 function mzCloseTab(t){t.open=false;t.bill=false;t.closedAt=Date.now();S.tablines.filter(l=>l.tab===t.id).forEach(l=>l.open=false);S.tablines=S.tablines.filter(l=>!(l.tab===t.id&&l.qty<=0))}
 // ---- cobro por persona ----
-function mzSyncCart(){const t=tabOf(mz.id);cart=t?linesOf(t.id).filter(l=>mz.sel[l.id]>0).map(l=>({pid:l.pid,name:l.name,price:l.price,cost:l.cost,qty:Math.min(mz.sel[l.id],pendQty(l)),line:l.id})):[]}
-function mzPayStart(){const t=tabOf(mz.id);if(!t||!canCobrar())return;if(!mz.pay){mz.bak=cart;mz.sel={}}mz.pay=true;pos.tab=t.id;pos.method=pos.method==='fiado'?'efectivo':pos.method;pos.received='';mzSyncCart();render();$('#main')?.scrollTo(0,0)}
+function mzSyncCart(){const t=tabOf(mz.id);if(!t){cart=[];return}
+ if(mz.mode==='iguales'){
+  // Partes iguales: cada parte paga la misma fracción de cada producto pendiente.
+  // Así el inventario, los costos y las estadísticas siguen cuadrando, y la última parte paga exactamente lo que falte.
+  const L=linesOf(t.id).filter(l=>pendQty(l)>0);const pend=sum(L,l=>pendQty(l)*l.price);const left=mzLeft(t);
+  if(!pend||!mz.k){cart=[];return}
+  const f=mz.k>=left?1:Math.round(pend*mz.k/left)/pend;
+  cart=L.map(l=>({pid:l.pid,name:l.name,price:l.price,cost:l.cost,qty:f===1?pendQty(l):r6(pendQty(l)*f),line:l.id}));return;
+ }
+ cart=linesOf(t.id).filter(l=>mz.sel[l.id]>0).map(l=>({pid:l.pid,name:l.name,price:l.price,cost:l.cost,qty:Math.min(mz.sel[l.id],pendQty(l)),line:l.id}))}
+// Partes que faltan por pagar en una mesa dividida en partes iguales
+function mzLeft(t){const d=t.split?t.split.done:0;return Math.max(1,mz.n-d)}
+function mzPart(t){const left=mzLeft(t);return Math.round(tabPend(t.id)/left)}
+function mzPayStart(){const t=tabOf(mz.id);if(!t||!canCobrar())return;if(!mz.pay){mz.bak=cart;mz.sel={};mz.mode=t.split?'iguales':'items';mz.n=t.split?t.split.n:Math.max(2,t.guests||2);mz.k=1}mz.pay=true;pos.tab=t.id;pos.method=pos.method==='fiado'?'efectivo':pos.method;pos.received='';mzSyncCart();render();$('#main')?.scrollTo(0,0)}
 function mzPayExit(silent){cart=mz.bak||[];mz.bak=null;mz.pay=false;mz.sel={};pos.tab=null;pos.received='';if(!silent)render()}
 // Lo pendiente se agrupa por producto: si hay dos líneas de cerveza (de meseros distintos
 // o pedidas después de un pago) el cajero ve una sola fila "Cerveza · quedan 3".
@@ -1487,7 +1500,7 @@ function mzPayList(t){
  return `<div class="mzp-quick"><button class="btn ${all?'primary':''}" data-a="mz-sel-all" data-v="all">${ic('check',16)} Pagan todo</button><button class="btn" data-a="mz-sel-all" data-v="none" ${none?'disabled':''}>Desmarcar todo</button></div>
   <div class="mzp-list">${G.map(g=>{const on=g.sel>0,part=on&&g.sel<g.pend;
    return `<div class="mzp-row ${on?'on':''} ${part?'part':''}">
-    <button class="mzp-hit" data-a="mz-tog" data-v="${esc(g.k)}" aria-pressed="${on}"><span class="mzp-box">${part?'<b style="font-size:13px">'+g.sel+'</b>':ic('check',16)}</span><span style="min-width:0"><span class="nm">${g.pend>1?g.pend+' × ':''}${esc(g.name)}</span><span class="unit">${money(g.price)} c/u${on?` · paga ${g.sel} de ${g.pend}`:g.pend>1?' · toca para marcar':''}</span></span></button>
+    <button class="mzp-hit" data-a="mz-tog" data-v="${esc(g.k)}" aria-pressed="${on}"><span class="mzp-box">${part?'<b style="font-size:13px">'+g.sel+'</b>':ic('check',16)}</span><span style="min-width:0"><span class="nm">${g.pend!==1?num(g.pend)+' × ':''}${esc(g.name)}</span><span class="unit">${money(g.price)} c/u${on?` · paga ${num(g.sel)} de ${num(g.pend)}`:g.pend>1?' · toca para marcar':''}</span></span></button>
     <div class="mzp-amt">${on?money(g.sel*g.price):`<span class="muted">${money(g.pend*g.price)}</span>`}</div>
     ${on&&g.pend>1?`<div class="mzp-qty"><span>¿Cuántos paga?</span><div class="qty"><button data-a="mz-gq" data-v="${esc(g.k)}" data-d="-1" aria-label="Uno menos">−</button><input type="number" value="${g.sel}" readonly tabindex="-1" aria-label="Cuántos paga"><button data-a="mz-gq" data-v="${esc(g.k)}" data-d="1" aria-label="Uno más" ${g.sel>=g.pend?'disabled':''}>+</button></div><span class="muted">de ${g.pend}</span></div>`:''}
    </div>`}).join('')}</div>`;
@@ -1496,11 +1509,11 @@ function mzPayList(t){
 function mzPaySummary(){
  const t=tabOf(mz.id);if(!t)return '';
  const now=cartTotal(),left=tabPend(t.id)-now;const n=sum(cart,i=>i.qty);
- return `<div class="mzp-sum"><div class="spread now"><span>Paga ahora${n?` · ${n} producto${n===1?'':'s'}`:''}</span><b class="num">${money(now)}</b></div>
-  ${n?`<div class="mzp-chips">${cart.map(i=>`<span class="pill">${num(i.qty)} × ${esc(i.name)}</span>`).join('')}</div>`:`<span class="muted small">Toca en la lista lo que va a pagar esta persona o grupo.</span>`}
+ return `<div class="mzp-sum"><div class="spread now"><span>Paga ahora${n&&mz.mode==='items'?` · ${n} producto${n===1?'':'s'}`:''}</span><b class="num">${money(now)}</b></div>
+  ${mz.mode==='iguales'?(()=>{const k=Math.min(mz.k,mzLeft(t)),d=t.split?t.split.done:0;return `<span class="muted small">${k>1?`Partes ${d+1} a ${d+k}`:`Parte ${d+1}`} de ${mz.n} · partes iguales</span>`})():n?`<div class="mzp-chips">${cart.map(i=>`<span class="pill">${num(i.qty)} × ${esc(i.name)}</span>`).join('')}</div>`:`<span class="muted small">Toca en la lista lo que va a pagar esta persona o grupo.</span>`}
   <div class="spread left"><span>${left>0?'Queda en la mesa':'La mesa'}</span><b class="num">${left>0?money(left):'queda saldada'}</b></div></div>`;
 }
-function mzBar(){const t=tabOf(mz.id);if(!t)return '';const n=sum(cart,i=>i.qty);return n?`${ic('wallet',17)}<span>Elegir cómo paga</span><b class="num">${money(cartTotal())}</b>`:`${ic('info',17)}<span>Marca lo que va a pagar</span>`}
+function mzBar(){const t=tabOf(mz.id);if(!t)return '';const n=sum(cart,i=>i.qty);return n?`${ic('wallet',17)}<span>${mz.mode==='iguales'?(Math.min(mz.k,mzLeft(t))>1?mz.k+' partes · ':'1 parte · '):''}Elegir cómo paga</span><b class="num">${money(cartTotal())}</b>`:`${ic('info',17)}<span>Marca lo que va a pagar</span>`}
 function viewMesaPay(){
  const m=T('tables').find(x=>x.id===mz.id);const t=tabOf(m.id);if(!t){mzPayExit(true);return viewMesas()}
  const n=sum(cart,i=>i.qty);
@@ -1509,17 +1522,29 @@ function viewMesaPay(){
   <div class="mzp-steps" id="mzp-steps">${mzSteps(n)}</div>
   ${openSession()?'':`<div class="banner">${ic('register')}<div class="grow">${isMesero(me())?'La caja está cerrada. Pídele al cajero que la abra para poder cobrar.':'Abre la caja antes de cobrar.'}</div>${isMesero(me())?'':`<button class="btn sm primary" data-a="go" data-v="cierre">Abrir caja</button>`}</div>`}
   <div class="pos">
-   <div class="card"><h2>¿Qué va a pagar? <span class="sub">lo que no marques sigue en la mesa</span></h2><div id="mzp-list">${mzPayList(t)}</div></div>
+   <div class="card"><div class="seg" style="margin-bottom:14px" role="tablist"><button class="${mz.mode==='items'?'on':''}" data-a="mz-mode" data-v="items">Por productos</button><button class="${mz.mode==='iguales'?'on':''}" data-a="mz-mode" data-v="iguales">Partes iguales</button></div>
+    ${mz.mode==='items'?`<h2>¿Qué va a pagar? <span class="sub">lo que no marques sigue en la mesa</span></h2>`:`<h2>Dividir la cuenta en partes iguales</h2>`}<div id="mzp-list">${mz.mode==='items'?mzPayList(t):mzEqual(t)}</div></div>
    <div class="card cart" id="cart-panel">${cartPanel()}</div>
   </div>
   <button class="mzp-bar" id="mzp-bar" data-a="mzp-go" ${n?'':'disabled'}>${mzBar()}</button>`;
 }
-function mzSteps(n){return `<span class="${n?'':'on'}"><i>1</i>Marca lo que paga</span><span>›</span><span class="${n?'on':''}"><i>2</i>Elige efectivo, transferencia o datáfono</span><span>›</span><span><i>3</i>Cobrar</span>`}
+function mzEqual(t){
+ const d=t.split?t.split.done:0;const left=mzLeft(t);const part=mzPart(t);const k=Math.min(mz.k,left);
+ const stp=(a,v,dis1,dis2,lbl)=>`<div class="qty"><button data-a="${a}" data-d="-1" aria-label="Menos ${lbl}" ${dis1?'disabled':''}>−</button><input type="number" value="${v}" readonly tabindex="-1" aria-label="${lbl}"><button data-a="${a}" data-d="1" aria-label="Más ${lbl}" ${dis2?'disabled':''}>+</button></div>`;
+ return `<div class="stack">
+  ${t.guests&&!d&&mz.n!==t.guests?`<p class="muted small" style="margin:0">La mesa se abrió con ${t.guests} personas.</p>`:''}
+  <div class="spread"><div><b>¿Entre cuántas personas?</b>${d?`<div class="muted small">Ya pagaron ${d} parte${d>1?'s':''}</div>`:''}</div>${stp('mz-n',mz.n,mz.n<=Math.max(2,d+1),mz.n>=40,'personas')}</div>
+  <div class="mzp-sum"><div class="spread"><span>Cada parte</span><b class="num" style="font-size:22px">${money(part)}</b></div><span class="muted small">${money(tabPend(t.id))} pendientes entre ${left} parte${left>1?'s':''}${d?' que faltan':''}</span></div>
+  <div class="spread"><div><b>¿Cuántas partes paga ahora?</b><div class="muted small">Si una persona paga por otra, súmale partes</div></div>${stp('mz-k',k,k<=1,k>=left,'partes')}</div>
+  ${left>1?`<button class="btn sm ghost" data-a="mz-k-all" style="align-self:flex-start">Pagan las ${left} partes que faltan</button>`:''}
+ </div>`;
+}
+function mzSteps(n){return mz.mode==='iguales'?`<span class="${n?'':'on'}"><i>1</i>Elige entre cuántos</span><span>›</span><span class="${n?'on':''}"><i>2</i>Elige cómo paga</span><span>›</span><span><i>3</i>Cobrar</span>`:`<span class="${n?'':'on'}"><i>1</i>Marca lo que paga</span><span>›</span><span class="${n?'on':''}"><i>2</i>Elige efectivo, transferencia o datáfono</span><span>›</span><span><i>3</i>Cobrar</span>`}
 // Al marcar no se vuelve a pintar toda la pantalla: así en el celular no salta al inicio
 function mzPayRefresh(){
  const t=tabOf(mz.id);if(!t||!$('#mzp-list')){render();return}
  mzSyncCart();
- $('#mzp-list').innerHTML=mzPayList(t);refreshPOS();
+ $('#mzp-list').innerHTML=mz.mode==='iguales'?mzEqual(t):mzPayList(t);refreshPOS();
  const b=$('#mzp-bar');if(b){b.innerHTML=mzBar();b.disabled=!cart.length}
  const st=$('#mzp-steps');if(st)st.innerHTML=mzSteps(cart.length);
 }
@@ -1529,7 +1554,8 @@ function mzCheck(){for(const i of cart){const l=S.tablines.find(x=>x.id===i.line
 function mzApplyPay(sale){
  const t=S.tabs.find(x=>x.id===pos.tab);if(!t)return null;const m=S.tables.find(x=>x.id===t.table);
  sale.tab=t.id;sale.mesa=m?.name||'';
- sale.items.forEach(i=>{const l=S.tablines.find(x=>x.id===i.line);if(l)l.paid=(l.paid||0)+Math.min(i.qty,pendQty(l))});
+ sale.items.forEach(i=>{const l=S.tablines.find(x=>x.id===i.line);if(l)l.paid=r6((l.paid||0)+Math.min(i.qty,pendQty(l)))});
+ if(mz.mode==='iguales'&&mz.pay){const d=t.split?t.split.done:0;const k=Math.min(mz.k,mzLeft(t));sale.split={n:mz.n,from:d+1,to:d+k};t.split={n:mz.n,done:d+k}}
  sale.mesaN=S.sales.filter(x=>x.tab===t.id&&x.status!=='anulada').length+1;sale.mesaRest=tabPend(t.id);
  const left=linesOf(t.id).some(l=>pendQty(l)>0);t.bill=false;
  if(!left)mzCloseTab(t);
@@ -1539,10 +1565,13 @@ function mzApplyPay(sale){
 function mzVoid(s){
  if(!s.tab)return;const its=s.items.filter(i=>i.line);if(!its.length)return;let t=S.tabs.find(x=>x.id===s.tab);if(!t)return;
  if(!t.open){const cur=S.tabs.find(x=>x.tid===s.tid&&x.table===t.table&&x.open);if(cur){its.forEach(i=>{const l=S.tablines.find(x=>x.id===i.line);if(l)l.tab=cur.id});t=cur}else{t.open=true;t.closedAt=null}}
- its.forEach(i=>{const l=S.tablines.find(x=>x.id===i.line);if(l)l.paid=Math.max(0,(l.paid||0)-i.qty)});
+ its.forEach(i=>{const l=S.tablines.find(x=>x.id===i.line);if(l)l.paid=Math.max(0,r6((l.paid||0)-i.qty))});
+ if(s.split&&t.split)t.split.done=Math.max(0,t.split.done-(s.split.to-s.split.from+1));
  S.tablines.filter(l=>l.tab===t.id).forEach(l=>l.open=true);
 }
 // Pagos de una mesa (una venta por cada persona o grupo que pagó)
+const splitTxt=s=>s.split?`${s.split.from===s.split.to?'Parte '+s.split.from:'Partes '+s.split.from+' a '+s.split.to} de ${s.split.n}`:'';
+const itemsTxt=(s,x)=>s.split?`${splitTxt(s)} de la cuenta${s.mesa?' de '+s.mesa:''}`:s.items.map(i=>num(i.qty)+x+i.name).join(', ');
 const mesaPays=s=>s.tab?S.sales.filter(x=>x.tab===s.tab&&x.status!=='anulada').sort((a,b)=>a.at-b.at):[];
 const mesaPill=s=>s.mesa?`<span class="pill ac" style="margin-left:6px">${ic('table',12)} ${esc(s.mesa)}${s.tab&&s.mesaN?` · pago ${s.mesaN}`:''}</span>`:'';
 function mzCfgModal(){
@@ -1623,7 +1652,7 @@ function posResults(){
  const title=pos.q?`${P.length} resultado${P.length>1?'s':''}`:catMode()&&pos.cat?(pos.cat==='__none'?'Sin categoría':catsOf().find(c=>c.id===pos.cat)?.name||'')+` · ${P.length} producto${P.length>1?'s':''}`:'Más vendidos';
  return bar+`<div class="muted small" style="margin-bottom:8px">${esc(title)}</div><div class="tiles">${P.map(p=>`<button class="tile ${availOf(p)<=0?'out':''}" data-a="add" data-id="${p.id}"><strong>${esc(p.name)}</strong>${lectorOn()?`<span class="st mono">${esc(p.code)}</span>`:`<span class="st">${esc(p.cat)}</span>`}<span class="spread"><span class="price">${money(p.price)}</span><span class="st">${recipeOf(p)?`alcanza ${num(availOf(p))}`:`${num(p.stock)} disp.`}</span></span></button>`).join('')}</div>`;
 }
-function cartTotal(){return sum(cart,i=>i.price*i.qty)}
+function cartTotal(){return Math.round(sum(cart,i=>i.price*i.qty))}
 const payTotal=()=>{const s=cartTotal();return s-fidDisc(s)};
 function cartPanel(){
  const u=me(),sub=cartTotal(),disc=fidDisc(sub),total=sub-disc;
@@ -1674,7 +1703,7 @@ function checkout(){
  if(pos.method==='fiado'&&!pos.customer){toast('Selecciona el cliente que se lleva fiado','bad');return}
  const t=tenant();const last=Math.max(1000,...T('sales').map(s=>s.num));
  const sale={id:uid(),tid:t.id,at:Date.now(),items:cart.map(i=>({...i})),total,method:pos.method,bank:pos.method==='transferencia'?pos.bank:'',card:pos.method==='datafono'?pos.card:'',ref:pos.method==='transferencia'||pos.method==='datafono'?pos.ref:'',confirmed:pos.method!=='transferencia'||pos.verified,received:pos.method==='efectivo'?(parseMoney(pos.received)||total):0,seller:me().id,customer:pos.method==='fiado'?pos.customer:'',status:'ok',num:last+1};
- if(fm)Object.assign(sale,{mid:fm.id,sub,disc,ptsUsed:used});
+ if(fm)Object.assign(sale,{mid:fm.id,sub,disc,ptsUsed:used});else if(pos.tab)sale.sub=sub;
  if(fm){
   if(used){ptsConsume(fm,used);ptsMove(fm,'redime',-used,`Venta #${sale.num}`,sale.id)}
   const earned=sale.method==='fiado'?0:earnPts(total,cfg);
@@ -1696,7 +1725,7 @@ function receiptHTML(s){
  const t=S.tenants.find(x=>x.id===s.tid);
  return `<div class="receipt">${receiptHead(t)}<hr>
   <div class="ln"><span>Venta #${s.num}</span><span>${fdt(s.at)}</span></div><div class="ln"><span>Atendió</span><span>${esc(userName(s.seller))}</span></div>${s.mesa?`<div class="ln"><span>Mesa</span><span>${esc(s.mesa)}${s.tab&&s.mesaN?` · pago ${s.mesaN}`:''}</span></div>`:''}<hr>
-  ${s.items.map(i=>`<div class="ln"><span>${i.qty} × ${esc(i.name)}</span><span>${money(i.qty*i.price)}</span></div>`).join('')}<hr>
+  ${s.split?`<div class="ln"><span>${splitTxt(s)} de la cuenta (partes iguales)</span><span>${money(s.sub||s.total)}</span></div>`:s.items.map(i=>`<div class="ln"><span>${num(i.qty)} × ${esc(i.name)}</span><span>${money(i.qty*i.price)}</span></div>`).join('')}<hr>
   ${s.disc?`<div class="ln"><span>Subtotal</span><span>${money(s.sub)}</span></div><div class="ln"><span>Descuento ${num(s.ptsUsed)} puntos</span><span>−${money(s.disc)}</span></div>`:''}
   <div class="ln"><b>TOTAL</b><b>${money(s.total)}</b></div>${s.tab&&s.status!=='anulada'?(()=>{const P=mesaPays(s);const rest=s.mesaRest||0;return `${rest?`<div class="ln"><span>Queda pendiente en la mesa</span><span>${money(rest)}</span></div>`:`<div class="ln"><span>Con este pago la mesa quedó</span><span>saldada</span></div>`}${P.length>1?`<hr><div class="ln"><b>Pagos de ${esc(s.mesa)}</b><span></span></div>${P.map(x=>`<div class="ln"><span>${x.id===s.id?'▸ ':''}Pago ${x.mesaN||''} · #${x.num} · ${ftime(x.at)}</span><span>${money(x.total)}</span></div>`).join('')}<div class="ln"><span>Total pagado en la mesa</span><span>${money(sum(P,x=>x.total))}</span></div>`:''}`})():''}
   <div class="ln"><span>Pago</span><span>${s.method==='efectivo'?'Efectivo':s.method==='datafono'?'Datáfono'+(s.card?' · '+esc(s.card):'')+(s.ref?' · aprob. '+esc(s.ref):''):s.method==='fiado'?'Fiado: '+esc(S.customers.find(c=>c.id===s.customer)?.name||''):esc(s.bank)+(s.ref?' · ref '+esc(s.ref):'')}</span></div>
@@ -1964,7 +1993,7 @@ function viewVentas(){
    ${sel('vf-method',[['','Todos los pagos'],['efectivo','Efectivo'],['transferencia','Transferencia'],['datafono','Datáfono'],['pendiente','Por confirmar'],['fiado','Fiado']],vf.method,'data-c="vf-method"')}
    ${allV?'':'<!--'}${sel('vf-seller',[['','Todos los vendedores'],...emps.map(e=>[e.id,e.name])],vf.seller,'data-c="vf-seller"')}${allV?'':'-->'}
   </div>
-  ${list.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Fecha</th><th>Productos</th><th>Vendedor</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${list.slice(0,150).map(s=>`<tr class="click" data-a="sale" data-id="${s.id}"><td class="mono">${s.num}</td><td style="white-space:nowrap">${fdt(s.at)}</td><td class="small">${esc(s.items.map(i=>i.qty+'× '+i.name).join(', '))}${mesaPill(s)}</td><td>${esc(userName(s.seller))}</td><td>${payPill(s)}</td><td class="r num"><b>${money(s.total)}</b></td></tr>`).join('')}</tbody></table></div>${list.length>150?`<p class="muted small">Mostrando 150 de ${list.length}. Exporta a Excel para ver todo.</p>`:''}`:`<div class="empty">${ic('receipt',26)}No hay ventas con estos filtros.</div>`}</div>`;
+  ${list.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Fecha</th><th>Productos</th><th>Vendedor</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${list.slice(0,150).map(s=>`<tr class="click" data-a="sale" data-id="${s.id}"><td class="mono">${s.num}</td><td style="white-space:nowrap">${fdt(s.at)}</td><td class="small">${esc(itemsTxt(s,'× '))}${mesaPill(s)}</td><td>${esc(userName(s.seller))}</td><td>${payPill(s)}</td><td class="r num"><b>${money(s.total)}</b></td></tr>`).join('')}</tbody></table></div>${list.length>150?`<p class="muted small">Mostrando 150 de ${list.length}. Exporta a Excel para ver todo.</p>`:''}`:`<div class="empty">${ic('receipt',26)}No hay ventas con estos filtros.</div>`}</div>`;
 }
 
 /* =========================================================
@@ -2258,7 +2287,7 @@ function guideSections(){
   'Toca una mesa libre y luego <b>Abrir mesa</b>. Si quieres, escribe cuántas personas son.',
   'Toca los platos y bebidas para agregarlos a la cuenta. Con <b>−</b> y <b>+</b> corriges las cantidades. Lo que agregas se ve al instante en los demás celulares.',
   'Cuando la mesa quiera pagar, toca <b>Pedir la cuenta</b>: en el mapa de mesas sale marcada en amarillo.',
-  ...(canCobrar()?['Para cobrar toca <b>Cobrar</b> y toca en la lista los productos que paga esa persona o grupo (o <b>Pagan todo</b>). Si de un producto pagan solo algunos (2 de 4 cervezas), ajusta cuántos con − y +. Abajo ves lo que paga ahora y lo que queda en la mesa.','Lo que no se pagó queda en la mesa. Cuando ya se pagó todo, la mesa se libera sola. Si los clientes se cambian, usa <b>Cambiar de mesa</b>.',...(isMesero(u)?['Lo que cobras queda a tu nombre: lo ves en <b>Ventas</b>. Entrega el dinero en la caja.']:[])]:['El cobro lo hace la caja: allá marcan lo que paga cada persona y la mesa sigue abierta con lo que falte.'])]})}
+  ...(canCobrar()?['Para cobrar toca <b>Cobrar</b> y toca en la lista los productos que paga esa persona o grupo (o <b>Pagan todo</b>). Si de un producto pagan solo algunos (2 de 4 cervezas), ajusta cuántos con − y +. Abajo ves lo que paga ahora y lo que queda en la mesa. Si prefieren dividir la cuenta, usa <b>Partes iguales</b>: eliges entre cuántas personas y cada una paga su parte; la mesa sigue abierta hasta que paguen todas.','Lo que no se pagó queda en la mesa. Cuando ya se pagó todo, la mesa se libera sola. Si los clientes se cambian, usa <b>Cambiar de mesa</b>.',...(isMesero(u)?['Lo que cobras queda a tu nombre: lo ves en <b>Ventas</b>. Entrega el dinero en la caja.']:[])]:['El cobro lo hace la caja: allá marcan lo que paga cada persona y la mesa sigue abierta con lo que falte.'])]})}
  return S_;
 }
 function viewGuia(){
@@ -2806,6 +2835,10 @@ document.addEventListener('click',e=>{
   'mz-sel':()=>mzSel(id,Number(el.dataset.d)),
   'mz-sel-line':()=>{const l=S.tablines.find(x=>x.id===id);if(l){mz.sel[id]=pendQty(l);mzPayRefresh()}},
   'mz-sel-all':()=>{const t=tabOf(mz.id);if(!t)return;mz.sel={};if(el.dataset.v!=='none')linesOf(t.id).filter(l=>pendQty(l)>0).forEach(l=>mz.sel[l.id]=pendQty(l));mzPayRefresh()},
+  'mz-mode':()=>{const t=tabOf(mz.id);mz.mode=el.dataset.v;mz.sel={};mz.k=1;if(t&&!t.split)mz.n=Math.max(2,t.guests||mz.n||2);render()},
+  'mz-n':()=>{const t=tabOf(mz.id);if(!t)return;const d=t.split?t.split.done:0;mz.n=Math.max(Math.max(2,d+1),Math.min(40,mz.n+Number(el.dataset.d)));mz.k=Math.min(mz.k,mzLeft(t));if(t.split)t.split.n=mz.n,save();mzPayRefresh()},
+  'mz-k':()=>{const t=tabOf(mz.id);if(!t)return;mz.k=Math.max(1,Math.min(mzLeft(t),mz.k+Number(el.dataset.d)));mzPayRefresh()},
+  'mz-k-all':()=>{const t=tabOf(mz.id);if(t){mz.k=mzLeft(t);mzPayRefresh()}},
   'mz-tog':()=>{const g=mzGroupByKey(el.dataset.v);if(g){mzSetGroup(g,g.sel?0:g.pend);mzPayRefresh()}},
   'mz-gq':()=>{const g=mzGroupByKey(el.dataset.v);if(g){const n=g.sel+Number(el.dataset.d);if(n<1)mzSetGroup(g,0);else mzSetGroup(g,n);mzPayRefresh()}},
   'mzp-go':()=>$('#cart-panel')?.scrollIntoView({behavior:'smooth',block:'start'}),
@@ -2815,7 +2848,7 @@ document.addEventListener('click',e=>{
   'confirm-tr':()=>{const s=S.sales.find(x=>x.id===id);s.confirmed=true;save();closeModal();render();toast('Transferencia confirmada')},
   'void-ask':()=>{const s=S.sales.find(x=>x.id===id);openModal(`Anular venta #${s.num}`,`<p>El stock de los productos vuelve al inventario y la venta deja de contar en los reportes.</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="void-do" data-id="${id}">Anular venta</button>`)},
   'void-do':()=>{const s=S.sales.find(x=>x.id===id);s.status='anulada';s.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,1,`Anulación venta #${s.num}`,Date.now(),s.tid)});S.ledger=S.ledger.filter(l=>l.sid!==s.id);fidVoid(s);mzVoid(s);save();_sc=null;closeModal();render();toast('Venta anulada')},
-  'export-sales':()=>saveFile(`ventas-${dkey(Date.now())}.xlsx`,T('sales').map(s=>({Numero:s.num,Fecha:new Date(s.at).toLocaleString('es-CO'),Productos:s.items.map(i=>i.qty+'x '+i.name).join(', '),Vendedor:userName(s.seller),Pago:({efectivo:'Efectivo',transferencia:'Transferencia',datafono:'Datáfono',fiado:'Fiado'})[s.method]||s.method,Banco:s.bank,Tarjeta:s.card||'',Referencia:s.ref,Confirmada:s.confirmed?'Sí':'No',Estado:s.status,Mesa:s.mesa||'',Total:s.total})),'Ventas'),
+  'export-sales':()=>saveFile(`ventas-${dkey(Date.now())}.xlsx`,T('sales').map(s=>({Numero:s.num,Fecha:new Date(s.at).toLocaleString('es-CO'),Productos:itemsTxt(s,'x '),Vendedor:userName(s.seller),Pago:({efectivo:'Efectivo',transferencia:'Transferencia',datafono:'Datáfono',fiado:'Fiado'})[s.method]||s.method,Banco:s.bank,Tarjeta:s.card||'',Referencia:s.ref,Confirmada:s.confirmed?'Sí':'No',Estado:s.status,Mesa:s.mesa||'',Total:s.total})),'Ventas'),
   // inventario
   'rc-new':()=>recipeModal(null),
   'rc-edit':()=>recipeModal(S.products.find(x=>x.id===id)),
