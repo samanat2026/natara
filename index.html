@@ -200,7 +200,8 @@ tbody tr.click:hover{background:var(--surface-2)}
 
 /* ---------- login ---------- */
 .login{min-height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr)}
-.login-brand{background:var(--side);color:var(--side-ink);padding:48px max(40px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:26px;justify-content:center}
+.login-brand{background:var(--side);color:var(--side-ink)}
+.lb-in{position:sticky;top:0;min-height:100vh;min-height:100dvh;box-sizing:border-box;padding:48px max(40px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:26px;justify-content:center}
 .login-brand .logo{display:flex;align-items:center;gap:12px;color:#fff}
 .login-brand .logo b{font-family:var(--f-display);font-size:34px;letter-spacing:-.03em}
 .login-brand h1{font-family:var(--f-display);font-weight:500;font-size:clamp(24px,3vw,34px);line-height:1.15;color:#fff;letter-spacing:-.02em;max-width:16ch}
@@ -291,7 +292,7 @@ details.guide[open] summary{margin-bottom:10px}
 .acc .who{flex:1;min-width:0}
 .acc .who strong{display:block}
 .acc .who span{font-size:13px;color:var(--ink-3)}
-@media (max-width:880px){.login{grid-template-columns:1fr}.login-brand{padding:36px max(20px,env(safe-area-inset-left,0px)) 30px max(20px,env(safe-area-inset-left,0px))}.login-pick{padding:28px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));max-width:none}.feat{grid-template-columns:1fr}}
+@media (max-width:880px){.login{grid-template-columns:1fr}.lb-in{position:static;min-height:0;padding:36px max(20px,env(safe-area-inset-left,0px)) 30px max(20px,env(safe-area-inset-left,0px))}.login-pick{padding:28px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));max-width:none}.feat{grid-template-columns:1fr}}
 
 /* ---------- lock ---------- */
 .lock-screen{min-height:100%;display:grid;place-items:center;padding:32px max(16px,env(safe-area-inset-left,0px))}
@@ -1175,13 +1176,13 @@ function visCard(){
    <div class="kpi"><span class="lbl">Últimos 7 días</span><span class="val">${nf(p7)}</span><span class="foot">personas nuevas</span></div>
   </div>${chart}
   <p class="muted small" style="margin-top:8px">${T.ultima?'Última visita: '+new Date(T.ultima).toLocaleString('es-CO',{dateStyle:'medium',timeStyle:'short'})+' · ':''}En la demo se muestra a los clientes desde ${VIS_MIN} personas. Tus visitas desde la consola no cuentan.</p></div>`}
-function loginBrand(){return `<section class="login-brand">
+function loginBrand(){return `<section class="login-brand"><div class="lb-in">
    <div class="logo">${mark(44)}<b>natara</b></div>
    <h1>Tu caja, tu inventario y tus cuentas, <em>en balance.</em></h1>
    <div class="feat">${['Inventario siempre al día','Caja rápida y sencilla','Efectivo, transferencias y datáfono','Apertura y cierre de caja','Ingresos y egresos','Estadísticas de ventas','Fiados y abonos','Empleados con permisos','Mesas y meseros para restaurantes','Puntos y fidelización'].map(f=>`<div>${ic('check',16)} ${f}</div>`).join('')}</div>
    ${visBadge()}
    <span class="by">Un producto de Samanat · <a href="${waLink('Hola, quiero saber más de Natara')}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">WhatsApp ${WA_TXT}</a></span>
-  </section>`}
+  </div></section>`}
 function viewLogin(){
  if(MODE==='real'||lg.mode!=='pick')return viewLoginReal();
  const acc=u=>{const t=S.tenants.find(x=>x.id===u.tid);return`<button class="acc" data-a="login" data-id="${u.id}"><div class="avatar">${initials(u.name)}</div><div class="who"><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin · Samanat':u.role==='dueno'?'Dueño(a) · ve todo el negocio':isMesero(u)?(meseroCobra(u)?'Mesero(a) · atiende mesas y también cobra':'Mesero(a) · atiende mesas, no cobra'):(()=>{const ps=(u.perms||[]).map(id=>PERMS.find(p=>p.id===id)).filter(p=>p&&t&&t.mods.includes(p.mod));return ps.length?'Cajero(a) · vende y además puede: '+ps.map(p=>p.short).join(', '):'Cajero(a) sin permisos extra · solo vende y ve sus ventas'})()}</span></div>${t?pillDue(t):`<span class="pill ac">Admin</span>`}</button>`};
