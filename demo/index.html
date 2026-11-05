@@ -530,6 +530,7 @@ const waBtn=(msg,label='Escríbenos por WhatsApp',cls='btn')=>`<a class="${cls}"
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const COP=new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
+const INC_REG='Responsable de impuesto al consumo';
 const money=n=>COP.format(Math.round(n||0));
 const num=n=>new Intl.NumberFormat('es-CO',{maximumFractionDigits:2}).format(n||0);
 const uid=()=>Math.random().toString(36).slice(2,10);
@@ -767,7 +768,7 @@ function seed(){
  S.settings.push({id:'fid_t1',tid:'t1',on:true});
  // datos del recibo de ejemplo (Mi negocio)
  S.settings.push({id:'biz_t1',tid:'t1',razon:'Panadería La Espiga S.A.S.',nit:'900123456',dir:'Calle 50 # 43-21, barrio Prado',city:'Medellín',tel:'300 512 4471',email:'contacto@laespiga.co',regimen:'Responsable de IVA',pie:'Pan fresco todos los días desde las 6 a. m.'});
- S.settings.push({id:'biz_t5',tid:'t5',razon:'El Fogón Paisa S.A.S.',nit:'900654321',dir:'Carrera 70 # 44-15, Laureles',city:'Medellín',tel:'304 381 2207',email:'',regimen:'No responsable de IVA',pie:'¡Gracias por visitarnos! Síguenos en redes'});
+ S.settings.push({id:'biz_t5',tid:'t5',razon:'El Fogón Paisa S.A.S.',nit:'900654321',dir:'Carrera 70 # 44-15, Laureles',city:'Medellín',tel:'304 381 2207',email:'',regimen:INC_REG,pie:'¡Gracias por visitarnos! Síguenos en redes'});
  // caja abierta hoy
  S.sessions.push({id:uid(),tid:'t1',openedAt:today+6*3600e3,openedBy:'u2',base:150000,closedAt:null});
  S.sessions.push({id:uid(),tid:'t2',openedAt:today+7*3600e3,openedBy:'u5',base:100000,closedAt:null});
@@ -831,6 +832,30 @@ const bizOf=tid=>S.settings.find(x=>x.id==='biz_'+tid)||{};
 function nitDV(n){const d=String(n||'').replace(/\D/g,'');if(!d)return '';const w=[3,7,13,17,19,23,29,37,41,43,47,53,59,67,71];let s=0;for(let i=0;i<d.length&&i<w.length;i++)s+=Number(d[d.length-1-i])*w[i];const r=s%11;return String(r>1?11-r:r)}
 const fmtNit=n=>{const d=String(n||'').replace(/\D/g,'');return d?grp(Number(d))+'-'+nitDV(d):''};
 function receiptHead(t){const b=bizOf(t.id);const L=[`<b>${esc(t.name)}</b>`];if(b.razon&&norm(b.razon)!==norm(t.name))L.push(esc(b.razon));if(b.nit)L.push('NIT '+esc(fmtNit(b.nit)));if(b.regimen)L.push(esc(b.regimen));if(b.dir)L.push(esc(b.dir));const city=b.city||t.city,tel=b.tel||t.phone;L.push(esc(city)+(tel?' · Tel. '+esc(tel):''));if(b.email)L.push(esc(b.email));return `<div class="c">${L.join('<br>')}</div>`}
+/* Impuestos en el recibo. Los precios de Natara siempre incluyen el impuesto (como en la carta o la góndola);
+   si el negocio es responsable, el recibo separa la base y el impuesto por tarifa. */
+const taxKind=tid=>{const r=bizOf(tid).regimen||'';return r==='Responsable de IVA'?'iva':r===INC_REG?'inc':null};
+const TX_OPTS={iva:[['19','IVA 19%'],['5','IVA 5%'],['0','Exento de IVA (0%)'],['e','Excluido de IVA']],inc:[['8','Impuesto al consumo 8%'],['na','No aplica']]};
+const txRate=k=>({'19':19,'5':5,'8':8})[k]||0;
+const txDefault=kind=>kind==='iva'?'19':'8';
+const txOf=(p,tid)=>{const k=taxKind(tid);if(!k)return null;const v=p&&p.tx&&TX_OPTS[k].some(o=>o[0]===p.tx)?p.tx:txDefault(k);return v};
+const txLabel=k=>(TX_OPTS.iva.concat(TX_OPTS.inc).find(o=>o[0]===k)||['',k])[1];
+// Desglose de una venta: base sin impuesto + impuesto por tarifa; con descuento se reparte en proporción
+function taxBreak(s){
+ const kind=s.tax!==undefined?s.tax:taxKind(s.tid);if(!kind)return null;
+ const gross=sum(s.items,i=>i.price*i.qty);if(!gross)return null;const f=s.total/gross;
+ const G={};s.items.forEach(i=>{const k=i.tx||txOf(S.products.find(x=>x.id===i.pid),s.tid)||txDefault(kind);G[k]=(G[k]||0)+i.price*i.qty*f});
+ const rows=Object.keys(G).map(k=>{const r=txRate(k);const imp=Math.round(G[k]-G[k]/(1+r/100));return {k,r,imp,gross:G[k]}}).sort((a,b)=>b.r-a.r);
+ const taxes=sum(rows,x=>x.imp);
+ return {kind,rows,taxes,base:Math.round(s.total)-taxes};
+}
+function taxLinesHTML(s){
+ const T_=taxBreak(s);if(!T_)return '';const nm=T_.kind==='iva'?'IVA':'Impuesto al consumo';
+ const free=T_.rows.filter(x=>!x.r);
+ return `<div class="ln"><span>Subtotal sin ${T_.kind==='iva'?'IVA':'impuesto'}</span><span>${money(T_.base)}</span></div>
+  ${T_.rows.filter(x=>x.r).map(x=>`<div class="ln"><span>${T_.kind==='iva'?'IVA':'INC'} ${x.r}%${T_.rows.length>1?` <small>(sobre ${money(x.gross-x.imp)})</small>`:''}</span><span>${money(x.imp)}</span></div>`).join('')}
+  ${free.map(x=>`<div class="ln"><span>${x.k==='e'?'Excluido de IVA':x.k==='0'?'Exento de IVA':'Sin '+nm.toLowerCase()}</span><span>${money(x.gross)}</span></div>`).join('')}`;
+}
 function receiptFoot(t){const b=bizOf(t.id);return `<div class="c">${b.pie?esc(b.pie)+'<br>':''}Gracias por tu compra · natara${b.nit?'<br><span style="font-size:11px">Documento de control interno. No es factura electrónica.</span>':''}</div>`}
 const catKey=n=>norm(n);
 const catsOf=(tid=tenant()?.id)=>(S.cats||[]).filter(c=>c.tid===tid).sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name));
@@ -1703,6 +1728,7 @@ function checkout(){
  const t=tenant();const last=Math.max(1000,...T('sales').map(s=>s.num));
  const sale={id:uid(),tid:t.id,at:Date.now(),items:cart.map(i=>({...i})),total,method:pos.method,bank:pos.method==='transferencia'?pos.bank:'',card:pos.method==='datafono'?pos.card:'',ref:pos.method==='transferencia'||pos.method==='datafono'?pos.ref:'',confirmed:pos.method!=='transferencia'||pos.verified,received:pos.method==='efectivo'?(parseMoney(pos.received)||total):0,seller:me().id,customer:pos.method==='fiado'?pos.customer:'',status:'ok',num:last+1};
  if(fm)Object.assign(sale,{mid:fm.id,sub,disc,ptsUsed:used});else if(pos.tab)sale.sub=sub;
+ {const tk=taxKind(t.id);sale.tax=tk;if(tk)sale.items.forEach(i=>{i.tx=txOf(S.products.find(x=>x.id===i.pid),t.id)})}
  if(fm){
   if(used){ptsConsume(fm,used);ptsMove(fm,'redime',-used,`Venta #${sale.num}`,sale.id)}
   const earned=sale.method==='fiado'?0:earnPts(total,cfg);
@@ -1726,7 +1752,7 @@ function receiptHTML(s){
   <div class="ln"><span>Venta #${s.num}</span><span>${fdt(s.at)}</span></div><div class="ln"><span>Atendió</span><span>${esc(userName(s.seller))}</span></div>${s.mesa?`<div class="ln"><span>Mesa</span><span>${esc(s.mesa)}</span></div>`:''}<hr>
   ${s.split?`<div class="ln"><span>${splitTxt(s)} de la cuenta (partes iguales)</span><span>${money(s.sub||s.total)}</span></div>`:s.items.map(i=>`<div class="ln"><span>${num(i.qty)} × ${esc(i.name)}</span><span>${money(i.qty*i.price)}</span></div>`).join('')}<hr>
   ${s.disc?`<div class="ln"><span>Subtotal</span><span>${money(s.sub)}</span></div><div class="ln"><span>Descuento ${num(s.ptsUsed)} puntos</span><span>−${money(s.disc)}</span></div>`:''}
-  <div class="ln"><b>TOTAL</b><b>${money(s.total)}</b></div><div class="ln"><span>Pago</span><span>${s.method==='efectivo'?'Efectivo':s.method==='datafono'?'Datáfono'+(s.card?' · '+esc(s.card):'')+(s.ref?' · aprob. '+esc(s.ref):''):s.method==='fiado'?'Fiado: '+esc(S.customers.find(c=>c.id===s.customer)?.name||''):esc(s.bank)+(s.ref?' · ref '+esc(s.ref):'')}</span></div>
+  ${taxLinesHTML(s)}<div class="ln"><b>TOTAL</b><b>${money(s.total)}</b></div><div class="ln"><span>Pago</span><span>${s.method==='efectivo'?'Efectivo':s.method==='datafono'?'Datáfono'+(s.card?' · '+esc(s.card):'')+(s.ref?' · aprob. '+esc(s.ref):''):s.method==='fiado'?'Fiado: '+esc(S.customers.find(c=>c.id===s.customer)?.name||''):esc(s.bank)+(s.ref?' · ref '+esc(s.ref):'')}</span></div>
   ${s.method==='efectivo'?`<div class="ln"><span>Recibido</span><span>${money(s.received)}</span></div><div class="ln"><span>Cambio</span><span>${money(Math.max(0,s.received-s.total))}</span></div>`:''}
   ${s.mid?`<hr><div class="ln"><span>Cliente</span><span>${esc(S.members.find(m=>m.id===s.mid)?.name||'')}</span></div><div class="ln"><span>Puntos ganados</span><span>${num(s.ptsEarned||0)}</span></div><div class="ln"><span>Saldo de puntos</span><span>${num(s.ptsAfter||0)}</span></div>`:''}
   ${s.status==='anulada'?`<hr><div class="c"><b>VENTA ANULADA</b></div>`:''}
@@ -2104,6 +2130,7 @@ function productForm(p,kind){
   ${ins?field('Unidad de medida',sel('unit',UNITS,p?.unit||'kg')):''}
   <div id="pf-cost-wrap" ${!ins&&pfRecipe.length?'hidden':''}>${field(ins?'Costo por unidad':'Costo',minp('cost',p?.cost??'',''))}</div>
   ${ins?'':field('Precio de venta',minp('price',p?.price??'','required'))}
+  ${!ins&&taxKind(tenant().id)?field(taxKind(tenant().id)==='iva'?'IVA (incluido en el precio)':'Impuesto al consumo (incluido en el precio)',sel('tx',TX_OPTS[taxKind(tenant().id)],txOf(p,tenant().id))):''}
   ${!ins&&has('recetas')?`<p class="muted small full" style="margin:0">${ic('chef',13)} ¿Este producto se arma con otros? Créalo en <button type="button" class="linkish" data-a="go" data-v="recetas">Recetas y combos</button>.</p>`:''}
   <div class="form-grid full" id="pf-stock-wrap" style="grid-column:1/-1" ${!ins&&pfRecipe.length?'hidden':''}>
   ${field(edit?'Stock actual':'Stock inicial',inp('stock',p?.stock??0,'number','step="any"'+(edit?' readonly':'')))}
@@ -2600,7 +2627,7 @@ function viewNegocio(){
       ${field('Ciudad',`<input class="input" name="city" value="${v('city',t.city)}" maxlength="60">`)}
       ${field('Teléfono',`<input class="input" name="tel" value="${v('tel',t.phone)}" inputmode="tel" maxlength="30">`)}
       ${field('Correo (opcional)',`<input class="input" name="email" type="email" value="${v('email')}" maxlength="120">`)}
-      ${field('Régimen',sel('regimen',[['','Sin especificar'],['No responsable de IVA','No responsable de IVA'],['Responsable de IVA','Responsable de IVA']],b.regimen||''))}
+      ${field('Régimen',sel('regimen',[['','Sin especificar'],['No responsable de IVA','No responsable de IVA'],['Responsable de IVA','Responsable de IVA'],[INC_REG,'Responsable de impuesto al consumo (restaurantes, bares)']],b.regimen||''))}
       ${field('Mensaje al pie del recibo (opcional)',`<input class="input" name="pie" value="${v('pie')}" placeholder="Síguenos en Instagram @tunegocio" maxlength="120">`,'full')}
      </div>
      <div id="biz-err"></div>
@@ -2608,7 +2635,7 @@ function viewNegocio(){
     </form>
    </div>
    <div class="stack">
-    <div class="card"><h2>Así se ve en el recibo</h2><div class="receipt">${receiptHead(t)}<hr><div class="ln"><span>Venta #1234</span><span>${fdt(Date.now())}</span></div><div class="ln"><span>1 × Producto de ejemplo</span><span>${money(10000)}</span></div><hr>${receiptFoot(t)}</div></div>
+    <div class="card"><h2>Así se ve en el recibo</h2><div class="receipt">${receiptHead(t)}<hr><div class="ln"><span>Venta #1234</span><span>${fdt(Date.now())}</span></div><div class="ln"><span>1 × Producto de ejemplo</span><span>${money(10000)}</span></div><hr>${(()=>{const k=taxKind(t.id);const ex={tid:t.id,total:10000,tax:k,items:[{price:10000,qty:1,tx:k?txDefault(k):null}]};return taxLinesHTML(ex)})()}<div class="ln"><b>TOTAL</b><b>${money(10000)}</b></div><hr>${receiptFoot(t)}</div>${taxKind(t.id)?`<p class="muted small" style="margin:8px 0 0">${ic('info',13)} Tus precios ya incluyen el impuesto. El recibo separa cuánto es base y cuánto es ${taxKind(t.id)==='iva'?'IVA':'impuesto al consumo'}. Si algún producto tiene otra tarifa (5%, exento o excluido), cámbialo en Inventario → editar producto.</p>`:''}</div>
     <div class="hint">${ic('info',15)} <b>Importante:</b> el recibo de Natara es un documento de control interno para ti y tu cliente. <b>No es factura electrónica ni documento equivalente POS</b> ante la DIAN: para eso se necesita una resolución de numeración y un proveedor tecnológico autorizado.</div>
    </div>
   </div>
@@ -3055,7 +3082,7 @@ document.addEventListener('submit',e=>{
    const recipe=kind==='insumo'?[]:pfRecipe.filter(r=>r.pid&&Number(r.qty)>0).map(r=>({pid:r.pid,qty:Number(r.qty)}));
    if(!recipe.length&&!parseMoney(d.cost)&&d.cost!=='0'){toast('Escribe el costo del producto','bad');return}
    let cat=(d.cat||'').trim();if(cat==='__new'){const nm=(d.newcat||'').trim();if(!nm){toast('Escribe el nombre de la nueva categoría','bad');return}cat=ensureCat(nm)}
-   const data={code,name:d.name.trim(),cat,cost:recipe.length?Math.round(recipeCost(recipe)):parseMoney(d.cost),price:kind==='insumo'?0:parseMoney(d.price),kind,unit:kind==='insumo'?(d.unit||'kg'):'und',min:recipe.length?0:(Number(d.min)||0),supplier:d.supplier||'',recipe};if(d.id)delete data.kind;
+   const data={code,name:d.name.trim(),cat,cost:recipe.length?Math.round(recipeCost(recipe)):parseMoney(d.cost),price:kind==='insumo'?0:parseMoney(d.price),kind,unit:kind==='insumo'?(d.unit||'kg'):'und',min:recipe.length?0:(Number(d.min)||0),supplier:d.supplier||'',recipe};if(d.tx)data.tx=d.tx;if(d.id)delete data.kind;
    if(d.id){Object.assign(S.products.find(p=>p.id===d.id),data)}else{const np={id:uid(),tid:t.id,...data,stock:recipe.length?0:(Number(d.stock)||0)};S.products.push(np);if(np.stock)S.kardex.push({id:uid(),tid:t.id,pid:np.id,type:'entrada',qty:np.stock,at:Date.now(),note:'Stock inicial'})}
    save();closeModal();render();toast(d.id?'Guardado':kind==='insumo'?'Insumo creado':'Producto creado')},
   'stock-adj':()=>{const p=S.products.find(x=>x.id===d.id);const q=Number(d.qty)||0;let delta=d.type==='entrada'?q:d.type==='salida'?-q:q-p.stock;p.stock=Math.round((p.stock+delta)*100)/100;S.kardex.push({id:uid(),tid:t.id,pid:p.id,type:d.type,qty:d.type==='ajuste'?q:Math.abs(delta),at:Date.now(),note:d.note||(d.type==='entrada'?'Entrada manual':d.type==='salida'?(p.kind==='insumo'?'Consumo en producción':'Salida manual'):'Conteo físico')});save();closeModal();render();toast(`${p.name}: quedan ${num(p.stock)} ${p.unit||'und'}`)},

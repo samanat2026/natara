@@ -175,3 +175,7 @@ Al crear un cliente se genera una contraseña temporal y se envía por correo co
 - No cuentan la app real, la consola de demo ni las vistas previas fuera de `samanat2026.github.io`.
 - En la demo, el aviso "X personas han probado Natara" aparece desde `VIS_MIN` (10) personas. En la consola (Resumen) se ven los totales, hoy, los últimos 7 días y una gráfica de 14 días.
 - **Reglas:** se agregó `demovisits` (lectura pública; cada escritura solo suma 1 visita y máximo 1 persona). Hay que volver a pegar `firestore.rules` en Firebase.
+
+## Impuestos en el recibo
+
+En *Mi negocio → Régimen* el dueño elige **No responsable de IVA**, **Responsable de IVA** o **Responsable de impuesto al consumo** (restaurantes y bares, INC 8%). Los precios siempre incluyen el impuesto; si el negocio es responsable, el recibo muestra *Subtotal sin IVA/impuesto*, el impuesto por tarifa y el *TOTAL*. Cada producto tiene su tarifa (IVA 19%, 5%, exento, excluido; o INC 8% / no aplica) en Inventario → editar; por defecto 19% (IVA) u 8% (INC). La venta guarda la tarifa de cada producto (`items[].tx`, `sale.tax`) para que el recibo no cambie si después se edita el producto. Con descuento por puntos el impuesto se calcula sobre lo que realmente se pagó.
