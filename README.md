@@ -38,12 +38,12 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 
 | Correo | Rol | Qué ve |
 |---|---|---|
-| marta@laespiga.co | Dueña · Panadería La Espiga | Plan Premium (todo para tiendas), con puntos encendidos |
-| juan@laespiga.co | Cajero · Panadería La Espiga | Caja + permisos: inventario, costos, recetas, proveedores y fiados |
-| laura@laespiga.co | Cajera · Panadería La Espiga | Sin permisos extra: solo vende y ve sus propias ventas |
-| pedro@laespiga.co | Cajero desactivado | Prueba el mensaje de usuario desactivado |
+| pacho@minimercado.co | Dueño · Minimercado Don Pacho | Plan Premium (todo para tiendas): fiados, proveedores, combos, puntos encendidos y caja por categorías |
+| yuliana@minimercado.co | Cajera · Don Pacho | Caja + permisos: inventario, costos, recetas, proveedores y fiados |
+| brayan@minimercado.co | Cajero · Don Pacho | Sin permisos extra: solo vende y ve sus propias ventas |
+| kevin@minimercado.co | Cajero desactivado | Prueba el mensaje de usuario desactivado |
 | carlos@vidasana.co | Dueño · Droguería Vida Sana | Plan Pro |
-| pacho@minimercado.co | Dueño · Minimercado Don Pacho | Plan Básico (18 productos de ejemplo) |
+| marta@laespiga.co | Dueña · Panadería La Espiga | Plan Básico: inventario, caja y apertura y cierre, sin empleados |
 | andrea@arcoiris.co | Dueña · Papelería Arcoíris | Cuenta suspendida (pantalla de bloqueo). Solo aparece en la consola de demo, no en la demo de clientes |
 | diana@elfogon.co | Dueña · Restaurante El Fogón Paisa | Plan Restaurante, con 12 mesas y 4 ocupadas; puntos incluidos pero apagados |
 | andres@elfogon.co | Cajero · El Fogón | Entra a las mesas y cobra por persona |
@@ -102,7 +102,7 @@ Complemento de $14.900/mes (incluido en Premium y Restaurante). Samanat lo activ
 - **Cámara del celular o del computador (gratis):** botón *Cámara* en la búsqueda de la Caja, las Mesas, el Inventario y las compras a proveedores, y botón de cámara junto al campo *Código de barras* del producto. En la caja y las mesas el escáner se queda abierto: cada producto que se lee entra solo a la venta, con pitido y vibración. Mientras el mismo código siga frente a la cámara no se suma dos veces; para otro igual se retira y se vuelve a apuntar. Si el código no existe, el dueño lo puede crear ahí mismo.
   - Motor: el `BarcodeDetector` del navegador (Chrome en Android) y, donde no existe (iPhone, Firefox, computador), ZXing (`@zxing/library` 0.21.3 desde jsDelivr), que solo se descarga la primera vez que se abre la cámara. Lee EAN-13, EAN-8, UPC, Code 128, Code 39, ITF y QR.
   - Necesita HTTPS (GitHub Pages ya lo es) y que la persona dé permiso de cámara.
-- **Cantidad al leer un producto:** en la Caja, al leer un código con el lector USB aparece arriba *Pan de bono · ¿Cuántos?* con el número listo para escribir: se escribe la cantidad y Enter. Si en vez de eso se lee otro producto, el primero queda con 1 y sigue el nuevo. Con la cámara, el último producto leído trae − y + y un campo para escribir la cantidad en la misma pantalla del lector.
+- **Cantidad al leer un producto:** en la Caja, al leer un código con el lector USB aparece arriba *Arroz 1 kg · ¿Cuántos?* con el número listo para escribir: se escribe la cantidad y Enter. Si en vez de eso se lee otro producto, el primero queda con 1 y sigue el nuevo. Con la cámara, el último producto leído trae − y + y un campo para escribir la cantidad en la misma pantalla del lector.
 - **Lector USB o Bluetooth:** funciona como un teclado. En la Caja, las Mesas (dentro de una mesa) y el Inventario no hace falta tocar el campo de búsqueda: Natara reconoce las teclas rápidas que terminan en Enter y agrega el producto. Si el cursor está en un campo (por ejemplo *Código* del producto), el código se escribe ahí.
 
 Los códigos de la demo son inventados y no tienen dígito de control válido, así que con la cámara solo se leen productos reales; en la demo se puede probar escaneando cualquier producto empacado y creándolo con *Crearlo*.

@@ -524,7 +524,7 @@ details.hint summary{cursor:pointer}
    ========================================================= */
 const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';const DEMO_ADMIN=MODE==='demo'&&window.NATARA_DEMO_ADMIN===true;const ADMIN_EMAIL='samanat2026@gmail.com';
 const REAL_URL='https://samanat2026.github.io/natara/',DEMO_URL='https://samanat2026.github.io/natara/demo/';
-const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v16';
+const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v17';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 const WA_NUM='573146619135',WA_TXT='314 661 9135';
@@ -664,22 +664,22 @@ function seed(){
  const S={v:1,config:{contact:'WhatsApp 314 661 9135 · samanat2026@gmail.com',brand:'Samanat'},tenants:[],users:[],products:[],sales:[],moves:[],customers:[],ledger:[],suppliers:[],sessions:[],kardex:[],messages:[],requests:[],payments:[],purchases:[],orders:[],members:[],pmoves:[],settings:[],cats:[],tables:[],tabs:[],tablines:[]};
  if(MODE==='real'){S.config.contact='WhatsApp 314 661 9135 · samanat2026@gmail.com';S.users=[{id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'samanat2026@gmail.com',pass:'',mustChange:true,perms:[],active:true}];return S}
  S.tenants=[
-  {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'total',mods:PLANS[2].mods.slice(),v2:true,status:'activo',due:today+18*DAY,since:today-140*DAY,catPos:true},
+  {id:'t1',name:'Panadería La Espiga',type:'Panadería',city:'Medellín',phone:'300 512 4471',plan:'basico',mods:PLANS[0].mods.slice(),status:'activo',due:today+12*DAY,since:today-64*DAY},
   {id:'t2',name:'Droguería Vida Sana',type:'Farmacia',city:'Envigado',phone:'311 208 9934',plan:'pro',mods:PLANS[1].mods.slice(),status:'activo',due:today+3*DAY,since:today-75*DAY},
-  {id:'t3',name:'Minimercado Don Pacho',type:'Minimercado',city:'Bello',phone:'320 744 1180',plan:'basico',mods:PLANS[0].mods.slice(),status:'activo',due:today+12*DAY,since:today-64*DAY},
+  {id:'t3',name:'Minimercado Don Pacho',type:'Minimercado',city:'Bello',phone:'320 744 1180',plan:'total',mods:PLANS[2].mods.slice(),v2:true,status:'activo',due:today+18*DAY,since:today-140*DAY,catPos:true},
   {id:'t4',name:'Papelería Arcoíris',type:'Papelería',city:'Itagüí',phone:'315 630 2257',plan:'pro',mods:PLANS[1].mods.slice(),status:'suspendido',due:today-4*DAY,since:today-50*DAY},
   {id:'t5',name:'Restaurante El Fogón Paisa',type:'Restaurante',city:'Medellín',phone:'304 381 2207',plan:'restaurante',mods:PLANS[3].mods.slice(),v2:true,status:'activo',due:today+22*DAY,since:today-45*DAY,catPos:true},
  ];
  S.users=[
   {id:'u0',tid:null,name:'Natalia Orozco',role:'superadmin',email:'natalia@samanat.co',pin:'0000',active:true},
   {id:'u1',tid:'t1',name:'Marta Gómez',role:'dueno',email:'marta@laespiga.co',pin:'1111',active:true},
-  {id:'u2',tid:'t1',name:'Juan Pérez',role:'cajero',email:'juan@laespiga.co',pin:'2222',active:true},
-  {id:'u3',tid:'t1',name:'Laura Ríos',role:'cajero',email:'laura@laespiga.co',pin:'3333',active:true},
+  {id:'u2',tid:'t3',name:'Yuliana Cano',role:'cajero',email:'yuliana@minimercado.co',pin:'2222',active:true},
+  {id:'u3',tid:'t3',name:'Brayan Ospina',role:'cajero',email:'brayan@minimercado.co',pin:'3333',active:true},
   {id:'u4',tid:'t2',name:'Carlos Mejía',role:'dueno',email:'carlos@vidasana.co',pin:'4444',active:true},
   {id:'u5',tid:'t2',name:'Sofía Arango',role:'cajero',email:'sofia@vidasana.co',pin:'5555',active:true},
   {id:'u6',tid:'t3',name:'Francisco Úsuga',role:'dueno',email:'pacho@minimercado.co',pin:'6666',active:true},
   {id:'u7',tid:'t4',name:'Andrea Vélez',role:'dueno',email:'andrea@arcoiris.co',pin:'7777',active:true},
-  {id:'u8',tid:'t1',name:'Pedro Gil',role:'cajero',email:'pedro@laespiga.co',pin:'8888',active:false},
+  {id:'u8',tid:'t3',name:'Kevin Restrepo',role:'cajero',email:'kevin@minimercado.co',pin:'8888',active:false},
   {id:'u9',tid:'t5',name:'Diana Ramírez',role:'dueno',email:'diana@elfogon.co',pin:'9999',active:true},
   {id:'u10',tid:'t5',name:'Andrés Mora',role:'cajero',email:'andres@elfogon.co',pin:'1010',active:true},
   {id:'u11',tid:'t5',name:'Camila Torres',role:'cajero',puesto:'mesero',email:'camila@elfogon.co',pin:'1111',active:true},
@@ -689,18 +689,17 @@ function seed(){
  const prods={
   t1:[['7709990000011','Pan francés','Panes',350,700,180,40],['7709990000028','Pan de bono','Panes',700,1500,95,30],['7709990000035','Almojábana','Panes',650,1500,70,25],['7709990000042','Buñuelo','Panes',500,1200,60,25],['7709990000059','Croissant de mantequilla','Hojaldres',1400,3500,28,12],['7709990000066','Pastel de pollo','Hojaldres',1600,4000,22,10],['7709990000073','Torta de chocolate (porción)','Repostería',2200,6000,16,8],['7709990000080','Torta tres leches (porción)','Repostería',2500,6500,6,8],['7709990000097','Pan tajado integral 600 g','Empacados',4200,7500,14,6],['7709990000103','Leche entera 1 L','Lácteos',3300,4600,24,12],['7709990000110','Yogur de fresa 200 g','Lácteos',1700,2800,4,10],['7709990000127','Queso campesino 250 g','Lácteos',5200,8500,11,5],['7709990000134','Gaseosa 400 ml','Bebidas',1900,3200,40,15],['7709990000141','Jugo de naranja 300 ml','Bebidas',2100,4000,18,8],['7709990000158','Café tinto','Bebidas',400,1500,500,0],['7709990000165','Chocolate caliente','Bebidas',900,3000,300,0],['7709990000172','Huevos AA x 30','Abarrotes',13500,17900,9,4]],
   t2:[['7702001000017','Acetaminofén 500 mg x 10 tab','Analgésicos',1200,2800,85,30],['7702001000024','Ibuprofeno 400 mg x 10 tab','Analgésicos',1800,4200,60,25],['7702001000031','Loratadina 10 mg x 10 tab','Antialérgicos',1500,3900,40,15],['7702001000048','Suero oral sabor fresa 500 ml','Hidratación',2600,5200,30,12],['7702001000055','Alcohol antiséptico 350 ml','Primeros auxilios',3800,7200,18,10],['7702001000062','Curitas x 20','Primeros auxilios',2500,5500,25,10],['7702001000079','Vitamina C 500 mg x 30','Vitaminas',8500,16900,12,6],['7702001000086','Tapabocas x 10','Cuidado personal',3000,6500,7,10],['7702001000093','Crema dental 100 ml','Cuidado personal',3900,7400,22,10],['7702001000109','Pañitos húmedos x 50','Bebé',4500,8900,15,6],['7702001000116','Gel antibacterial 250 ml','Cuidado personal',4200,8500,3,8],['7702001000123','Termómetro digital','Equipos',9800,22000,5,3]],
-  t3:[['7703000000014','Arroz 1 kg','Granos',3600,4900,40,15],['7703000000021','Aceite 1 L','Abarrotes',8200,11500,18,8],['7703000000038','Azúcar 1 kg','Granos',3400,4600,30,12],['7703000000045','Panela x 2','Abarrotes',3000,4400,22,10],['7703000000052','Fríjol cargamanto 500 g','Granos',5200,7200,16,6],['7703000000069','Lenteja 500 g','Granos',2400,3500,20,8],['7703000000076','Pasta spaghetti 500 g','Abarrotes',2300,3400,26,10],['7703000000083','Atún en lata 170 g','Enlatados',4300,6200,18,8],['7703000000090','Leche entera 1 L','Lácteos',3400,4300,30,12],['7703000000106','Huevos x 12','Huevos',9800,12500,14,6],['7703000000113','Café molido 250 g','Bebidas',7600,10500,12,5],['7703000000120','Chocolate de mesa 250 g','Bebidas',4800,6900,15,6],['7703000000137','Gaseosa 1.5 L','Bebidas',3900,5500,24,10],['7703000000144','Jabón de loza 500 g','Aseo',3300,4800,18,6],['7703000000151','Papel higiénico x 4','Aseo',5200,7500,20,8],['7703000000168','Detergente 1 kg','Aseo',8900,12900,10,4],['7703000000175','Sal 1 kg','Abarrotes',1400,2200,25,8],['7703000000182','Galletas de soda x 6','Mecato',3100,4500,22,8]],
+  t3:[['7703000000014','Arroz 1 kg','Granos',3600,4900,40,15],['7703000000021','Aceite 1 L','Abarrotes',8200,11500,18,8],['7703000000038','Azúcar 1 kg','Granos',3400,4600,30,12],['7703000000045','Panela x 2','Abarrotes',3000,4400,22,10],['7703000000052','Fríjol cargamanto 500 g','Granos',5200,7200,16,6],['7703000000069','Lenteja 500 g','Granos',2400,3500,20,8],['7703000000076','Pasta spaghetti 500 g','Abarrotes',2300,3400,26,10],['7703000000083','Atún en lata 170 g','Enlatados',4300,6200,18,8],['7703000000090','Leche entera 1 L','Lácteos',3400,4300,30,12],['7703000000106','Huevos x 12','Huevos',9800,12500,4,6],['7703000000113','Café molido 250 g','Bebidas',7600,10500,12,5],['7703000000120','Chocolate de mesa 250 g','Bebidas',4800,6900,15,6],['7703000000137','Gaseosa 1.5 L','Bebidas',3900,5500,24,10],['7703000000144','Jabón de loza 500 g','Aseo',3300,4800,18,6],['7703000000151','Papel higiénico x 4','Aseo',5200,7500,20,8],['7703000000168','Detergente 1 kg','Aseo',8900,12900,3,4],['7703000000175','Sal 1 kg','Abarrotes',1400,2200,25,8],['7703000000182','Galletas de soda x 6','Mecato',3100,4500,22,8],['7703000000199','Arepas de maíz x 5','Arepas y pan',2600,3800,16,8],['7703000000205','Pan tajado blanco 450 g','Arepas y pan',4300,6200,10,4],['7703000000212','Queso campesino 250 g','Lácteos',5400,8200,9,4],['7703000000229','Cerveza nacional 330 ml','Bebidas',2400,3500,48,24],['7703000000236','Papas fritas 45 g','Mecato',1500,2500,30,10],['7703000000243','Plátano verde (unidad)','Fruver',600,1000,40,15],['7703000000250','Tomate chonto (libra)','Fruver',1500,2400,12,6]],
   t4:[['7704000000011','Cuaderno 100 hojas cuadriculado','Cuadernos',2800,5500,60,20],['7704000000028','Lapicero negro','Escritura',600,1500,120,40],['7704000000035','Resma carta 75 g','Papel',16000,23000,10,5],['7704000000042','Colores x 12','Arte',5200,9800,25,10],['7704000000059','Pegante en barra 21 g','Oficina',1700,3500,30,12]],
   t5:[['FG01','Bandeja paisa','Platos fuertes',13500,32000,40,10],['FG02','Churrasco','Platos fuertes',17000,38000,25,8],['FG03','Mojarra frita','Platos fuertes',14500,34000,20,6],['FG04','Pechuga a la plancha','Platos fuertes',9800,26000,30,8],['FG05','Sancocho trifásico','Platos fuertes',9500,24000,35,10],['FG06','Almuerzo ejecutivo','Menú del día',7200,18000,60,15],['FG07','Chicharrón con arepa','Entradas',5200,14000,30,8],['FG08','Empanadas x3','Entradas',2600,8000,45,12],['FG09','Patacones con hogao','Entradas',3300,10000,40,10],['FG10','Limonada natural','Bebidas',1500,6000,80,20],['FG11','Limonada de coco','Bebidas',3200,9000,50,15],['FG12','Jugo en agua','Bebidas',1800,6000,60,15],['FG13','Gaseosa 400 ml','Bebidas',2100,4500,48,24],['FG14','Cerveza nacional','Bebidas',3000,6500,72,24],['FG15','Agua sin gas 600 ml','Bebidas',1300,3500,40,12],['FG16','Torta tres leches','Postres',3000,8000,16,6],['FG17','Brevas con arequipe','Postres',3400,9000,12,5]],
  };
  for(const tid in prods) prods[tid].forEach(([code,name,cat,cost,price,stock,min])=>S.products.push({id:uid(),tid,code,name,cat,cost,price,stock,min,supplier:'',kind:'venta',unit:'und'}));
- [['INS01','Harina de trigo','Harinas','kg',3200,75,25],['INS02','Azúcar','Endulzantes','kg',4200,30,10],['INS03','Levadura fresca','Panadería','kg',16000,2.5,1],['INS04','Mantequilla','Lácteos','kg',18500,8,3],['INS05','Queso costeño para pandebono','Lácteos','kg',17000,3,4],['INS06','Huevos','Huevos','cubeta',14500,5,3],['INS07','Leche para producción','Lácteos','L',3000,20,10],['INS08','Bolsas de papel','Empaques','paquete',6500,12,4]].forEach(([code,name,cat,unit,cost,stock,min])=>S.products.push({id:uid(),tid:'t1',code,name,cat,cost,price:0,stock,min,unit,kind:'insumo',supplier:''}));
  // ventas históricas
- const sellers={t1:['u1','u2','u3'],t2:['u4','u5'],t4:['u7'],t3:['u6'],t5:['u9','u10','u10']};
- const vol={t1:[9,16],t2:[5,10],t4:[2,6],t3:[3,6],t5:[14,24]};
+ const sellers={t1:['u1'],t2:['u4','u5'],t4:['u7'],t3:['u6','u2','u3'],t5:['u9','u10','u10']};
+ const vol={t1:[4,8],t2:[5,10],t4:[2,6],t3:[10,18],t5:[14,24]};
  for(const tid of ['t1','t2','t4','t3','t5']){
   const P=S.products.filter(p=>p.tid===tid&&p.kind!=='insumo');
-  const days=tid==='t4'?40:tid==='t3'?34:29;
+  const days=tid==='t4'?40:tid==='t1'?34:29;
   for(let d=days;d>=0;d--){
    if(tid==='t4'&&d<4) continue;
    const base=today-d*DAY;
@@ -709,7 +708,7 @@ function seed(){
     const at=base+(tid==='t5'?ri(11,21):ri(6,19))*3600e3+ri(0,59)*6e4;
     if(at>now) continue;
     const items=[];const lines=tid==='t5'?ri(2,5):ri(1,3);
-    for(let j=0;j<lines;j++){const p=pick(P);if(items.find(i=>i.pid===p.id))continue;items.push({pid:p.id,name:p.name,price:p.price,cost:p.cost,qty:p.cat==='Panes'?ri(2,10):ri(1,3)})}
+    for(let j=0;j<lines;j++){const p=pick(P);if(items.find(i=>i.pid===p.id))continue;items.push({pid:p.id,name:p.name,price:p.price,cost:p.cost,qty:p.cat==='Panes'||p.cat==='Fruver'?ri(2,8):ri(1,3)})}
     const total=sum(items,i=>i.price*i.qty);
     const isT=rnd()<.34;
     const method=isT?'transferencia':'efectivo';
@@ -720,7 +719,7 @@ function seed(){
  S.sales.sort((a,b)=>a.at-b.at);
  const counters={};S.sales.forEach(s=>{counters[s.tid]=(counters[s.tid]||1000)+1;s.num=counters[s.tid]});
  // una transferencia pendiente de confirmar hoy
- const pend=S.sales.filter(s=>s.tid==='t1'&&s.method==='transferencia'&&s.at>today).pop();
+ const pend=S.sales.filter(s=>s.tid==='t3'&&s.method==='transferencia'&&s.at>today).pop();
  if(pend) pend.confirmed=false;
  // restaurante El Fogón: mesas, cuentas abiertas y un pago parcial (la familia de la Mesa 2)
  const T5=n=>S.products.find(x=>x.tid==='t5'&&x.name===n);
@@ -739,52 +738,57 @@ function seed(){
  // movimientos manuales
  const mv=(tid,type,cat,concept,amount,at,method='transferencia')=>S.moves.push({id:uid(),tid,type,cat,concept,amount,at,method});
  const m0=new Date(today);m0.setDate(1);const monthStart=m0.getTime();
- [['t1',1800000,1300000],['t2',2200000,1600000],['t4',1200000,0]].forEach(([tid,arr,nom])=>{
+ [['t3',1600000,1300000],['t2',2200000,1600000],['t4',1200000,0]].forEach(([tid,arr,nom])=>{
   mv(tid,'egreso','Arriendo','Arriendo del local',arr,monthStart+9*3600e3);
-  mv(tid,'egreso','Servicios públicos','Energía y agua',tid==='t1'?486000:212000,today-12*DAY+10*3600e3);
+  mv(tid,'egreso','Servicios públicos','Energía y agua',tid==='t3'?486000:212000,today-12*DAY+10*3600e3);
   if(nom) mv(tid,'egreso','Nómina','Quincena empleados',nom,today-16*DAY+17*3600e3);
   mv(tid,'egreso','Arriendo','Arriendo del local (mes anterior)',arr,monthStart-30*DAY+9*3600e3);
  });
  for(let w=0;w<5;w++){mv('t2','egreso','Compra de mercancía','Pedido a distribuidora',ri(600,900)*1000,today-w*7*DAY-2*DAY+11*3600e3)}
- mv('t1','egreso','Transporte','Domicilios de la semana',62000,today-2*DAY+18*3600e3,'efectivo');
+ mv('t3','egreso','Transporte','Domicilios de la semana',62000,today-2*DAY+18*3600e3,'efectivo');
  // gastos del restaurante El Fogón
  mv('t5','egreso','Arriendo','Arriendo del local',3200000,monthStart+9*3600e3);mv('t5','egreso','Nómina','Quincena cocina y meseros',2850000,today-16*DAY+17*3600e3);mv('t5','egreso','Servicios públicos','Gas, energía y agua',920000,today-11*DAY+10*3600e3);
  for(let w=0;w<5;w++){mv('t5','egreso','Compra de mercancía','Carnes y pescado (Carnes La Granja)',ri(780,980)*1000,today-w*7*DAY-DAY+8*3600e3);mv('t5','egreso','Compra de mercancía','Verduras y frutas (plaza Minorista)',ri(260,340)*1000,today-w*7*DAY-3*DAY+7*3600e3,'efectivo')}
- mv('t1','ingreso','Pedido especial','Torta de cumpleaños por encargo',145000,today-3*DAY+15*3600e3);
- mv('t1','ingreso','Pedido especial','Refrigerios para reunión de copropiedad',260000,today-9*DAY+11*3600e3);
+ mv('t3','ingreso','Pedido especial','Mercado por encargo para la tienda escolar',145000,today-3*DAY+15*3600e3);
+ mv('t3','ingreso','Pedido especial','Refrigerios para reunión de copropiedad',260000,today-9*DAY+11*3600e3);
  // fiados
  [['Gloria Restrepo','301 455 2210',[[ -6,18000,'cargo'],[-3,14500,'cargo']]],['Portería Edificio Las Palmas','604 444 1290',[[-10,62000,'cargo'],[-4,30000,'abono'],[-1,16000,'cargo']]],['Jorge Cardona (taxista)','313 220 7781',[[-2,12000,'cargo']]]].forEach(([name,phone,entries])=>{
-  const c={id:uid(),tid:'t1',name,phone};S.customers.push(c);
-  entries.forEach(([d,amount,type])=>S.ledger.push({id:uid(),tid:'t1',cid:c.id,type,amount,at:today+d*DAY+10*3600e3,note:type==='cargo'?'Venta fiada':'Abono'}));
+  const c={id:uid(),tid:'t3',name,phone};S.customers.push(c);
+  entries.forEach(([d,amount,type])=>S.ledger.push({id:uid(),tid:'t3',cid:c.id,type,amount,at:today+d*DAY+10*3600e3,note:type==='cargo'?'Venta fiada':'Abono'}));
  });
  // proveedores
- [['Molinos del Valle','Harina, azúcar, levadura','604 360 1100','Martes y viernes'],['Lácteos La Pradera','Leche, yogur, queso','310 778 4410','Todos los días'],['Distribuidora Bebidas Antioquia','Gaseosas y jugos','604 512 8890','Lunes']].forEach(([name,what,phone,days])=>S.suppliers.push({id:uid(),tid:'t1',name,what,phone,days}));
+ [['Distribuidora Abarrotes El Ahorro','Granos, aceite, panela, enlatados','604 360 1100','Martes y viernes'],['Lácteos La Pradera','Leche, queso, huevos','310 778 4410','Todos los días'],['Distribuidora Bebidas Antioquia','Gaseosas y cerveza','604 512 8890','Lunes']].forEach(([name,what,phone,days])=>S.suppliers.push({id:uid(),tid:'t3',name,what,phone,days}));
  // vínculo proveedor ↔ productos e historial de compras
- const supBy=n=>S.suppliers.find(x=>x.tid==='t1'&&x.name===n);
- const link={'Molinos del Valle':['Harina de trigo','Azúcar','Levadura fresca','Bolsas de papel'],'Lácteos La Pradera':['Mantequilla','Queso costeño para pandebono','Leche para producción','Huevos','Leche entera 1 L','Yogur de fresa 200 g','Queso campesino 250 g'],'Distribuidora Bebidas Antioquia':['Gaseosa 400 ml','Jugo de naranja 300 ml']};
- for(const n in link)link[n].forEach(pn=>{const pr=S.products.find(x=>x.tid==='t1'&&x.name===pn);if(pr)pr.supplier=supBy(n).id});
- const byName=n=>S.products.find(x=>x.tid==='t1'&&x.name===n);
- const buy=(supName,list,at,method)=>{const sp=supBy(supName);const items=list.map(([n,q])=>{const pr=byName(n);return{pid:pr.id,name:pr.name,qty:q,unit:pr.unit,cost:pr.cost}});const total=sum(items,i=>i.qty*i.cost);S.purchases.push({id:uid(),tid:'t1',sid:sp.id,at,items,total,method});mv('t1','egreso','Compra de mercancía',`Compra a ${sp.name}`,total,at,method)};
- for(let w=0;w<5;w++){buy('Molinos del Valle',[['Harina de trigo',50],['Azúcar',ri(15,25)],['Levadura fresca',2]],today-w*7*DAY-DAY+8*3600e3,'efectivo');if(w<3)buy('Lácteos La Pradera',[['Mantequilla',4],['Leche para producción',20],['Queso costeño para pandebono',5]],today-w*7*DAY-3*DAY+9*3600e3,'transferencia')}
- const mkCombo=(code,name,price,parts)=>{const recipe=parts.map(([n,q])=>({pid:byName(n).id,qty:q}));S.products.push({id:uid(),tid:'t1',code,name,cat:'Combos',cost:Math.round(sum(recipe,c=>S.products.find(x=>x.id===c.pid).cost*c.qty)),price,stock:0,min:0,supplier:'',kind:'venta',unit:'und',recipe})};
- mkCombo('COMBO1','Desayuno: chocolate con pan y queso',7500,[['Chocolate caliente',1],['Pan francés',2],['Queso costeño para pandebono',0.05]]);
- mkCombo('COMBO2','Tinto con pandebono',2800,[['Café tinto',1],['Pan de bono',1]]);
- // caja por categorías: categorías creadas por la dueña de La Espiga
- [...new Set(S.products.filter(p=>p.tid==='t1'&&p.kind!=='insumo').map(p=>p.cat))].forEach((name,i)=>S.cats.push({id:uid(),tid:'t1',name,order:i}));
- // clientes afiliados a puntos (La Espiga): [puntos, hace cuántos días los ganó]
- [['1036654321','Luisa Fernanda Restrepo','300 455 1290',[[420,40],[180,200]]],['71789456','Jorge Iván Cardona','312 778 4410',[[95,10],[60,350]]],['1017223344','Valentina Zapata','318 902 3366',[[35,5]]]].forEach(([doc,name,phone,ls])=>{const id=uid();S.members.push({id,tid:'t1',doc,name,phone,consent:true,since:today-210*DAY,last:today-DAY,lotes:ls.map(([p,d])=>({p,v:today+(365-d)*DAY})).sort((a,b)=>a.v-b.v)});ls.forEach(([p,d])=>S.pmoves.push({id:uid(),tid:'t1',mid:id,type:'acumula',pts:p,note:'Compras',sid:'',at:today-d*DAY+11*3600e3,by:'u2'}))});
- // Puntos y fidelización: La Espiga los tiene encendidos; El Fogón los tiene en su plan pero apagados
- S.settings.push({id:'fid_t1',tid:'t1',on:true});
+ const supBy=n=>S.suppliers.find(x=>x.tid==='t3'&&x.name===n);
+ const link={'Distribuidora Abarrotes El Ahorro':['Arroz 1 kg','Aceite 1 L','Azúcar 1 kg','Panela x 2','Fríjol cargamanto 500 g','Lenteja 500 g','Pasta spaghetti 500 g','Atún en lata 170 g','Sal 1 kg'],'Lácteos La Pradera':['Leche entera 1 L','Queso campesino 250 g','Huevos x 12'],'Distribuidora Bebidas Antioquia':['Gaseosa 1.5 L','Cerveza nacional 330 ml']};
+ for(const n in link)link[n].forEach(pn=>{const pr=S.products.find(x=>x.tid==='t3'&&x.name===pn);if(pr)pr.supplier=supBy(n).id});
+ const byName=n=>S.products.find(x=>x.tid==='t3'&&x.name===n);
+ const buy=(supName,list,at,method)=>{const sp=supBy(supName);const items=list.map(([n,q])=>{const pr=byName(n);return{pid:pr.id,name:pr.name,qty:q,unit:pr.unit,cost:pr.cost}});const total=sum(items,i=>i.qty*i.cost);S.purchases.push({id:uid(),tid:'t3',sid:sp.id,at,items,total,method});mv('t3','egreso','Compra de mercancía',`Compra a ${sp.name}`,total,at,method)};
+ for(let w=0;w<5;w++){buy('Distribuidora Abarrotes El Ahorro',[['Arroz 1 kg',24],['Azúcar 1 kg',ri(12,20)],['Aceite 1 L',12],['Panela x 2',10]],today-w*7*DAY-DAY+8*3600e3,'efectivo');if(w<3)buy('Lácteos La Pradera',[['Leche entera 1 L',24],['Huevos x 12',8],['Queso campesino 250 g',6]],today-w*7*DAY-3*DAY+9*3600e3,'transferencia')}
+ const mkCombo=(code,name,price,parts)=>{const recipe=parts.map(([n,q])=>({pid:byName(n).id,qty:q}));S.products.push({id:uid(),tid:'t3',code,name,cat:'Combos',cost:Math.round(sum(recipe,c=>S.products.find(x=>x.id===c.pid).cost*c.qty)),price,stock:0,min:0,supplier:'',kind:'venta',unit:'und',recipe})};
+ mkCombo('COMBO1','Mercado básico: arroz, aceite, azúcar, panela y sal',26900,[['Arroz 1 kg',1],['Aceite 1 L',1],['Azúcar 1 kg',1],['Panela x 2',1],['Sal 1 kg',1]]);
+ mkCombo('COMBO2','Desayuno: arepas, queso y chocolate',17500,[['Arepas de maíz x 5',1],['Queso campesino 250 g',1],['Chocolate de mesa 250 g',1]]);
+ mkCombo('COMBO3','Kit de aseo: jabón, papel y detergente',23500,[['Jabón de loza 500 g',1],['Papel higiénico x 4',1],['Detergente 1 kg',1]]);
+ // caja por categorías: categorías creadas por el dueño de Don Pacho
+ [...new Set(S.products.filter(p=>p.tid==='t3'&&p.kind!=='insumo').map(p=>p.cat))].forEach((name,i)=>S.cats.push({id:uid(),tid:'t3',name,order:i}));
+ // clientes afiliados a puntos (Don Pacho): [puntos, hace cuántos días los ganó]
+ [['1036654321','Luisa Fernanda Restrepo','300 455 1290',[[420,40],[180,200]]],['71789456','Jorge Iván Cardona','312 778 4410',[[95,10],[60,350]]],['1017223344','Valentina Zapata','318 902 3366',[[35,5]]]].forEach(([doc,name,phone,ls])=>{const id=uid();S.members.push({id,tid:'t3',doc,name,phone,consent:true,since:today-210*DAY,last:today-DAY,lotes:ls.map(([p,d])=>({p,v:today+(365-d)*DAY})).sort((a,b)=>a.v-b.v)});ls.forEach(([p,d])=>S.pmoves.push({id:uid(),tid:'t3',mid:id,type:'acumula',pts:p,note:'Compras',sid:'',at:today-d*DAY+11*3600e3,by:'u2'}))});
+ // Puntos y fidelización: Don Pacho los tiene encendidos; El Fogón los tiene en su plan pero apagados
+ S.settings.push({id:'fid_t3',tid:'t3',on:true});
  // datos del recibo de ejemplo (Mi negocio)
  S.settings.push({id:'biz_t1',tid:'t1',razon:'Panadería La Espiga S.A.S.',nit:'900123456',dir:'Calle 50 # 43-21, barrio Prado',city:'Medellín',tel:'300 512 4471',email:'contacto@laespiga.co',regimen:'Responsable de IVA',pie:'Pan fresco todos los días desde las 6 a. m.'});
+ S.settings.push({id:'biz_t3',tid:'t3',razon:'Francisco Úsuga · Minimercado Don Pacho',nit:'71654987',dir:'Carrera 50 # 52-10, barrio Niquía',city:'Bello',tel:'320 744 1180',email:'donpacho@minimercado.co',regimen:'Responsable de IVA',pie:'Domicilios gratis en el barrio: pide por WhatsApp'});
  S.settings.push({id:'biz_t5',tid:'t5',razon:'El Fogón Paisa S.A.S.',nit:'900654321',dir:'Carrera 70 # 44-15, Laureles',city:'Medellín',tel:'304 381 2207',email:'',regimen:INC_REG,pie:'¡Gracias por visitarnos! Síguenos en redes'});
  // caja abierta hoy
- S.sessions.push({id:uid(),tid:'t1',openedAt:today+6*3600e3,openedBy:'u2',base:150000,closedAt:null});
+ S.sessions.push({id:uid(),tid:'t3',openedAt:today+6*3600e3,openedBy:'u2',base:150000,closedAt:null});
  S.sessions.push({id:uid(),tid:'t2',openedAt:today+7*3600e3,openedBy:'u5',base:100000,closedAt:null});
  S.sessions.push({id:uid(),tid:'t5',openedAt:t5open,openedBy:'u10',base:200000,closedAt:null});
- for(let d=1;d<=4;d++) S.sessions.push({id:uid(),tid:'t1',openedAt:today-d*DAY+6*3600e3,openedBy:pick(['u2','u3']),base:150000,closedAt:today-d*DAY+20*3600e3,closedBy:'u1',counted:0,expected:0,diff:pick([0,0,-2000,1000,0])});
+ for(let d=1;d<=4;d++) S.sessions.push({id:uid(),tid:'t3',openedAt:today-d*DAY+6*3600e3,openedBy:pick(['u2','u3']),base:150000,closedAt:today-d*DAY+20*3600e3,closedBy:'u6',counted:0,expected:0,diff:pick([0,0,-2000,1000,0])});
+ // La Espiga (Básico): la dueña abre y cierra la caja ella misma
+ S.sessions.push({id:uid(),tid:'t1',openedAt:today+6*3600e3,openedBy:'u1',base:80000,closedAt:null});
+ for(let d=1;d<=3;d++) S.sessions.push({id:uid(),tid:'t1',openedAt:today-d*DAY+6*3600e3,openedBy:'u1',base:80000,closedAt:today-d*DAY+19*3600e3,closedBy:'u1',counted:0,expected:0,diff:pick([0,0,-1000,0])});
  // mensajes y solicitudes
- S.messages.push({id:uid(),to:'all',kind:'aviso',title:'Bienvenidos a Natara',body:'Gracias por confiar en Samanat. Si necesitas ayuda para cargar tu inventario desde Excel, escríbenos y lo hacemos contigo.',at:today-12*DAY,readBy:['t1']});
+ S.messages.push({id:uid(),to:'all',kind:'aviso',title:'Bienvenidos a Natara',body:'Gracias por confiar en Samanat. Si necesitas ayuda para cargar tu inventario desde Excel, escríbenos y lo hacemos contigo.',at:today-12*DAY,readBy:['t3']});
  S.messages.push({id:uid(),to:'all',kind:'promo',title:'Nuevo módulo: Fiados y clientes',body:'Lleva el control de lo que te deben tus clientes y registra los abonos. Actívalo desde Mi plan.',at:today-2*DAY,readBy:[]});
  S.requests.push({id:uid(),tid:'t2',mod:'fiados',at:today-1*DAY+15*3600e3,status:'pendiente'});
  // pagos a Samanat
@@ -908,15 +912,15 @@ function autoCode(used,pre='P'){const P=T('products');let n=P.length+1,c;do{c=pr
 const balanceOf=cid=>sum(S.ledger.filter(l=>l.cid===cid),l=>l.type==='cargo'?l.amount:-l.amount);
 
 /* ---------- actividad en vivo (clave aparte para no re-renderizar a los negocios) ---------- */
-const LIVE=MODE==='real'?'natara-live-prod':'natara-live';const ONLINE_MS=MODE==='real'?720000:45000;let L0;
+const LIVE=MODE==='real'?'natara-live-prod':'natara-live-v2';const ONLINE_MS=MODE==='real'?720000:45000;let L0;
 function seedLive(){
  if(MODE==='real')return {presence:{},views:{},feed:[]};
  const r=mulberry32(77),ri=(a,b)=>a+Math.floor(r()*(b-a+1));const today=sod(Date.now()),now=Date.now();
- const L={presence:{},views:{t1:{caja:420,inventario:96,ventas:80,estadisticas:35,finanzas:28,fiados:22,proveedores:14,cierre:30},t2:{caja:260,inventario:70,ventas:45,estadisticas:10,cierre:24},t3:{caja:60,inventario:12},t4:{caja:24,inventario:9,ventas:4},t5:{mesas:380,caja:90,ventas:60,inventario:40,estadisticas:25,cierre:20}},feed:[]};
- const plan={t1:['u1','u2','u3'],t2:['u4','u5'],t3:['u6'],t4:['u7'],t5:['u9','u10','u11','u12']};const stop={t4:5};
+ const L={presence:{},views:{t3:{caja:420,inventario:96,ventas:80,estadisticas:35,finanzas:28,fiados:22,proveedores:14,cierre:30},t2:{caja:260,inventario:70,ventas:45,estadisticas:10,cierre:24},t1:{caja:60,inventario:12,cierre:8},t4:{caja:24,inventario:9,ventas:4},t5:{mesas:380,caja:90,ventas:60,inventario:40,estadisticas:25,cierre:20}},feed:[]};
+ const plan={t1:['u1'],t2:['u4','u5'],t3:['u6','u2','u3'],t4:['u7'],t5:['u9','u10','u11','u12']};const stop={t4:5};
  for(const tid in plan)for(let d=13;d>=0;d--){if(stop[tid]&&d<stop[tid])continue;plan[tid].forEach(u=>{if(r()<.15)return;const at=today-d*DAY+ri(6,9)*3600e3+ri(0,59)*6e4;if(at<now)L.feed.push({tid,uid:u,type:'login',text:'Inició sesión',at})})}
  S.sales.filter(s=>s.at>=today&&s.status!=='anulada').forEach(s=>L.feed.push({tid:s.tid,uid:s.seller,type:'venta',text:`Venta #${saleNo(s)} por ${money(s.total)}`,amount:s.total,at:s.at}));
- S.purchases.filter(x=>x.at>now-3*DAY).forEach(x=>L.feed.push({tid:x.tid,uid:'u1',type:'compra',text:`Compra a ${S.suppliers.find(s=>s.id===x.sid)?.name} por ${money(x.total)}`,at:x.at}));
+ S.purchases.filter(x=>x.at>now-3*DAY).forEach(x=>L.feed.push({tid:x.tid,uid:S.users.find(u=>u.tid===x.tid&&u.role==='dueno')?.id,type:'compra',text:`Compra a ${S.suppliers.find(s=>s.id===x.sid)?.name} por ${money(x.total)}`,at:x.at}));
  L.feed.sort((a,b)=>a.at-b.at);return L;
 }
 function liveRefresh(){if(REAL){L0=L0||{presence:{},views:{},feed:[]};return}try{const r=localStorage.getItem(LIVE);if(r){L0=JSON.parse(r);return}}catch(e){}if(!L0){L0=seedLive();liveSave()}}
@@ -1268,7 +1272,7 @@ function viewLogin(){
  const byT=S.tenants.filter(t=>DEMO_ADMIN||t.status==='activo').sort((a,b)=>(a.status!=='activo')-(b.status!=='activo')||rank[a.plan]-rank[b.plan]).map(t=>{const p=planById(t.plan);const extras=t.mods.filter(m=>!p.mods.includes(m));const susp=t.status!=='activo';
   return `<div class="plan-demo ${susp?'susp':''}"><div class="pd-head">${susp?`<div><span class="pd-kicker">Así se ve una cuenta suspendida</span><strong>${esc(t.name)}</strong><span class="muted small">${esc(t.type)} · plan ${p.name} sin pagar</span></div><span class="pill bad">${ic('lock',12)} Suspendida</span>`:`<div><span class="pd-kicker">Ejemplo: ${esc(t.name)} · ${esc(t.type)}</span><strong>Plan ${p.name}</strong><span class="muted small">${ideal[t.plan]}</span></div><div class="pd-price"><b>${money(fee(t))}</b><span class="muted small">al mes${extras.length?` · plan ${money(p.price)} + ${extras.map(m=>modById(m).name.toLowerCase()).join(', ')}`:''}</span></div>`}</div>
   ${susp?'':`<div class="chips">${t.mods.filter(promoMod).map(m=>`<span class="pill ${p.mods.includes(m)?'':'ac'}">${modById(m).name}</span>`).join('')}</div>`}
-  <div class="acc-group">${S.users.filter(u=>u.tid===t.id&&u.active).map(acc).join('')}</div>${susp?'':`<button class="btn primary" data-a="co-open" data-v="${t.plan}" style="align-self:flex-start">${ic('cart',16)} Contratar el plan ${p.name}</button>`}</div>`}).join('');
+  <div class="acc-group">${S.users.filter(u=>u.tid===t.id&&u.active).sort((a,b)=>(b.role==='dueno')-(a.role==='dueno')).map(acc).join('')}</div>${susp?'':`<button class="btn primary" data-a="co-open" data-v="${t.plan}" style="align-self:flex-start">${ic('cart',16)} Contratar el plan ${p.name}</button>`}</div>`}).join('');
  return `<div class="login">${loginBrand()}
   <section class="login-pick">
    <div><h2>${DEMO_ADMIN?'Demo · Consola de Samanat':'Entra a la demo'}</h2><p class="muted" style="margin:6px 0 0">${DEMO_ADMIN?'Esta página es solo para ti. Usa los mismos datos de la demo de clientes, más tu consola de superusuario.':'Elige una cuenta. Cada rol ve sus propios módulos.'}</p></div>
@@ -1289,17 +1293,18 @@ function testCases(){
  return `<details class="hint" open><summary><b>Cuentas y casos para probar</b></summary>
   <p style="margin:8px 0 4px">Contraseña de todas las cuentas: <b class="mono">${DEMO_PASS}</b>. Toca un correo para llenarlo.</p>
   <ul class="cases">
-   <li>${em('marta@laespiga.co')} dueña de la panadería</li>
-   <li>${em('juan@laespiga.co')} cajero con permisos: inventario, costos, proveedores y fiados</li>
-   <li>${em('laura@laespiga.co')} cajera sin permisos: solo vende y ve sus ventas</li>
+   <li>${em('pacho@minimercado.co')} dueño del minimercado (plan Premium)</li>
+   <li>${em('yuliana@minimercado.co')} cajera con permisos: inventario, costos, proveedores y fiados</li>
+   <li>${em('brayan@minimercado.co')} cajero sin permisos: solo vende y ve sus ventas</li>
+   <li>${em('marta@laespiga.co')} dueña de la panadería (plan Básico)</li>
   </ul>
   <b>Validaciones</b>
   <ul class="cases">
-   <li>Correo sin @ o sin dominio, por ejemplo <span class="mono">marta@laespiga</span> → correo con formato inválido</li>
+   <li>Correo sin @ o sin dominio, por ejemplo <span class="mono">pacho@minimercado</span> → correo con formato inválido</li>
    <li>Campos vacíos → te dice cuál falta</li>
    <li>Contraseña equivocada → "Correo o contraseña incorrectos" y los intentos que quedan</li>
    <li>5 intentos fallidos → ingreso bloqueado 1 minuto con cuenta regresiva</li>
-   <li>${em('pedro@laespiga.co')} → usuario desactivado por la dueña</li>
+   <li>${em('kevin@minimercado.co')} → usuario desactivado por el dueño</li>
    <li>${em('andrea@arcoiris.co')} → entra, pero el negocio está suspendido por falta de pago</li>
    <li>Bloq Mayús activado → aviso debajo de la contraseña</li>
    <li>¿Olvidaste tu contraseña? → código de 6 dígitos y reglas de contraseña segura</li>
