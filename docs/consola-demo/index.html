@@ -1194,8 +1194,12 @@ function tenantView(){
  if(nn.mod&&!t.mods.includes(nn.mod))return viewUpsell(nn.mod);
  return ({inicio:viewInicio,negocio:viewNegocio,mesas:viewMesas,caja:viewCaja,cierre:viewCierre,ventas:viewVentas,inventario:viewInventario,recetas:viewRecetas,guia:viewGuia,fiados:viewFiados,puntos:viewPuntos,finanzas:viewFinanzas,estadisticas:viewStats,proveedores:viewProveedores,empleados:viewEmpleados,plan:viewPlan,mensajes:viewMensajes})[v]();
 }
+// En celular o tablet (pantalla táctil, sin mouse) no se pone el cursor solo en el buscador de la caja:
+// eso abre el teclado cada vez que se toca un producto. En computador sí, para que el lector de barras siga listo.
+const esTactil=()=>matchMedia('(hover: none) and (pointer: coarse)').matches;
+function focusPosQ(){if(esTactil())return;$('#pos-q')?.focus()}
 function afterRender(){
- if(sess.view==='caja'&&!$('#modal-root').innerHTML){const q=$('#pos-q');if(q)q.focus()}
+ if(sess.view==='caja'&&!$('#modal-root').innerHTML)focusPosQ()
 }
 
 /* =========================================================
@@ -1691,7 +1695,7 @@ function viewCaja(){
 function posQBar(){const it=pos.last&&cart.find(i=>i.pid===pos.last);if(!it)return '';
  return `<div class="scan-qty"><span class="grow"><b>${esc(it.name)}</b><span class="muted small"> · ${money(it.price)} c/u</span></span><label for="pos-qn" class="small">¿Cuántos?</label><input class="input num" id="pos-qn" type="text" inputmode="numeric" autocomplete="off" value="${it.qty}" aria-label="Cantidad de ${esc(it.name)}"><button class="btn sm primary" data-a="qn-ok">Listo</button></div>`}
 function posQShow(pid,focus){pos.last=pid;const b=$('#pos-qbar');if(!b)return;b.innerHTML=posQBar();if(focus){const q=$('#pos-qn');if(q){q.focus();q.select()}}}
-function posQDone(){const q=$('#pos-qn');if(q&&pos.last)setCartQty(pos.last,q.value);pos.last=null;const b=$('#pos-qbar');if(b)b.innerHTML='';$('#pos-q')?.focus()}
+function posQDone(){const q=$('#pos-qn');if(q&&pos.last)setCartQty(pos.last,q.value);pos.last=null;const b=$('#pos-qbar');if(b)b.innerHTML='';if(esTactil())document.activeElement?.blur();else focusPosQ()}
 // Un código leído en cualquier campo de la caja: se agrega y queda lista la cantidad
 function posCode(code){const p=findByCode(code);if(!p||p.kind==='insumo'){scanBeep(false);toast(`No encontramos el código ${code}`,'bad');return false}
  if(!addToCart(p)){scanBeep(false);return false}scanBeep(true);posQShow(p.id,true);return true}
@@ -2889,7 +2893,7 @@ document.addEventListener('click',e=>{
   'reset-ask':()=>openModal('Restablecer demo','<p>Se borran todos los cambios y vuelven los datos de ejemplo. Esto aplica en este navegador.</p>',`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="reset-do">Restablecer</button>`),
   'reset-do':()=>{S=seed();save();L0=seedLive();liveSave();closeModal();toast('Demo restablecida');render()},
   // POS
-  add:()=>{addToCart(S.products.find(p=>p.id===id));const q=$('#pos-q');if(q){q.focus()}},
+  add:()=>{addToCart(S.products.find(p=>p.id===id));focusPosQ()},
   'pos-cat':()=>{pos.cat=v;pos.q='';const q=$('#pos-q');if(q)q.value='';const pr=$('#pos-results');if(pr)pr.innerHTML=posResults()},
   // categorías (dueño o empleado con permiso de editar inventario)
   cats:()=>catsModal(),
