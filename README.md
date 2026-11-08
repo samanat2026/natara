@@ -198,7 +198,7 @@ Al crear un cliente se genera una contraseña temporal y se envía por correo co
 - Producto 2: agendamiento de citas para salones de uñas por WhatsApp.
 
 ## Visitas a la demo
-- La demo pública (`/natara/demo/`) cuenta sus visitas en Firestore, colección `demovisits`: un documento `total` y uno por día (`d_AAAA-MM-DD`, hora de Colombia).
+- La demo pública (`/demo/`) cuenta sus visitas en Firestore, colección `demovisits`: un documento `total` y uno por día (`d_AAAA-MM-DD`, hora de Colombia).
 - **Personas** = navegadores distintos (se marca con `localStorage`). **Visitas** = veces que abrieron la demo (una por pestaña o sesión).
 - No cuentan la app real, la consola de demo ni las vistas previas fuera de la demo publicada.
 - En la demo, el aviso "X personas han probado Natara" aparece desde `VIS_MIN` (10) personas. En la consola (Resumen) se ven los totales, hoy, los últimos 7 días y una gráfica de 14 días.
