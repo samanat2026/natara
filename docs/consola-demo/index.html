@@ -12,8 +12,8 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Natara · Demo">
 <meta property="og:description" content="Prueba Natara gratis: inventario, caja, ingresos y egresos para tu negocio.">
-<meta property="og:image" content="https://samanat2026.github.io/natara/logo-512.png">
-<meta property="og:url" content="https://samanat2026.github.io/natara/demo/">
+<meta property="og:image" content="https://natara.pages.dev/logo-512.png">
+<meta property="og:url" content="https://natara.pages.dev/demo/">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Natara · Consola demo</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -525,7 +525,10 @@ details.hint summary{cursor:pointer}
    Estado local (por navegador). Pestañas sincronizadas en vivo.
    ========================================================= */
 const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';const DEMO_ADMIN=MODE==='demo'&&window.NATARA_DEMO_ADMIN===true;const ADMIN_EMAIL='samanat2026@gmail.com';
-const REAL_URL='https://samanat2026.github.io/natara/',DEMO_URL='https://samanat2026.github.io/natara/demo/';
+// Las direcciones salen de donde esté publicada la app (sirve en cualquier hosting, sin escribir el dominio):
+// https://algo/ → app real · https://algo/demo/ → demo
+const SITE_BASE=(()=>{try{if(!/^https?:$/.test(location.protocol))throw 0;let p=location.pathname.replace(/[^/]*$/,'');p=p.replace(/(consola-demo|demo|diagnostico)\/$/,'');return location.origin+p}catch(e){return 'https://natara.pages.dev/'}})();
+const REAL_URL=SITE_BASE,DEMO_URL=SITE_BASE+'demo/';
 const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v17';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
@@ -1205,14 +1208,14 @@ let lg={mode:MODE==='real'?'form':'pick',email:'',pass:'',err:{},fails:{},lockUn
 const DEMO_PASS='Natara2026*';
 /* =========================================================
    VISITAS A LA DEMO — contador público en Firestore (colección demovisits)
-   Solo cuenta en samanat2026.github.io/natara/demo/ (no en la app real,
+   Solo cuenta en la demo publicada (/demo/) — no en la app real,
    ni en la consola de demo, ni en vistas previas).
    personas = navegadores distintos · visitas = sesiones (pestaña abierta)
    ========================================================= */
 const VIS_MIN=10; // la demo muestra el contador desde esta cantidad de personas
 const VIS={total:null,days:[],loaded:0,busy:false};
 function visDay(t){return new Date(t||Date.now()).toLocaleDateString('en-CA',{timeZone:'America/Bogota'})}
-function visShouldCount(){return !REAL&&!DEMO_ADMIN&&location.hostname==='samanat2026.github.io'&&/\/demo\/?/.test(location.pathname)}
+function visShouldCount(){return !REAL&&!DEMO_ADMIN&&location.protocol==='https:'&&!/^(localhost|127\.|192\.168\.)/.test(location.hostname)&&/\/demo\/(index\.html)?$/.test(location.pathname)}
 async function visCount(){
  if(!visShouldCount())return;
  let newSes=false,newPer=false;
@@ -3396,7 +3399,7 @@ async function fbAfterAuth(u){
   subscribe(prof);RB.authReady=true;RB.profileReady=true;lg.banner=null;lg.err={};
   if(prof.tid)liveEvent('login','Entró a Natara');
   try{render()}catch(e){console.error('render',e)}
- }catch(e){console.error(e);RB.authReady=true;lg.banner=['bad',e.code==='permission-denied'?(u.email===ADMIN_EMAIL?'Firestore rechazó el acceso: falta pegar las reglas de seguridad (Firebase → Firestore → Reglas → Publicar). Revísalo en samanat2026.github.io/natara/diagnostico/':'Tu cuenta no tiene permisos. Habla con Samanat.'):/does not exist|not.?found/i.test(e.message||'')?'La base de datos de Firestore todavía no está creada. Revísalo en samanat2026.github.io/natara/diagnostico/':'No pudimos cargar tu cuenta. Revisa tu conexión e intenta de nuevo.'];try{await FB.signOut(FB.auth)}catch(_){}render()}
+ }catch(e){console.error(e);RB.authReady=true;lg.banner=['bad',e.code==='permission-denied'?(u.email===ADMIN_EMAIL?'Firestore rechazó el acceso: falta pegar las reglas de seguridad (Firebase → Firestore → Reglas → Publicar). Revísalo en '+SITE_BASE+'diagnostico/':'Tu cuenta no tiene permisos. Habla con Samanat.'):/does not exist|not.?found/i.test(e.message||'')?'La base de datos de Firestore todavía no está creada. Revísalo en '+SITE_BASE+'diagnostico/':'No pudimos cargar tu cuenta. Revisa tu conexión e intenta de nuevo.'];try{await FB.signOut(FB.auth)}catch(_){}render()}
 }
 function fbBoot(){
  FB.onAuthStateChanged(FB.auth,u=>{

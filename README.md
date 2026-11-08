@@ -4,8 +4,9 @@ Software de gestión para pequeños negocios (panaderías, farmacias, minimercad
 
 ## Demo
 
-- **App real (clientes):** https://samanat2026.github.io/natara/
-- **Demo para mostrar:** https://samanat2026.github.io/natara/demo/
+- **App real (clientes):** https://natara.pages.dev/ (antes en GitHub Pages; la cuenta de GitHub fue suspendida el 7 de noviembre de 2026)
+- **Demo para mostrar:** https://natara.pages.dev/demo/
+- Las direcciones internas salen de donde esté publicada la app, así que funciona en cualquier hosting sin cambiar el código.
 
 `index.html` es la app real y `demo/index.html` la demo, generadas desde el mismo código (`window.NATARA_MODE`). Solo se edita `index.html`; después `python3 tools/build.py` genera `demo/`, `consola-demo/` y la copia en `docs/`. La demo trae datos de ejemplo y cuentas de prueba; la app real arranca vacía, solo con la cuenta de Samanat.
 
@@ -198,7 +199,7 @@ Al crear un cliente se genera una contraseña temporal y se envía por correo co
 ## Visitas a la demo
 - La demo pública (`/natara/demo/`) cuenta sus visitas en Firestore, colección `demovisits`: un documento `total` y uno por día (`d_AAAA-MM-DD`, hora de Colombia).
 - **Personas** = navegadores distintos (se marca con `localStorage`). **Visitas** = veces que abrieron la demo (una por pestaña o sesión).
-- No cuentan la app real, la consola de demo ni las vistas previas fuera de `samanat2026.github.io`.
+- No cuentan la app real, la consola de demo ni las vistas previas fuera de la demo publicada.
 - En la demo, el aviso "X personas han probado Natara" aparece desde `VIS_MIN` (10) personas. En la consola (Resumen) se ven los totales, hoy, los últimos 7 días y una gráfica de 14 días.
 - **Reglas:** se agregó `demovisits` (lectura pública; cada escritura solo suma 1 visita y máximo 1 persona). Hay que volver a pegar `firestore.rules` en Firebase.
 

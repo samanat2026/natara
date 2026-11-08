@@ -25,7 +25,7 @@ a{color:#0E7C66;font-weight:600}
 <h1>Diagnóstico de Natara</h1>
 <p>Revisa si Firebase quedó bien configurado. Mándale un pantallazo de esta página a quien te ayuda.</p>
 <div id="list"></div>
-<p style="margin-top:20px">Cuando todo esté en verde, entra a la app: <a href="/natara/">samanat2026.github.io/natara</a></p>
+<p style="margin-top:20px">Cuando todo esté en verde, entra a la app: <a href="../" id="app-link">la app</a></p>
 </main>
 <script type="module">
 const list=document.getElementById('list');
@@ -42,7 +42,8 @@ try{
 const app=A.initializeApp(cfg);const auth=AU.getAuth(app);const db=FS.getFirestore(app);
 
 const r2=row('2. Inicio de sesión con correo y contraseña (Authentication)');
-const r3=row('3. Dominio autorizado: samanat2026.github.io');
+const HOST=location.hostname,BASE=location.href.replace(/diagnostico\/.*$/,'');document.getElementById('app-link').textContent=BASE;
+const r3=row('3. Dominio autorizado: '+HOST);
 try{
  await AU.signInWithEmailAndPassword(auth,'diagnostico-no-existe@natara.co','Prueba-No-Existe-123!');
  r2('ok','Activado.');
@@ -55,11 +56,11 @@ try{
  else r2('wait','Respuesta inesperada: <code>'+c+'</code>');
 }
 try{
- await AU.sendPasswordResetEmail(auth,'diagnostico-no-existe@natara.co',{url:'https://samanat2026.github.io/natara/'});
+ await AU.sendPasswordResetEmail(auth,'diagnostico-no-existe@natara.co',{url:BASE});
  r3('ok','Autorizado.');
 }catch(e){
  const c=e.code||'';
- if(c==='auth/unauthorized-continue-uri'||c==='auth/unauthorized-domain')r3('bad','<b>Falta agregarlo.</b> En Firebase → Authentication → Configuración → Dominios autorizados → Agregar dominio → <code>samanat2026.github.io</code>.');
+ if(c==='auth/unauthorized-continue-uri'||c==='auth/unauthorized-domain')r3('bad','<b>Falta agregarlo.</b> En Firebase → Authentication → Configuración → Dominios autorizados → Agregar dominio → <code>'+HOST+'</code>.');
  else if(c==='auth/user-not-found')r3('ok','Autorizado.');
  else if(c==='auth/operation-not-allowed'||c==='auth/configuration-not-found')r3('wait','Primero activa el inicio de sesión con correo (punto 2).');
  else r3('wait','Respuesta inesperada: <code>'+c+'</code>');
