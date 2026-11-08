@@ -4,8 +4,9 @@ Software de gestión para pequeños negocios (panaderías, farmacias, minimercad
 
 ## Demo
 
-- **App real (clientes):** https://natara.pages.dev/ (antes en GitHub Pages; la cuenta de GitHub fue suspendida el 7 de noviembre de 2026)
-- **Demo para mostrar:** https://natara.pages.dev/demo/
+- **App real (clientes):** https://natara.com.co/ (dominio propio en Cloudflare; antes estaba en GitHub Pages, cuya cuenta fue suspendida el 7 de noviembre de 2026)
+- **Demo para mostrar:** https://natara.com.co/demo/
+- **Hosting:** Cloudflare Pages, proyecto `natara` (dirección de pruebas: https://natara-ckm.pages.dev/). Para publicar: `python3 tools/build.py`, comprimir `index.html`, `demo/`, `consola-demo/`, `diagnostico/` y los logos, y subir el .zip en *Workers & Pages → natara → Crear implementación*.
 - Las direcciones internas salen de donde esté publicada la app, así que funciona en cualquier hosting sin cambiar el código.
 
 `index.html` es la app real y `demo/index.html` la demo, generadas desde el mismo código (`window.NATARA_MODE`). Solo se edita `index.html`; después `python3 tools/build.py` genera `demo/`, `consola-demo/` y la copia en `docs/`. La demo trae datos de ejemplo y cuentas de prueba; la app real arranca vacía, solo con la cuenta de Samanat.

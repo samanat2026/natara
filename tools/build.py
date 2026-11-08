@@ -15,8 +15,8 @@ OGT_R = '<meta property="og:title" content="Natara · by Samanat">'
 OGT_D = '<meta property="og:title" content="Natara · Demo">'
 OGD_R = '<meta property="og:description" content="Inventario, caja, ingresos y egresos para tu negocio.">'
 OGD_D = '<meta property="og:description" content="Prueba Natara gratis: inventario, caja, ingresos y egresos para tu negocio.">'
-OGU_R = '<meta property="og:url" content="https://natara.pages.dev/">'
-OGU_D = '<meta property="og:url" content="https://natara.pages.dev/demo/">'
+OGU_R = '<meta property="og:url" content="https://natara.com.co/">'
+OGU_D = '<meta property="og:url" content="https://natara.com.co/demo/">'
 MODE = '<script>window.NATARA_MODE="real";</script>\n'
 
 s0 = src.index('<script>window.NATARA_FB_CONFIG=')
