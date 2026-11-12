@@ -32,7 +32,7 @@ El kardex necesita un índice compuesto, definido en [`firestore.indexes.json`](
 
 ### Alerta de cuota por WhatsApp
 
-`tools/alerta_cuota.py` corre en GitHub cada 10 minutos (`.github/workflows/alerta-cuota.yml`). Consulta en Google Cloud Monitoring cuántas lecturas, escrituras y borrados lleva Firestore hoy y avisa por WhatsApp (CallMeBot) al pasar el 80 %, el 90 % y el 95 % de la cuota gratis (50.000 lecturas, 20.000 escrituras y 20.000 borrados al día). Cada aviso sale una vez al día; la cuota se reinicia a la medianoche del Pacífico (2 o 3 a. m. en Colombia). Necesita los secretos `GCP_SA_KEY`, `CALLMEBOT_PHONE` y `CALLMEBOT_APIKEY`. Para probarlo: Actions → *Alerta de cuota de Firebase* → *Run workflow*.
+`tools/alerta_cuota.py` está **apagado** (solo se corre a mano en Actions): las métricas de Firestore que usa solo existen en el plan Blaze. Cuando se encienda, corre cada hora (`.github/workflows/alerta-cuota.yml`). Consulta en Google Cloud Monitoring cuántas lecturas, escrituras y borrados lleva Firestore hoy y avisa por WhatsApp (CallMeBot) al pasar el 80 %, el 90 % y el 95 % de la cuota gratis (50.000 lecturas, 20.000 escrituras y 20.000 borrados al día). Cada aviso sale una vez al día; la cuota se reinicia a la medianoche del Pacífico (2 o 3 a. m. en Colombia). Necesita los secretos `GCP_SA_KEY`, `CALLMEBOT_PHONE` y `CALLMEBOT_APIKEY`. Para probarlo: Actions → *Alerta de cuota de Firebase* → *Run workflow*.
 
 ### Cuentas de ejemplo
 

@@ -1,7 +1,9 @@
 name: Alerta de cuota de Firebase
 on:
-  schedule:
-    - cron: '*/10 * * * *'   # cada 10 minutos (GitHub a veces se demora unos minutos más)
+  # Apagado: Firestore solo da estas métricas en el plan Blaze, y correr cada 10 minutos
+  # sin poder leerlas no sirve. Para volver a encenderlo, quita el # de las dos líneas:
+  # schedule:
+  #   - cron: '0 * * * *'   # cada hora
   workflow_dispatch:
     inputs:
       prueba:
