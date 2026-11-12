@@ -526,8 +526,10 @@ details.hint summary{cursor:pointer}
    ========================================================= */
 const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';const DEMO_ADMIN=MODE==='demo'&&window.NATARA_DEMO_ADMIN===true;const ADMIN_EMAIL='samanat2026@gmail.com';
 // Las direcciones salen de donde esté publicada la app (sirve en cualquier hosting, sin escribir el dominio):
-// https://algo/ → app real · https://algo/demo/ → demo
-const SITE_BASE=(()=>{try{if(!/^https?:$/.test(location.protocol))throw 0;let p=location.pathname.replace(/[^/]*$/,'');p=p.replace(/(consola-demo|demo|diagnostico)\/$/,'');return location.origin+p}catch(e){return 'https://natara.com.co/'}})();
+// Dirección oficial: los enlaces que ven los clientes (correos, WhatsApp, "ir a la app") siempre apuntan a natara.com.co,
+// sin importar desde qué dirección se abra. Solo en pruebas locales (localhost) se usa la dirección local.
+const SITE_URL='https://natara.com.co/';
+const SITE_BASE=(()=>{try{if(!/^https?:$/.test(location.protocol)||!/^(localhost|127\.|192\.168\.)/.test(location.hostname))return SITE_URL;let p=location.pathname.replace(/[^/]*$/,'');p=p.replace(/(consola-demo|demo|diagnostico)\/$/,'');return location.origin+p}catch(e){return SITE_URL}})();
 const REAL_URL=SITE_BASE,DEMO_URL=SITE_BASE+'demo/';
 const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v17';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';

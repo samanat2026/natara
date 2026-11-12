@@ -4,10 +4,10 @@ Software de gestión para pequeños negocios (panaderías, farmacias, minimercad
 
 ## Demo
 
-- **App real (clientes):** https://natara.com.co/ (dominio propio en Cloudflare; antes estaba en GitHub Pages, cuya cuenta fue suspendida el 7 de noviembre de 2026)
+- **App real (clientes):** https://natara.com.co/
 - **Demo para mostrar:** https://natara.com.co/demo/
-- **Hosting:** Cloudflare Pages, proyecto `natara` (dirección de pruebas: https://natara-ckm.pages.dev/). Para publicar: `python3 tools/build.py`, comprimir `index.html`, `demo/`, `consola-demo/`, `diagnostico/` y los logos, y subir el .zip en *Workers & Pages → natara → Crear implementación*.
-- Las direcciones internas salen de donde esté publicada la app, así que funciona en cualquier hosting sin cambiar el código.
+- **Hosting:** Cloudflare Pages, conectado a este repositorio: cada push a `main` publica la carpeta `docs/` en https://natara.com.co/. Antes de subir: `python3 tools/build.py` y `python3 tools/check.py`.
+- Los enlaces que ven los clientes (correos, WhatsApp, "ir a la app") siempre usan https://natara.com.co/ (`SITE_URL` en `index.html`); solo en pruebas locales (localhost) usan la dirección local.
 
 `index.html` es la app real y `demo/index.html` la demo, generadas desde el mismo código (`window.NATARA_MODE`). Solo se edita `index.html`; después `python3 tools/build.py` genera `demo/`, `consola-demo/` y la copia en `docs/`. La demo trae datos de ejemplo y cuentas de prueba; la app real arranca vacía, solo con la cuenta de Samanat.
 
@@ -103,7 +103,7 @@ Complemento de $14.900/mes (incluido en Premium y Restaurante). Samanat lo activ
 
 - **Cámara del celular o del computador (gratis):** botón *Cámara* en la búsqueda de la Caja, las Mesas, el Inventario y las compras a proveedores, y botón de cámara junto al campo *Código de barras* del producto. En la caja y las mesas el escáner se queda abierto: cada producto que se lee entra solo a la venta, con pitido y vibración. Mientras el mismo código siga frente a la cámara no se suma dos veces; para otro igual se retira y se vuelve a apuntar. Si el código no existe, el dueño lo puede crear ahí mismo.
   - Motor: el `BarcodeDetector` del navegador (Chrome en Android) y, donde no existe (iPhone, Firefox, computador), ZXing (`@zxing/library` 0.21.3 desde jsDelivr), que solo se descarga la primera vez que se abre la cámara. Lee EAN-13, EAN-8, UPC, Code 128, Code 39, ITF y QR.
-  - Necesita HTTPS (GitHub Pages ya lo es) y que la persona dé permiso de cámara.
+  - Necesita HTTPS (natara.com.co ya lo es) y que la persona dé permiso de cámara.
 - **Cantidad al leer un producto:** en la Caja, al leer un código con el lector USB aparece arriba *Arroz 1 kg · ¿Cuántos?* con el número listo para escribir: se escribe la cantidad y Enter. Si en vez de eso se lee otro producto, el primero queda con 1 y sigue el nuevo. Con la cámara, el último producto leído trae − y + y un campo para escribir la cantidad en la misma pantalla del lector.
 - **Lector USB o Bluetooth:** funciona como un teclado. En la Caja, las Mesas (dentro de una mesa) y el Inventario no hace falta tocar el campo de búsqueda: Natara reconoce las teclas rápidas que terminan en Enter y agrega el producto. Si el cursor está en un campo (por ejemplo *Código* del producto), el código se escribe ahí.
 
