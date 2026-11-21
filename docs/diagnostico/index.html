@@ -25,7 +25,7 @@ a{color:#0E7C66;font-weight:600}
 <h1>Diagnóstico de Natara</h1>
 <p>Revisa si Firebase quedó bien configurado. Mándale un pantallazo de esta página a quien te ayuda.</p>
 <div id="list"></div>
-<p style="margin-top:20px">Cuando todo esté en verde, entra a la app: <a href="../" id="app-link">la app</a></p>
+<p style="margin-top:20px">Cuando todo esté en verde, entra a la app: <a href="/" id="app-link">la app</a></p>
 </main>
 <script type="module">
 const list=document.getElementById('list');
@@ -42,7 +42,7 @@ try{
 const app=A.initializeApp(cfg);const auth=AU.getAuth(app);const db=FS.getFirestore(app);
 
 const r2=row('2. Inicio de sesión con correo y contraseña (Authentication)');
-const HOST=location.hostname,BASE=location.href.replace(/diagnostico\/.*$/,'');document.getElementById('app-link').textContent=BASE;
+const HOST=location.hostname,BASE=location.origin+location.pathname.replace(/diagnostico\/?.*$/,'');{const l=document.getElementById('app-link');l.textContent=BASE;l.href=BASE;l.target='_top'}
 const r3=row('3. Dominio autorizado: '+HOST);
 try{
  await AU.signInWithEmailAndPassword(auth,'diagnostico-no-existe@natara.co','Prueba-No-Existe-123!');
