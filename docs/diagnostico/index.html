@@ -53,6 +53,7 @@ try{
  else if(c==='auth/configuration-not-found')r2('bad','<b>Authentication no está iniciado.</b> En Firebase → Authentication → botón “Comenzar”, y luego activa Correo electrónico/contraseña.');
  else if(['auth/invalid-credential','auth/user-not-found','auth/wrong-password','auth/invalid-login-credentials'].includes(c))r2('ok','Activado y respondiendo.');
  else if(c==='auth/unauthorized-domain')r2('bad','Este dominio no está autorizado.');
+ else if(c==='auth/network-request-failed')r2('wait','No hubo conexión con Firebase en ese momento (internet lento o cambiando de red). Recarga la página.');
  else r2('wait','Respuesta inesperada: <code>'+c+'</code>');
 }
 try{
