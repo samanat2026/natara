@@ -506,6 +506,16 @@ details.hint summary{cursor:pointer}
  #print-area .ln>:last-child{text-align:right;white-space:nowrap}
  #print-area hr{border:0;border-top:1px dashed #000;margin:5px 0}
 }
+/* Domicilios */
+.dom-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.dom-card{display:flex;flex-direction:column;gap:8px}
+.dom-card .dc-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dom-card .dc-addr{font-size:14px;line-height:1.45}
+.dom-card .dc-money{display:flex;justify-content:space-between;gap:4px 10px;font-size:13px;background:var(--surface-2);border-radius:10px;padding:8px 10px;flex-wrap:wrap}
+.dom-card .dc-links{display:flex;gap:6px;flex-wrap:wrap}
+.dom-card .dc-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto}
+.dom-form{margin:4px 0 2px}
+.dom-card a.btn{text-decoration:none}
 </style>
 </head>
 <body>
@@ -529,7 +539,7 @@ const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';co
 const SITE_URL='https://natara.com.co/';
 const SITE_BASE=(()=>{try{if(!/^https?:$/.test(location.protocol)||!/^(localhost|127\.|192\.168\.)/.test(location.hostname))return SITE_URL;let p=location.pathname.replace(/[^/]*$/,'');p=p.replace(/(consola-demo|demo|diagnostico)\/$/,'');return location.origin+p}catch(e){return SITE_URL}})();
 const REAL_URL=SITE_BASE,DEMO_URL=SITE_BASE+'demo/';
-const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v18';
+const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v19';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 const WA_NUM='573146619135',WA_TXT='314 661 9135';
@@ -570,6 +580,9 @@ const IC={
  box:'M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8',
  receipt:'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h4',
  ccard:'M3 6h18a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zM2 10h20M6 15h4',
+ phone:'M5 4h3l2 5-2.5 1.5a11 11 0 0 0 6 6L15 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2',
+ pin:'M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5a2.5 2.5 0 0 0 0 5',
+ moto:'M3 17a2 2 0 1 0 4 0a2 2 0 1 0-4 0M17 17a2 2 0 1 0 4 0a2 2 0 1 0-4 0M7 17h7l3-6h-4l-2-3H8M14 5h3l3 6M5 13h4',
  wallet:'M3 7h15a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zM3 7l12-4v4M16 14h.01',
  chart:'M4 20V10M10 20V4M16 20v-7M22 20H2',
  users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8',
@@ -628,6 +641,7 @@ const MODS=[
  {id:'proveedores',name:'Proveedores',icon:'truck',price:19900,desc:'Directorio de proveedores y registro de compras que suben el inventario y quedan como egreso.'},
  {id:'mesas',name:'Mesas y meseros',icon:'table',price:29900,food:true,desc:'Para restaurantes y cafeterías: ves tus mesas libres y ocupadas, cada mesero abre su mesa y agrega lo que piden, y en la caja cobras por persona: cada quien paga lo suyo y la mesa sigue abierta hasta que se pague todo.'},
  {id:'recetas',name:'Recetas y combos',icon:'chef',price:10000,addon:true,desc:'Arma productos con lo que tienes en inventario: una arepa con chorizo y queso, un desayuno, un combo. Al venderlos, cada ingrediente se descuenta solo, y ves cuánto te cuesta y cuánto ganas en cada uno.'},
+ {id:'domicilios',name:'Domicilios',icon:'moto',price:10000,addon:true,desc:'Registra pedidos a domicilio desde la caja con la dirección del cliente, asígnalos a tus domiciliarios o a uno externo y sigue cada pedido hasta que se entrega. El envío es del domiciliario y no entra a tu caja.'},
  {id:'lector',name:'Lector de código de barras',icon:'barcode',price:14900,addon:true,desc:'Vende y busca productos escaneando el código con la cámara del celular o con un lector USB o Bluetooth. Ideal si el negocio vende productos empacados.'},
  {id:'fidelizacion',name:'Puntos y fidelización',icon:'gift',price:5000,addon:true,desc:'Tus clientes se afilian gratis con su cédula, acumulan puntos con cada compra y los usan como descuento en la caja, al estilo de Puntos Colombia. Tú decides cada cuánto se gana un punto, cuánto vale y cuándo vence.'},
 ];
@@ -799,6 +813,28 @@ function seed(){
  S.requests.push({id:uid(),tid:'t2',mod:'fiados',at:today-1*DAY+15*3600e3,status:'pendiente'});
  // pagos a Samanat
  S.tenants.forEach(t=>{for(let m=0;m<5;m++){const at=t.due-(m+1)*30*DAY;if(at>t.since&&at<now)S.payments.push({id:uid(),tid:t.id,amount:fee(t),at,method:pick(['Nequi','Bancolombia','Efectivo'])})}});
+ // DOMICILIOS de ejemplo: Don Pacho (Premium) y El Fogón (Restaurante), con un domiciliario propio cada uno
+ S.users.push({id:'u13',tid:'t3',name:'Jhon Pérez',role:'cajero',puesto:'domiciliario',email:'jhon@minimercado.co',pin:'1313',active:true,pass:'Natara2026*',perms:[]});
+ S.users.push({id:'u14',tid:'t5',name:'Mateo Ríos',role:'cajero',puesto:'domiciliario',email:'mateo@elfogon.co',pin:'1414',active:true,pass:'Natara2026*',perms:[]});
+ const DCL={t3:[['Gloria Restrepo','301 455 2210','Calle 52 # 48-17, apto 201','Niquía'],['Hernán Castaño','312 600 4512','Carrera 49 # 55-30','Cabañas'],['Paula Andrea Gil','318 220 9087','Diagonal 55 # 40-12, torre 3 apto 504','Niquía'],['Óscar Muñoz','300 711 3344','Calle 47 # 50-06','Centro'],['Marcela Ríos','315 488 2001','Carrera 52 # 57-21','Mirador']],
+  t5:[['Juliana Mesa','300 812 4455','Circular 4 # 73-20, apto 1102','Laureles'],['Andrés Villa','311 543 7789','Carrera 76 # 34-15','Estadio'],['Carolina Duque','317 220 6610','Calle 44 # 80-21, apto 302','Floresta'],['Familia Arango','304 998 1202','Transversal 39 # 72-48','Laureles']]};
+ const DRI={t3:'u13',t5:'u14'},DFEE={t3:[3000,4000,5000],t5:[5000,6000,7000]};
+ const mkD=(tid,c,fee,cour,ext,st,at,paid)=>{const [name,tel,dir,barrio]=c;const t={recibido:at};if(st!=='recibido')t.preparando=at+ri(2,5)*6e4;if(st==='camino'||st==='entregado')t.camino=at+ri(9,16)*6e4;if(st==='entregado')t.entregado=at+ri(22,42)*6e4;return {name,tel,dir,barrio,nota:'',fee,cour,ext,st,t,paid}};
+ // historial: algunos pedidos de días anteriores fueron domicilios entregados
+ S.sales.filter(x=>(x.tid==='t3'||(x.tid==='t5'&&!x.mesa))&&x.at<today&&x.status==='ok').forEach(x=>{if(rnd()<(x.tid==='t3'?.14:.6)){const own=rnd()<.7;x.dom=mkD(x.tid,pick(DCL[x.tid]),pick(DFEE[x.tid]),own?DRI[x.tid]:'',own?'':pick(['Rappi','Mensajero Don Luis']),'entregado',x.at,true)}});
+ // hoy: pedidos en cada estado
+ const P3=n=>S.products.find(x=>x.tid==='t3'&&x.name===n);
+ const dSale=(tid,list,method,st,cour,ext,mins,ci,fee,paid,rec)=>{const items=list.map(([n,q])=>{const pr=tid==='t3'?P3(n):T5(n);return pr&&{pid:pr.id,name:pr.name,price:pr.price,cost:pr.cost,qty:q}}).filter(Boolean);if(!items.length)return;
+  const open=tid==='t3'?today+6*3600e3:t5open;const at=Math.max(open+6e4,now-mins*6e4);if(at>now)return;const total=sum(items,i=>i.price*i.qty);
+  S.sales.push({id:uid(),tid,at,items,total,method,bank:method==='transferencia'?'Nequi':'',card:method==='datafono'?'Débito':'',ref:method==='efectivo'?'':String(ri(100000,999999)),confirmed:true,received:method==='efectivo'?(rec||total+fee):0,seller:tid==='t3'?'u2':'u10',customer:'',status:'ok',num:Math.max(1000,...S.sales.filter(x=>x.tid===tid).map(x=>x.num||0))+1,dom:mkD(tid,DCL[tid][ci],fee,cour,ext,st,at,paid)})};
+ dSale('t3',[['Detergente 1 kg',1],['Papel higiénico x 4',2]],'efectivo','entregado','u13','',75,3,3000,false);
+ dSale('t3',[['Leche entera 1 L',2],['Queso campesino 250 g',1]],'transferencia','entregado','','Rappi',130,4,4000,false);
+ dSale('t3',[['Panela x 2',2],['Chocolate de mesa 250 g',1],['Arepas de maíz x 5',2]],'efectivo','camino','u13','',28,1,4000,false,50000);
+ dSale('t3',[['Leche entera 1 L',3],['Azúcar 1 kg',1]],'transferencia','preparando','u13','',14,0,3000,false);
+ dSale('t3',[['Arroz 1 kg',2],['Aceite 1 L',1],['Huevos x 12',1]],'efectivo','recibido','','',6,2,3000,false,50000);
+ dSale('t5',[['Churrasco',1],['Sancocho trifásico',1]],'transferencia','entregado','','Rappi',95,2,6000,false);
+ dSale('t5',[['Almuerzo ejecutivo',3],['Jugo en agua',3]],'efectivo','camino','u14','',22,1,6000,false,100000);
+ dSale('t5',[['Bandeja paisa',2],['Limonada de coco',2]],'datafono','preparando','u14','',9,0,5000,false);
  S.settings.push({id:'opts_t5',tid:'t5',datafono:true});// el restaurante recibe tarjeta: datáfono encendido
  if(MODE==='demo')S.users=S.users.filter(u=>u.role!=='superadmin');// la consola de demo la agrega al cargar
  S.seedDay=today;
@@ -908,7 +944,8 @@ const PERMS=[
 ];
 function canDo(p){const u=me();if(!u)return false;if(u.role==='dueno')return true;return (u.perms||[]).includes(p)}
 // El mesero (empleado con puesto 'mesero') solo ve las mesas y la guía
-const navAllowed=(n,u)=>u.puesto==='mesero'&&u.role==='cajero'?['mesas','guia',...((u.perms||[]).includes('mesa_cobrar')?['ventas']:[])].includes(n.v):n.roles.includes(u.role)||(!!n.perm&&[].concat(n.perm).some(canDo));
+// El domiciliario (puesto 'domiciliario') solo ve sus domicilios y la guía
+const navAllowed=(n,u)=>u.puesto==='domiciliario'&&u.role==='cajero'?['domicilios','guia'].includes(n.v):u.puesto==='mesero'&&u.role==='cajero'?['mesas','guia',...((u.perms||[]).includes('mesa_cobrar')?['ventas']:[])].includes(n.v):n.roles.includes(u.role)||(!!n.perm&&[].concat(n.perm).some(canDo));
 const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PASS_RULES=[['al menos 8 caracteres',p=>p.length>=8],['una mayúscula',p=>/[A-ZÁÉÍÓÚÑ]/.test(p)],['una minúscula',p=>/[a-záéíóúñ]/.test(p)],['un número',p=>/\d/.test(p)],['un símbolo (! @ # * …)',p=>/[^A-Za-z0-9ÁÉÍÓÚÑáéíóúñ]/.test(p)]];
 const phoneDigits=v=>String(v||'').replace(/\D/g,'').replace(/^57(?=\d{10}$)/,'');
@@ -1165,6 +1202,7 @@ function navBtn(v,label,icon,{locked=false,count=0}={}){
 const NAV=[
  {v:'inicio',label:'Inicio',icon:'home',mod:null,roles:['dueno','cajero'],sec:'Operación'},
  {v:'mesas',label:'Mesas',icon:'table',mod:'mesas',roles:['dueno','cajero']},
+ {v:'domicilios',label:'Domicilios',icon:'moto',mod:'domicilios',roles:['dueno','cajero']},
  {v:'caja',label:'Caja',icon:'cart',mod:'caja',roles:['dueno','cajero']},
  {v:'cierre',label:'Apertura y cierre',icon:'register',mod:'caja',roles:['dueno','cajero']},
  {v:'ventas',label:'Ventas',icon:'receipt',mod:'caja',roles:['dueno','cajero']},
@@ -1203,11 +1241,11 @@ function tenantNav(){
 function tenantView(){
  const u=me(),t=tenant();
  let v=sess.view;const n=NAV.find(x=>x.v===v);
- if(!n||!navAllowed(n,u)){v=sess.view=isMesero(u)||(u.role==='cajero'&&t.mods.includes('mesas')&&T('tables').length)?'mesas':u.role==='cajero'&&t.mods.includes('caja')?'caja':'inicio';saveSess()}
+ if(!n||!navAllowed(n,u)){v=sess.view=isDomi(u)?'domicilios':isMesero(u)||(u.role==='cajero'&&t.mods.includes('mesas')&&T('tables').length)?'mesas':u.role==='cajero'&&t.mods.includes('caja')?'caja':'inicio';saveSess()}
  if(v==='puntos'&&t.mods.includes('fidelizacion')&&!fidOn()){v=sess.view='negocio';saveSess()}
  const nn=NAV.find(x=>x.v===v);
  if(nn.mod&&!t.mods.includes(nn.mod))return viewUpsell(nn.mod);
- return ({inicio:viewInicio,negocio:viewNegocio,mesas:viewMesas,caja:viewCaja,cierre:viewCierre,ventas:viewVentas,inventario:viewInventario,recetas:viewRecetas,guia:viewGuia,fiados:viewFiados,puntos:viewPuntos,finanzas:viewFinanzas,estadisticas:viewStats,proveedores:viewProveedores,empleados:viewEmpleados,plan:viewPlan,mensajes:viewMensajes})[v]();
+ return ({inicio:viewInicio,negocio:viewNegocio,mesas:viewMesas,domicilios:viewDomicilios,caja:viewCaja,cierre:viewCierre,ventas:viewVentas,inventario:viewInventario,recetas:viewRecetas,guia:viewGuia,fiados:viewFiados,puntos:viewPuntos,finanzas:viewFinanzas,estadisticas:viewStats,proveedores:viewProveedores,empleados:viewEmpleados,plan:viewPlan,mensajes:viewMensajes})[v]();
 }
 // En celular o tablet (pantalla táctil, sin mouse) no se pone el cursor solo en el buscador de la caja:
 // eso abre el teclado cada vez que se toca un producto. En computador sí, para que el lector de barras siga listo.
@@ -1280,13 +1318,13 @@ function loginBrand(){return `<section class="login-brand"><div class="lb-in">
    <div class="logo">${mark(44)}<b>natara</b></div>
    <h1>Tu caja, tu inventario y tus cuentas, <em>en balance.</em></h1>
    ${MODE==='real'?'':`<button class="btn primary lb-try" data-a="lg-try">${ic('arrow',16)} Probar la demo ahora</button>`}
-   <div class="feat">${['Inventario siempre al día','Caja rápida y sencilla','Efectivo, transferencias y datáfono','Apertura y cierre de caja','Ingresos y egresos','Estadísticas de ventas','Fiados y abonos','Empleados con permisos','Mesas y meseros para restaurantes','Puntos y fidelización'].map(f=>`<div>${ic('check',16)} ${f}</div>`).join('')}</div>
+   <div class="feat">${['Inventario siempre al día','Caja rápida y sencilla','Efectivo, transferencias y datáfono','Apertura y cierre de caja','Ingresos y egresos','Estadísticas de ventas','Fiados y abonos','Empleados con permisos','Domicilios con seguimiento','Mesas y meseros para restaurantes','Puntos y fidelización'].map(f=>`<div>${ic('check',16)} ${f}</div>`).join('')}</div>
    ${visBadge()}
    <span class="by">Un producto de Samanat · <a href="${waLink('Hola, quiero saber más de Natara')}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">WhatsApp ${WA_TXT}</a></span>
   </div></section>`}
 function viewLogin(){
  if(MODE==='real'||lg.mode!=='pick')return viewLoginReal();
- const acc=u=>{const t=S.tenants.find(x=>x.id===u.tid);return`<button class="acc" data-a="login" data-id="${u.id}"><div class="avatar">${initials(u.name)}</div><div class="who"><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin · Samanat':u.role==='dueno'?'Dueño(a) · ve todo el negocio':isMesero(u)?(meseroCobra(u)?'Mesero(a) · atiende mesas y también cobra':'Mesero(a) · atiende mesas, no cobra'):(()=>{const ps=(u.perms||[]).map(id=>PERMS.find(p=>p.id===id)).filter(p=>p&&t&&t.mods.includes(p.mod));return ps.length?'Cajero(a) · vende y además puede: '+ps.map(p=>p.short).join(', '):'Cajero(a) sin permisos extra · solo vende y ve sus ventas'})()}</span></div>${t?pillDue(t):`<span class="pill ac">Admin</span>`}</button>`};
+ const acc=u=>{const t=S.tenants.find(x=>x.id===u.tid);return`<button class="acc" data-a="login" data-id="${u.id}"><div class="avatar">${initials(u.name)}</div><div class="who"><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin · Samanat':u.role==='dueno'?'Dueño(a) · ve todo el negocio':isMesero(u)?(meseroCobra(u)?'Mesero(a) · atiende mesas y también cobra':'Mesero(a) · atiende mesas, no cobra'):isDomi(u)?'Domiciliario(a) · lleva los pedidos':(()=>{const ps=(u.perms||[]).map(id=>PERMS.find(p=>p.id===id)).filter(p=>p&&t&&t.mods.includes(p.mod));return ps.length?'Cajero(a) · vende y además puede: '+ps.map(p=>p.short).join(', '):'Cajero(a) sin permisos extra · solo vende y ve sus ventas'})()}</span></div>${t?pillDue(t):`<span class="pill ac">Admin</span>`}</button>`};
  const rank={basico:0,pro:1,total:2,restaurante:3};
  const ideal={basico:'Para empezar: controla tu inventario y tu caja.',pro:'Para el negocio con empleados que quiere ver sus números.',total:'Todo para tu tienda: fiados, proveedores, recetas y puntos.',restaurante:'Para restaurantes: todo lo de Premium más mesas, meseros y cuentas divididas.'};
  // La cuenta suspendida solo se muestra en la consola de demo de Samanat, no a los clientes
@@ -1432,6 +1470,7 @@ function viewInicio(){
  else if(u.role==='dueno'&&dd<=5)banners.push(`<div class="banner">${ic('alert')}<div class="grow"><b>Tu cuota de Natara vence ${dd===0?'hoy':`en ${dd} día${dd===1?'':'s'}`}</b> (${fdate(t.due)}). Paga a tiempo para no perder el acceso.</div><button class="btn sm primary" data-a="pay-open">Pagar ahora</button></div>`);
  if(u.role==='dueno'&&unread)banners.push(`<div class="banner info">${ic('bell')}<div class="grow">Tienes <b>${unread} mensaje${unread>1?'s':''} nuevo${unread>1?'s':''}</b> de Samanat.</div><button class="btn sm" data-a="go" data-v="mensajes">Leer</button></div>`);
  if(has('mesas')&&mesasOf().length){const M=mesasOf(),occ=M.filter(m=>tabOf(m.id));const pe=sum(occ,m=>tabPend(tabOf(m.id).id));const bl=occ.filter(m=>tabOf(m.id).bill).length;banners.push(`<div class="banner info">${ic('table')}<div class="grow"><b>${occ.length} de ${M.length} mesas ocupadas</b>${pe?` · ${money(pe)} por cobrar`:''}${bl?` · ${bl} ${bl>1?'pidieron':'pidió'} la cuenta`:''}</div><button class="btn sm primary" data-a="go" data-v="mesas">Ver mesas</button></div>`)}
+ if(has('domicilios')&&!isDomi(u)){const A=domOf().filter(s=>s.status!=='anulada'&&s.dom.st!=='entregado');const w=A.filter(s=>s.dom.st!=='camino').length,g=A.length-w;if(A.length)banners.push(`<div class="banner info">${ic('moto')}<div class="grow"><b>${A.length} domicilio${A.length>1?'s':''} en curso</b>${w?` · ${w} por despachar`:''}${g?` · ${g} en camino`:''}</div><button class="btn sm primary" data-a="go" data-v="domicilios">Ver domicilios</button></div>`)}
  if(has('caja')&&!openSession())banners.push(`<div class="banner">${ic('register')}<div class="grow">La caja está cerrada. Ábrela con la base del día para empezar a vender.</div><button class="btn sm primary" data-a="go" data-v="cierre">Abrir caja</button></div>`);
  const recent=tdy.slice(-6).reverse();
  return `<div class="page-head"><div><h1>Hola, ${esc(u.name.split(' ')[0])}</h1><p>${new Date().toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long'})} · ${esc(t.name)}</p></div>
@@ -1459,7 +1498,8 @@ const payPill=s=>s.status==='anulada'?`<span class="pill bad">Anulada</span>`:s.
 const FOOD_RE=/restaur|cafeter|comida|asadero|pizz|\bbar\b|gastro|corrientazo|cevich|hambur|parrill|marisq|cocina|panader/;
 const foodType=t=>!!t&&FOOD_RE.test(norm(t.type));
 const isMesero=u=>!!u&&u.role==='cajero'&&u.puesto==='mesero';
-const roleLabel=u=>u.role==='superadmin'?'Superadmin':u.role==='dueno'?'Dueño(a)':isMesero(u)?'Mesero(a)':'Cajero(a)';
+const isDomi=u=>!!u&&u.role==='cajero'&&u.puesto==='domiciliario';
+const roleLabel=u=>u.role==='superadmin'?'Superadmin':u.role==='dueno'?'Dueño(a)':isMesero(u)?'Mesero(a)':isDomi(u)?'Domiciliario(a)':'Cajero(a)';
 const mesasOf=()=>T('tables').sort((a,b)=>(a.order??0)-(b.order??0)||a.name.localeCompare(b.name,'es',{numeric:true}));
 const tabOf=tbId=>T('tabs').find(x=>x.table===tbId&&x.open);
 const linesOf=tabId=>T('tablines').filter(l=>l.tab===tabId&&l.qty>0).sort((a,b)=>a.at-b.at);
@@ -1650,7 +1690,7 @@ function mzVoid(s){
 const splitTxt=s=>s.split?`${s.split.from===s.split.to?'Parte '+s.split.from:'Partes '+s.split.from+' a '+s.split.to} de ${s.split.n}`:'';
 const itemsTxt=(s,x)=>s.split?`${splitTxt(s)} de la cuenta${s.mesa?' de '+s.mesa:''}`:s.items.map(i=>num(i.qty)+x+i.name).join(', ');
 const mesaPays=s=>s.tab?S.sales.filter(x=>x.tab===s.tab&&x.status!=='anulada').sort((a,b)=>a.at-b.at):[];
-const mesaPill=s=>s.mesa?`<span class="pill ac" style="margin-left:6px">${ic('table',12)} ${esc(s.mesa)}${s.tab&&s.mesaN?` · pago ${s.mesaN}`:''}</span>`:'';
+const mesaPill=s=>s.dom?`<span class="pill good" style="margin-left:6px">${ic('moto',12)} Domicilio${s.dom.name?' · '+esc(s.dom.name.split(' ')[0]):''}</span>`:s.mesa?`<span class="pill ac" style="margin-left:6px">${ic('table',12)} ${esc(s.mesa)}${s.tab&&s.mesaN?` · pago ${s.mesaN}`:''}</span>`:'';
 function mzCfgModal(){
  const M=mesasOf();
  openModal('Configurar mesas',`<p class="muted small" style="margin:0">Cambia el nombre tocando el texto. Las mesas ocupadas no se pueden eliminar.</p>
@@ -1689,7 +1729,81 @@ window.addEventListener('popstate',e=>{
 /* =========================================================
    CAJA / POS
    ========================================================= */
-let cart=[];let pos={tab:null,q:'',cat:'',method:'efectivo',received:'',bank:'Nequi',card:'Débito',ref:'',verified:false,seller:null,customer:'',fdoc:'',mid:'',useP:false,fmiss:false};
+let cart=[];let pos={dom:null,tab:null,q:'',cat:'',method:'efectivo',received:'',bank:'Nequi',card:'Débito',ref:'',verified:false,seller:null,customer:'',fdoc:'',mid:'',useP:false,fmiss:false};
+let domf={tab:'act'};
+function domCard(s,rider){
+ const d=s.dom,st=s.status==='anulada'?'anulado':d.st,mine=rider;const tn=tenant()?.name||'';
+ const since=d.t?.[d.st]||s.at;const took=d.st==='entregado'&&d.t?.entregado?Math.max(1,Math.round((d.t.entregado-s.at)/6e4)):0;
+ const pay=s.method==='efectivo'?`Cobrar en efectivo ${money(s.total+(d.fee||0))}${s.received>s.total+(d.fee||0)?` · paga con ${money(s.received)}, lleva ${money(s.received-s.total-(d.fee||0))} de cambio`:''}`:s.method==='datafono'?`Llevar datáfono: ${money(s.total)}${d.fee?` + envío ${money(d.fee)} en efectivo`:''}`:s.method==='transferencia'?(s.confirmed?`Ya pagó por transferencia${d.fee?` · envío ${money(d.fee)} en efectivo`:''}`:`<span style="color:var(--warn)">Transferencia por confirmar</span>${d.fee?` · envío ${money(d.fee)}`:''}`):'';
+ const next=d.st==='recibido'?['preparando','Empezar a preparar']:null;
+ const msg=d.st==='camino'?`Hola ${d.name.split(' ')[0]||''}, tu pedido de ${tn} ya va en camino 🛵. Total a pagar: ${money(s.total+(d.fee||0))}.`:`Hola ${d.name.split(' ')[0]||''}, recibimos tu pedido en ${tn}. Te avisamos cuando salga.`;
+ const acts=[];
+ if(st!=='anulado'&&st!=='entregado'){
+  if(!mine){if(next)acts.push(`<button class="btn sm" data-a="dom-st" data-id="${s.id}" data-v="${next[0]}">${next[1]}</button>`);acts.push(`<button class="btn sm" data-a="dom-assign" data-id="${s.id}">${ic('users',14)} ${domKey(d)?'Cambiar domiciliario':'Asignar'}</button>`)}
+  if(d.st!=='camino')acts.push(`<button class="btn sm primary" data-a="dom-st" data-id="${s.id}" data-v="camino">${ic('moto',14)} Salió</button>`);
+  else acts.push(`<button class="btn sm primary" data-a="dom-st" data-id="${s.id}" data-v="entregado">${ic('check',14)} Entregado</button>`);
+  if(!mine)acts.push(`<button class="btn sm ghost" data-a="dom-cancel" data-id="${s.id}">Cancelar</button>`);
+ }
+ if(!mine)acts.push(`<button class="btn sm ghost" data-a="sale" data-id="${s.id}">${ic('receipt',14)} Comanda</button>`);
+ return `<div class="card dom-card">
+  <div class="dc-h"><b class="mono">#${saleNo(s)}</b><span class="pill ${st==='anulado'?'bad':DOM_PILL[st]}">${st==='anulado'?'Cancelado':DOM_ST[st]}</span><span class="muted small" style="margin-left:auto">${st==='entregado'?`entregado en ${took} min`:st==='anulado'?esc(s.voidWhy||''):`hace ${mzLong(since)}`}</span></div>
+  <div class="dc-addr"><b>${esc(d.name||'Cliente')}</b> · <span class="muted">${esc(d.tel)}</span><br>${esc(d.dir)}${d.barrio?` · ${esc(d.barrio)}`:''}${d.nota?`<br><span class="small muted">${ic('info',12)} ${esc(d.nota)}</span>`:''}</div>
+  <div class="small muted">${esc(itemsTxt(s,' × '))}</div>
+  <div class="dc-money"><span>Pedido <b class="num">${money(s.total)}</b></span>${d.fee?`<span>Envío <b class="num">${money(d.fee)}</b></span>`:''}<span style="flex-basis:100%">${pay}</span></div>
+  <div class="small">${ic('moto',13)} ${domWho(d)?`<b>${esc(domWho(d))}</b>`:'<span style="color:var(--warn)">Sin domiciliario</span>'}${d.paid?' · <span class="pill good">efectivo entregado</span>':''}</div>
+  ${st==='anulado'?'':`<div class="dc-links"><a class="btn sm" href="tel:${phoneDigits(d.tel)}">${ic('phone',14)} Llamar</a><a class="btn sm" href="${domWa(s,msg)}" target="_blank" rel="noopener">WhatsApp</a><a class="btn sm" href="${domMap(d)}" target="_blank" rel="noopener">${ic('pin',14)} Mapa</a></div>`}
+  ${acts.length?`<div class="dc-act">${acts.join('')}</div>`:''}
+ </div>`;
+}
+function domStatsCard(sales,tot){
+ const D=sales.filter(s=>s.dom);if(!D.length)return `<div class="card"><h2>Domicilios</h2><p class="muted small">Todavía no hay domicilios en este periodo.</p></div>`;
+ const v=sum(D,s=>s.total),fees=sum(D,s=>s.dom.fee||0);const E=D.filter(s=>s.dom.st==='entregado'&&s.dom.t?.entregado);const avg=E.length?Math.round(sum(E,s=>s.dom.t.entregado-s.at)/E.length/6e4):0;
+ const by={};D.forEach(s=>{const k=domWho(s.dom)||'Sin asignar';by[k]=(by[k]||0)+1});const B=Object.entries(by).sort((a,b)=>b[1]-a[1]);const mx=Math.max(1,...B.map(b=>b[1]));
+ return `<div class="card"><h2>Domicilios <span class="sub">${num(D.length)} pedidos</span></h2>
+  <div class="hbars"><div class="hb"><span>Ventas a domicilio <span class="muted small">· ${tot?Math.round(v/tot*100):0}% de lo vendido</span></span><b class="num">${money(v)}</b><div class="track"><div class="fill" style="width:${tot?v/tot*100:0}%"></div></div></div></div>
+  <p class="small" style="margin:10px 0 4px">Tiempo promedio de entrega: <b>${avg?avg+' min':'—'}</b> · Envíos que se ganaron los domiciliarios: <b>${money(fees)}</b> <span class="muted">(no entran a tu caja)</span></p>
+  <div class="hbars">${B.map(([k,n])=>`<div class="hb"><span>${esc(k)}</span><b class="num">${n}</b><div class="track"><div class="fill alt" style="width:${n/mx*100}%"></div></div></div>`).join('')}</div></div>`;
+}
+function viewDomicilios(){
+ const u=me(),rider=isDomi(u),today=sod(Date.now());
+ const L=domOf().filter(s=>!rider||s.dom.cour===u.id);
+ const act=L.filter(s=>s.status!=='anulada'&&s.dom.st!=='entregado').sort((a,b)=>a.at-b.at);
+ const done=L.filter(s=>s.status!=='anulada'&&s.dom.st==='entregado'&&(s.dom.t?.entregado||s.at)>=today).sort((a,b)=>(b.dom.t?.entregado||0)-(a.dom.t?.entregado||0));
+ const canc=L.filter(s=>s.status==='anulada'&&s.at>=today);
+ const owe=L.filter(s=>s.status!=='anulada'&&s.method==='efectivo'&&!s.dom.paid&&s.dom.st==='entregado');
+ if(rider){
+  const carry=sum(L.filter(s=>s.status!=='anulada'&&s.method==='efectivo'&&!s.dom.paid&&(s.dom.st==='entregado')),s=>s.total);
+  const fees=sum(done,s=>s.dom.fee||0);
+  return `<div class="page-head"><div><h1>Mis domicilios</h1><p>Los pedidos que te asignaron. Marca <b>Salió</b> cuando lo lleves y <b>Entregado</b> cuando el cliente lo reciba.</p></div></div>
+   ${carry?`<div class="banner">${ic('wallet')}<div class="grow">Tienes <b>${money(carry)}</b> de pedidos entregados para devolver en la caja. Los envíos (${money(fees)} hoy) son tuyos.</div></div>`:fees?`<div class="banner info">${ic('wallet')}<div class="grow">Hoy llevas <b>${money(fees)}</b> en envíos. Ya entregaste en la caja todo el efectivo de los pedidos.</div></div>`:''}
+   <h2 style="margin:6px 0 10px">Por entregar <span class="sub">${act.length}</span></h2>
+   ${act.length?`<div class="dom-list">${act.map(s=>domCard(s,true)).join('')}</div>`:`<div class="empty">${ic('moto',30)}No tienes pedidos pendientes. Cuando te asignen uno, aparece aquí.</div>`}
+   ${done.length?`<h2 style="margin:22px 0 10px">Entregados hoy <span class="sub">${done.length}</span></h2><div class="dom-list">${done.map(s=>domCard(s,true)).join('')}</div>`:''}`;
+ }
+ const wait=act.filter(s=>s.dom.st!=='camino').length,road=act.length-wait;
+ const groups={};owe.forEach(s=>{const k=domKey(s.dom)||'sin';(groups[k]=groups[k]||{who:domWho(s.dom)||'Sin domiciliario',list:[]}).list.push(s)});
+ const tabs=[['act',`En curso (${act.length})`],['done',`Entregados hoy (${done.length})`],['canc',`Cancelados (${canc.length})`]];
+ const list=domf.tab==='done'?done:domf.tab==='canc'?canc:act;
+ return `<div class="page-head"><div><h1>Domicilios</h1><p>Los pedidos para llevar, desde que entran hasta que se entregan. El envío es del domiciliario: no entra a tu caja.</p></div>
+  <div class="actions">${canCobrar()?`<button class="btn primary" data-a="dom-new">${ic('plus')} Nuevo domicilio</button>`:''}</div></div>
+  <div class="grid g4">
+   <div class="card kpi"><span class="lbl">Por despachar</span><span class="val">${wait}</span><span class="foot">recibidos o en preparación</span></div>
+   <div class="card kpi"><span class="lbl">En camino</span><span class="val">${road}</span><span class="foot">ya salieron</span></div>
+   <div class="card kpi"><span class="lbl">Entregados hoy</span><span class="val">${done.length}</span><span class="foot">${money(sum(done,s=>s.total))} en pedidos</span></div>
+   <div class="card kpi"><span class="lbl">Efectivo por recibir</span><span class="val">${money(sum(owe,s=>s.total))}</span><span class="foot">de domiciliarios, sin contar envíos</span></div>
+  </div>
+  ${Object.keys(groups).length?`<div class="card" style="margin-top:14px"><h2>Efectivo que deben entregar en la caja</h2><div class="stack" style="gap:8px">${Object.entries(groups).map(([k,g])=>`<div class="spread"><span><b>${esc(g.who)}</b> <span class="muted small">· ${g.list.length} pedido${g.list.length>1?'s':''} entregado${g.list.length>1?'s':''}</span></span><button class="btn sm primary" data-a="dom-paid" data-v="${esc(k)}">${ic('check',14)} Recibí ${money(sum(g.list,s=>s.total))}</button></div>`).join('')}</div></div>`:''}
+  <div class="seg" style="margin:16px 0 12px" role="tablist">${tabs.map(([k,l])=>`<button class="${domf.tab===k?'on':''}" data-a="dom-tab" data-v="${k}">${l}</button>`).join('')}</div>
+  ${list.length?`<div class="dom-list">${list.map(s=>domCard(s,false)).join('')}</div>`:`<div class="empty">${ic('moto',30)}${domf.tab==='act'?'No hay domicilios en curso. Registra uno desde la caja eligiendo <b>Domicilio</b>.':domf.tab==='done'?'Todavía no hay domicilios entregados hoy.':'No hay domicilios cancelados hoy.'}</div>`}`;
+}
+function domAssignModal(s){
+ const R=domRiders();const d=s.dom;
+ openModal(`Domiciliario del pedido #${saleNo(s)}`,`<div class="stack">
+  ${R.length?`<div class="check-list">${R.map(x=>`<label class="check"><input type="radio" name="dom-who" value="${x.id}" ${d.cour===x.id?'checked':''}><span>${esc(x.name)}<small>Domiciliario propio · lo ve en su celular</small></span></label>`).join('')}</div>`:`<p class="muted small" style="margin:0">No tienes domiciliarios propios. Créalos en <b>Empleados</b> con el puesto Domiciliario(a).</p>`}
+  <label class="check"><input type="radio" name="dom-who" value="ext" ${!d.cour&&d.ext?'checked':''}><span>Externo<small>Rappi, un mensajero o una empresa de domicilios</small></span></label>
+  ${field('Nombre del domiciliario externo',`<input class="input" id="dom-ext" value="${esc(d.ext||'')}" placeholder="Ej: Rappi, Juan el mensajero" autocomplete="off">`)}
+ </div>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="dom-assign-do" data-id="${s.id}">Guardar</button>`);
+}
 function viewCaja(){
  const u=me();
  const sess0=openSession();
@@ -1742,35 +1856,77 @@ function posResults(){
  return bar+`<div class="muted small" style="margin-bottom:8px">${esc(title)}</div><div class="tiles">${P.map(p=>`<button class="tile ${availOf(p)<=0?'out':''}" data-a="add" data-id="${p.id}"><strong>${esc(p.name)}</strong><span class="st">${esc(p.cat)}</span><span class="spread"><span class="price">${money(p.price)}</span><span class="st">${recipeOf(p)?`alcanza ${num(availOf(p))}`:`${num(p.stock)} disp.`}</span></span></button>`).join('')}</div>`;
 }
 function cartTotal(){return Math.round(sum(cart,i=>i.price*i.qty))}
+/* =========================================================
+   DOMICILIOS
+   El pedido es una venta normal con s.dom = {name,tel,dir,barrio,nota,fee,cour,ext,st,t,paid}.
+   - El inventario se descuenta al registrarlo; si se cancela, vuelve (igual que al anular).
+   - El envío (fee) es del domiciliario: sale en la comanda pero no suma a la venta ni a la caja.
+   - Si pagan en efectivo, esa plata está en la calle hasta que el domiciliario la entrega (paid).
+   ========================================================= */
+const DOM_ST={recibido:'Recibido',preparando:'En preparación',camino:'En camino',entregado:'Entregado'};
+const DOM_PILL={recibido:'warn',preparando:'ac',camino:'',entregado:'good'};
+const posDom=()=>pos.dom||(pos.dom={on:false,tel:'',name:'',dir:'',barrio:'',nota:'',fee:'',cour:'',ext:''});
+const domOn=()=>!pos.tab&&has('domicilios')&&!!pos.dom&&pos.dom.on;
+const domFee=()=>domOn()?parseMoney(pos.dom.fee)||0:0;
+const domOf=()=>T('sales').filter(s=>s.dom);
+const domRiders=()=>S.users.filter(x=>x.tid===tenant()?.id&&x.active&&!x.archived&&isDomi(x));
+const domWho=d=>d.cour?userName(d.cour):d.ext?d.ext+' (externo)':'';
+const domKey=d=>d.cour||(d.ext?'ext:'+norm(d.ext):'');
+const domContra=s=>s.method==='efectivo'||s.method==='datafono';
+const domMap=d=>`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([d.dir,d.barrio,tenant()?.city].filter(Boolean).join(', '))}`;
+const domWa=(s,txt)=>`https://wa.me/57${phoneDigits(s.dom.tel)}?text=${encodeURIComponent(txt)}`;
+function domLast(tel){const d=phoneDigits(tel);if(d.length<7)return null;const x=T('sales').filter(s=>s.dom&&phoneDigits(s.dom.tel)===d).sort((a,b)=>b.at-a.at)[0];return x?x.dom:null}
+function domBox(){
+ if(pos.tab||!has('domicilios'))return '';const d=posDom();const R=domRiders();
+ const inp_=(k,ph,extra='')=>`<input class="input" value="${esc(d[k])}" data-i="dom-f" data-k="${k}" autocomplete="off" placeholder="${ph}" ${extra}>`;
+ return `${d.on?`<div class="form-grid dom-form">
+   ${field('Teléfono del cliente',inp_('tel','300 123 4567','id="dom-tel" inputmode="tel"'))}
+   ${field('Nombre',inp_('name','¿A nombre de quién?'))}
+   ${field('Dirección',inp_('dir','Calle 50 # 43-21, apto 302'),'full')}
+   ${field('Barrio',inp_('barrio','Barrio'))}
+   ${field('Envío <span class="muted">(es del domiciliario)</span>',`<div class="money-in"><span>$</span><input class="input num" value="${d.fee===''?'':grp(parseMoney(d.fee))}" data-i="dom-f" data-k="fee" data-money inputmode="numeric" autocomplete="off" placeholder="0"></div>`)}
+   ${field('Indicaciones (opcional)',inp_('nota','Ej: timbre dañado, llamar al llegar'),'full')}
+   ${field('Domiciliario',sel('dom-cour',[['','Lo asigno después'],...R.map(x=>[x.id,x.name+' · propio']),['ext','Externo (Rappi, mensajero…)']],d.cour,'data-c="dom-cour"'),'full')}
+   ${d.cour==='ext'?field('Nombre o empresa del domiciliario externo',inp_('ext','Ej: Rappi, Juan el mensajero'),'full'):''}
+  </div>`:''}`;
+}
+function domToggle(){if(pos.tab||!has('domicilios'))return '';const d=posDom();
+ return `<div class="seg" role="tablist" aria-label="Dónde se entrega" style="margin-bottom:10px"><button class="${d.on?'':'on'}" data-a="dom-mode" data-v="0">${ic('store',15)} En el local</button><button class="${d.on?'on':''}" data-a="dom-mode" data-v="1">${ic('moto',15)} Domicilio</button></div>`}
+function domPaySummary(total){if(!domOn())return '';const fee=domFee();
+ return `<div class="spread small"><span class="muted">Envío · lo cobra el domiciliario, no entra a la caja</span><span class="num" id="dom-fee-v">${money(fee)}</span></div>
+  <div class="spread small"><span><b>El cliente paga al recibir</b></span><b class="num" id="dom-pay-v">${money(total+fee)}</b></div>`}
 const payTotal=()=>{const s=cartTotal();return s-fidDisc(s)};
 function cartPanel(){
  const u=me(),sub=cartTotal(),disc=fidDisc(sub),total=sub-disc;
  const emps=S.users.filter(x=>x.tid===u.tid&&x.active);
- const methods=[['efectivo','Efectivo'],['transferencia','Transferencia']];if(datafonoOn())methods.push(['datafono','Datáfono']);if(has('fiados')&&canDo('fiados'))methods.push(['fiado','Fiado']);
+ const dm=domOn();const methods=[['efectivo',dm?'Efectivo al recibir':'Efectivo'],['transferencia','Transferencia']];if(datafonoOn())methods.push(['datafono',dm?'Datáfono al recibir':'Datáfono']);if(has('fiados')&&canDo('fiados')&&!dm)methods.push(['fiado','Fiado']);
  if(!methods.some(m=>m[0]===pos.method))pos.method='efectivo';
  const rec=parseMoney(pos.received);
  let payBox='';
- if(pos.method==='efectivo')payBox=`${field('Recibido',`<div class="money-in"><span>$</span><input class="input num" id="pos-rec" type="text" inputmode="numeric" autocomplete="off" data-money placeholder="${grp(total)}" value="${pos.received===''?'':grp(parseMoney(pos.received))}" data-i="pos-rec"></div>`)}
-   <div class="row">${[...new Set([total,Math.ceil(total/5000)*5000,Math.ceil(total/10000)*10000,Math.ceil(total/50000)*50000])].filter(v=>v>0).slice(0,4).map(v=>`<button class="btn sm" data-a="quick-rec" data-v="${v}">${money(v)}</button>`).join('')}</div>
-   <div class="change"><span>Cambio</span><span class="num" id="pos-change">${money(Math.max(0,rec-total))}</span></div>`;
+ const cobro=total+(dm?domFee():0);
+ if(pos.method==='efectivo')payBox=`${field(dm?'¿Con cuánto paga? <span class="muted">(para llevar el cambio)</span>':'Recibido',`<div class="money-in"><span>$</span><input class="input num" id="pos-rec" type="text" inputmode="numeric" autocomplete="off" data-money placeholder="${grp(cobro)}" value="${pos.received===''?'':grp(parseMoney(pos.received))}" data-i="pos-rec"></div>`)}
+   <div class="row">${[...new Set([cobro,Math.ceil(cobro/5000)*5000,Math.ceil(cobro/10000)*10000,Math.ceil(cobro/50000)*50000])].filter(v=>v>0).slice(0,4).map(v=>`<button class="btn sm" data-a="quick-rec" data-v="${v}">${money(v)}</button>`).join('')}</div>
+   <div class="change"><span>${dm?'Cambio que lleva el domiciliario':'Cambio'}</span><span class="num" id="pos-change">${money(Math.max(0,rec-cobro))}</span></div>`;
  else if(pos.method==='transferencia')payBox=`<div class="form-grid">${field('Recibido en',sel('pos-bank',BANKS,pos.bank,'data-c="pos-bank"'))}${field('Referencia o últimos dígitos',`<input class="input" id="pos-ref" value="${esc(pos.ref)}" data-i="pos-ref" placeholder="Opcional">`)}</div>
    <label class="check"><input type="checkbox" id="pos-ver" ${pos.verified?'checked':''} data-c="pos-ver"><span>Verifiqué que el dinero llegó<small>Si no marcas esta casilla, la venta queda “por confirmar” y el dueño la revisa después.</small></span></label>`;
  else if(pos.method==='datafono')payBox=`<div class="form-grid">${field('Tarjeta',sel('pos-card',CARDS,pos.card,'data-c="pos-card"'))}${field('Número de aprobación',`<input class="input" id="pos-ref" value="${esc(pos.ref)}" data-i="pos-ref" placeholder="Opcional" inputmode="numeric" autocomplete="off">`)}</div>
    <p class="muted small" style="margin:0">${ic('info',13)} Cobra ${money(total)} en el datáfono y registra la venta cuando salga aprobada.</p>`;
  else payBox=T('customers').length?field('Cliente',sel('pos-cust',[['','Selecciona el cliente'],...T('customers').map(c=>[c.id,`${c.name} · debe ${money(balanceOf(c.id))}`])],pos.customer,'data-c="pos-cust"')):`<p class="muted small">Primero crea clientes en el módulo de Fiados.</p>`;
- return `${pos.tab?`<h2>Cobro de esta persona o grupo</h2>${mzPaySummary()}`:`<h2>Venta actual <span class="sub">${cart.length} producto${cart.length===1?'':'s'}</span></h2>
+ return `${pos.tab?`<h2>Cobro de esta persona o grupo</h2>${mzPaySummary()}`:`<h2>${domOn()?'Domicilio':'Venta actual'} <span class="sub">${cart.length} producto${cart.length===1?'':'s'}</span></h2>${domToggle()}
   ${cart.length?`<div class="cart-items">${cart.map((i,ix)=>`<div class="ci"><div style="min-width:0"><div class="nm">${esc(i.name)}</div><div class="unit">${money(i.price)} c/u</div></div>
    ${pos.tab?`<span class="num muted">× ${num(i.qty)}</span>`:`<div class="qty"><button data-a="qty" data-ix="${ix}" data-d="-1" aria-label="Menos">−</button><input type="number" min="1" value="${i.qty}" data-c="qty-set" data-ix="${ix}" aria-label="Cantidad"><button data-a="qty" data-ix="${ix}" data-d="1" aria-label="Más">+</button></div>`}
    <div class="num" style="text-align:right;min-width:78px"><b>${money(i.price*i.qty)}</b>${pos.tab?'':`<br><button class="icon-btn" style="color:var(--ink-3);padding:2px" data-a="rm" data-ix="${ix}" aria-label="Quitar">${ic('trash',15)}</button>`}</div></div>`).join('')}</div>`
   :`<div class="empty">${ic(lectorOn()?'barcode':'cart',30)}${lectorOn()?'Escanea un producto o tócalo en la lista para agregarlo.':'Busca un producto o tócalo en la lista para agregarlo.'}</div>`}`}
   ${disc?`<div class="spread small" style="margin-top:8px"><span class="muted">Subtotal</span><span class="num">${money(sub)}</span></div><div class="spread small" style="color:var(--good)"><span>Descuento con puntos</span><span class="num">− ${money(disc)}</span></div>`:''}
   ${pos.tab&&!disc?'':`<div class="total-row"><span class="muted">Total</span><span class="big">${money(total)}</span></div>`}
+  ${domPaySummary(total)}
   <div class="stack" style="margin-top:14px">
+   ${domBox()}
    ${fidBox(sub)}
    <div class="seller-line"><div class="avatar" style="width:28px;height:28px;font-size:11px">${initials(u.name)}</div><span>Vende <b>${esc(u.name)}</b></span><span class="muted small" style="margin-left:auto">${ic('lock',13)} queda a tu nombre</span></div>
    <div class="seg" role="tablist">${methods.map(([k,l])=>`<button class="${pos.method===k?'on':''}" data-a="pay" data-v="${k}">${l}</button>`).join('')}</div>
    ${payBox}
-   <button class="btn primary big" data-a="checkout" ${cart.length?'':'disabled'}>Cobrar ${money(total)}</button>
+   <button class="btn primary big" data-a="checkout" ${cart.length?'':'disabled'}>${dm?`${ic('moto',18)} Registrar domicilio · ${money(total)}`:`Cobrar ${money(total)}`}</button>
    ${pos.tab&&cart.length?(()=>{const t=S.tabs.find(x=>x.id===pos.tab);const left=t?tabPend(t.id)-sub:0;return `<p class="muted small" style="margin:0;text-align:center">${left>0?`La mesa sigue abierta con ${money(left)} pendientes.`:'Con este pago la mesa queda libre.'}</p>`})():''}
    ${cart.length&&!pos.tab?`<button class="btn ghost sm" data-a="clear-cart" style="align-self:center">Vaciar venta</button>`:''}
   </div>`;
@@ -1799,13 +1955,16 @@ function checkout(){
  const sub=cartTotal();const fm=fidOn()&&pos.mid?T('members').find(x=>x.id===pos.mid):null;const cfg=fidCfg();
  const used=fm&&pos.useP?maxRedeem(fm,sub,cfg):0;const disc=used*cfg.valorPunto;const total=sub-disc;
  if(!openSession()){toast('Abre la caja antes de cobrar','bad');return}
- if(pos.method==='efectivo'&&pos.received!==''&&parseMoney(pos.received)<total){toast('El dinero recibido no alcanza para el total','bad');return}
+ const D=domOn()?pos.dom:null;const fee=D?domFee():0;
+ if(D){if(phoneDigits(D.tel).length<7){toast('Escribe el teléfono del cliente del domicilio','bad');return}if(!D.dir.trim()){toast('Escribe la dirección del domicilio','bad');return}if(D.cour==='ext'&&!D.ext.trim()){toast('Escribe el nombre del domiciliario externo','bad');return}if(pos.method==='fiado'){toast('Los domicilios no se venden fiados','bad');return}}
+ if(pos.method==='efectivo'&&pos.received!==''&&parseMoney(pos.received)<total+fee){toast(D?'Con lo que paga no alcanza para el pedido y el envío':'El dinero recibido no alcanza para el total','bad');return}
  {const short=cart.map(i=>({i,p:S.products.find(x=>x.id===i.pid)})).find(({i,p})=>p&&i.qty>sellable(p,pos.tab)+1e-6);if(short){noStock(short.p,sellable(short.p,pos.tab));return}}
  if(pos.method==='fiado'&&!pos.customer){toast('Selecciona el cliente que se lleva fiado','bad');return}
  if(pos.method==='fiado'){const c=S.customers.find(x=>x.id===pos.customer);const debe=balanceOf(pos.customer);if(c&&c.limit>0&&debe+total>c.limit){toast(`${c.name} tiene un cupo de ${money(c.limit)} y ya debe ${money(debe)}. Solo se le puede fiar ${money(Math.max(0,c.limit-debe))} más.`,'bad');return}}
  const t=tenant();const last=Math.max(1000,RB.lastNum||0,...T('sales').map(s=>s.num||0));
- const sale={id:uid(),tid:t.id,at:Date.now(),items:cart.map(i=>({...i})),total,method:pos.method,bank:pos.method==='transferencia'?pos.bank:'',card:pos.method==='datafono'?pos.card:'',ref:pos.method==='transferencia'||pos.method==='datafono'?pos.ref:'',confirmed:pos.method!=='transferencia'||pos.verified,received:pos.method==='efectivo'?(parseMoney(pos.received)||total):0,seller:me().id,customer:pos.method==='fiado'?pos.customer:'',status:'ok',num:last+1,dev:DEV};
+ const sale={id:uid(),tid:t.id,at:Date.now(),items:cart.map(i=>({...i})),total,method:pos.method,bank:pos.method==='transferencia'?pos.bank:'',card:pos.method==='datafono'?pos.card:'',ref:pos.method==='transferencia'||pos.method==='datafono'?pos.ref:'',confirmed:pos.method!=='transferencia'||pos.verified,received:pos.method==='efectivo'?(parseMoney(pos.received)||total+fee):0,seller:me().id,customer:pos.method==='fiado'?pos.customer:'',status:'ok',num:last+1,dev:DEV};
  if(fm)Object.assign(sale,{mid:fm.id,sub,disc,ptsUsed:used});else if(pos.tab)sale.sub=sub;
+ if(D)sale.dom={name:D.name.trim(),tel:fmtPhone(D.tel)||D.tel.trim(),dir:D.dir.trim(),barrio:D.barrio.trim(),nota:D.nota.trim(),fee,cour:D.cour&&D.cour!=='ext'?D.cour:'',ext:D.cour==='ext'?D.ext.trim():'',st:'recibido',t:{recibido:sale.at},paid:false};
  {const tk=taxKind(t.id);sale.tax=tk;if(tk)sale.items.forEach(i=>{i.tx=txOf(S.products.find(x=>x.id===i.pid),t.id)})}
  if(fm){
   if(used){ptsConsume(fm,used);ptsMove(fm,'redime',-used,`Venta #${saleNo(sale)}`,sale.id)}
@@ -1814,11 +1973,11 @@ function checkout(){
   sale.ptsEarned=earned;sale.ptsAfter=ptsOf(fm);fm.last=Date.now();
  }
  const tabPay=pos.tab?mzApplyPay(sale):null;
- RB.lastNum=Math.max(RB.lastNum||0,sale.num);S.sales.push(sale);liveEvent('venta',`Venta #${saleNo(sale)} por ${money(total)}`,null,total);
+ RB.lastNum=Math.max(RB.lastNum||0,sale.num);S.sales.push(sale);liveEvent('venta',`${sale.dom?'Domicilio':'Venta'} #${saleNo(sale)} por ${money(total)}`,null,total);
  sale.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,-1,`Venta #${saleNo(sale)}`,sale.at,t.id)});
  if(sale.method==='fiado')S.ledger.push({id:uid(),tid:t.id,cid:sale.customer,type:'cargo',amount:total,at:sale.at,note:`Venta fiada #${saleNo(sale)}`,sid:sale.id});
  save();_sc=null;
- cart=[];pos={...pos,last:null,tab:null,q:'',received:'',ref:'',verified:false,customer:'',fdoc:'',mid:'',useP:false,fmiss:false};
+ cart=[];pos={...pos,dom:null,last:null,tab:null,q:'',received:'',ref:'',verified:false,customer:'',fdoc:'',mid:'',useP:false,fmiss:false};
  if(tabPay){cart=mz.bak||[];mz.bak=null;mz.pay=false;mz.sel={};if(tabPay.closed)mz.id=null;render();toast(tabPay.closed?`Ya pagaron todo: ${tabPay.name} quedó libre`:`Pago registrado. ${tabPay.name} sigue abierta con lo pendiente`)}
  showReceipt(sale,true);
  const pr=$('#pos-results');if(pr)pr.innerHTML=posResults();const q=$('#pos-q');if(q)q.value='';
@@ -1827,11 +1986,12 @@ function checkout(){
 function receiptHTML(s){
  const t=S.tenants.find(x=>x.id===s.tid);
  return `<div class="receipt">${receiptHead(t)}<hr>
-  <div class="ln"><span>Venta #${saleNo(s)}</span><span>${fdt(s.at)}</span></div><div class="ln"><span>Atendió</span><span>${esc(userName(s.seller))}</span></div>${s.mesa?`<div class="ln"><span>Mesa</span><span>${esc(s.mesa)}</span></div>`:''}<hr>
+  <div class="ln"><span>Venta #${saleNo(s)}</span><span>${fdt(s.at)}</span></div><div class="ln"><span>Atendió</span><span>${esc(userName(s.seller))}</span></div>${s.mesa?`<div class="ln"><span>Mesa</span><span>${esc(s.mesa)}</span></div>`:''}${s.dom?`<hr><div class="c"><b>DOMICILIO</b></div><div class="ln"><span>Cliente</span><span>${esc(s.dom.name||'—')}</span></div><div class="ln"><span>Teléfono</span><span>${esc(s.dom.tel)}</span></div><div class="ln"><span>Dirección</span><span style="text-align:right">${esc(s.dom.dir)}${s.dom.barrio?'<br>'+esc(s.dom.barrio):''}</span></div>${s.dom.nota?`<div class="small">${esc(s.dom.nota)}</div>`:''}${domWho(s.dom)?`<div class="ln"><span>Domiciliario</span><span>${esc(domWho(s.dom))}</span></div>`:''}`:''}<hr>
   ${s.split?`<div class="ln"><span>${splitTxt(s)} de la cuenta (partes iguales)</span><span>${money(s.sub||s.total)}</span></div>`:s.items.map(i=>`<div class="ln"><span>${num(i.qty)} × ${esc(i.name)}</span><span>${money(i.qty*i.price)}</span></div>`).join('')}<hr>
   ${s.disc?`<div class="ln"><span>Subtotal</span><span>${money(s.sub)}</span></div><div class="ln"><span>Descuento ${num(s.ptsUsed)} puntos</span><span>−${money(s.disc)}</span></div>`:''}
   ${taxLinesHTML(s)}<div class="ln"><b>TOTAL</b><b>${money(s.total)}</b></div><div class="ln"><span>Pago</span><span>${s.method==='efectivo'?'Efectivo':s.method==='datafono'?'Datáfono'+(s.card?' · '+esc(s.card):'')+(s.ref?' · aprob. '+esc(s.ref):''):s.method==='fiado'?'Fiado: '+esc(S.customers.find(c=>c.id===s.customer)?.name||''):esc(s.bank)+(s.ref?' · ref '+esc(s.ref):'')}</span></div>
-  ${s.method==='efectivo'?`<div class="ln"><span>Recibido</span><span>${money(s.received)}</span></div><div class="ln"><span>Cambio</span><span>${money(Math.max(0,s.received-s.total))}</span></div>`:''}
+  ${s.dom?`${s.dom.fee?`<div class="ln"><span>Envío (se le paga al domiciliario)</span><span>${money(s.dom.fee)}</span></div>`:''}${domContra(s)?`<div class="ln"><b>A PAGAR AL RECIBIR</b><b>${money(s.total+(s.dom.fee||0))}</b></div>`:''}`:''}
+  ${s.method==='efectivo'?`<div class="ln"><span>${s.dom?'Paga con':'Recibido'}</span><span>${money(s.received)}</span></div><div class="ln"><span>Cambio</span><span>${money(Math.max(0,s.received-s.total-(s.dom?.fee||0)))}</span></div>`:''}
   ${s.mid?`<hr><div class="ln"><span>Cliente</span><span>${esc(S.members.find(m=>m.id===s.mid)?.name||'')}</span></div><div class="ln"><span>Puntos ganados</span><span>${num(s.ptsEarned||0)}</span></div><div class="ln"><span>Saldo de puntos</span><span>${num(s.ptsAfter||0)}</span></div>`:''}
   ${s.status==='anulada'?`<hr><div class="c"><b>VENTA ANULADA</b>${s.voidWhy?`<div class="small">${esc(s.voidWhy)}${s.voidBy?` · ${esc(userName(s.voidBy))}`:''}</div>`:''}</div>`:''}
   <hr>${receiptFoot(t)}</div>`;
@@ -1846,11 +2006,11 @@ function mesaNote(s,fresh){
 }
 function showReceipt(s,fresh=false){
  const t=S.tenants.find(x=>x.id===s.tid);
- const body=`${fresh?`<div class="banner info">${ic('check')}<div class="grow"><b>Venta registrada.</b> ${s.method==='efectivo'&&s.received>s.total?`Entrega ${money(s.received-s.total)} de cambio.`:''}${s.method==='transferencia'&&!s.confirmed?'Quedó por confirmar la transferencia.':''}</div></div>`:''}
+ const body=`${fresh&&s.dom?`<div class="banner info">${ic('moto')}<div class="grow"><b>Domicilio registrado.</b> Ya aparece en <b>Domicilios</b> para prepararlo y despacharlo.${s.dom.cour?` Le avisamos a ${esc(userName(s.dom.cour))} en su celular.`:''}</div></div>`:fresh?`<div class="banner info">${ic('check')}<div class="grow"><b>Venta registrada.</b> ${s.method==='efectivo'&&s.received>s.total?`Entrega ${money(s.received-s.total)} de cambio.`:''}${s.method==='transferencia'&&!s.confirmed?'Quedó por confirmar la transferencia.':''}</div></div>`:''}
 ${mesaNote(s,fresh)}${receiptHTML(s)}${printOn()?`<p class="small muted prn-under">${ic('printer',14)} ${esc(prnLabel())} · <button class="linkish" data-a="prn-setup">Configurar impresora</button></p>`:''}`;
  const can=canDo('anular')&&s.status!=='anulada';
- const foot=`${s.method==='transferencia'&&!s.confirmed&&s.status!=='anulada'?`<button class="btn" data-a="confirm-tr" data-id="${s.id}">${ic('check',16)} Confirmar transferencia</button>`:''}${can&&!fresh?`<button class="btn danger" data-a="void-ask" data-id="${s.id}">Anular venta</button>`:''}${printOn()?`<button class="btn" data-a="prn-sale" data-id="${s.id}">${ic('printer',16)} Imprimir</button>`:''}<button class="btn primary" data-a="close-modal">${fresh?(s.tab?'Listo':'Nueva venta'):'Cerrar'}</button>`;
- openModal(fresh?'Venta registrada':`Venta #${saleNo(s)}`,body,foot);
+ const foot=`${s.method==='transferencia'&&!s.confirmed&&s.status!=='anulada'?`<button class="btn" data-a="confirm-tr" data-id="${s.id}">${ic('check',16)} Confirmar transferencia</button>`:''}${can&&!fresh?`<button class="btn danger" data-a="void-ask" data-id="${s.id}">Anular venta</button>`:''}${printOn()?`<button class="btn" data-a="prn-sale" data-id="${s.id}">${ic('printer',16)} Imprimir</button>`:''}${fresh&&s.dom?`<button class="btn" data-a="go" data-v="domicilios">${ic('moto',16)} Ver domicilios</button>`:''}<button class="btn primary" data-a="close-modal">${fresh?(s.tab?'Listo':s.dom?'Nuevo pedido':'Nueva venta'):'Cerrar'}</button>`;
+ openModal(fresh?(s.dom?'Domicilio registrado':'Venta registrada'):`${s.dom?'Domicilio':'Venta'} #${saleNo(s)}`,body,foot);
  if(fresh&&printOn()&&prnCfg().auto)printSale(s);
 }
 
@@ -2056,10 +2216,11 @@ function sessionTotals(s){
  const tr=sum(sales.filter(x=>x.method==='transferencia'),x=>x.total);
  const fi=sum(sales.filter(x=>x.method==='fiado'),x=>x.total);
  const df=sum(sales.filter(x=>x.method==='datafono'),x=>x.total);
+ const domPend=sum(sales.filter(x=>x.method==='efectivo'&&x.dom&&!x.dom.paid),x=>x.total);
  const mv=T('moves').filter(m=>m.method==='efectivo'&&m.at>=s.openedAt&&m.at<=end);
  const inC=sum(mv.filter(m=>m.type==='ingreso'),m=>m.amount),outC=sum(mv.filter(m=>m.type==='egreso'),m=>m.amount);
  const abonos=sum(T('ledger').filter(l=>l.type==='abono'&&l.cash&&l.at>=s.openedAt&&l.at<=end),l=>l.amount);
- return {count:sales.length,cash,tr,df,fi,inC:inC,outC,abonos,expected:s.base+cash+inC+abonos-outC};
+ return {count:sales.length,cash,tr,df,fi,inC:inC,outC,abonos,domPend,expected:s.base+cash-domPend+inC+abonos-outC};
 }
 function viewCierre(){
  need(30,['sessions']);{const o=openSession();if(o)need((sod(Date.now())-sod(o.openedAt))/DAY+1,['sales','moves'])}
@@ -2071,6 +2232,7 @@ function viewCierre(){
    <div class="tbl-wrap"><table><tbody>
    <tr><td>Base inicial</td><td class="r num">${money(s.base)}</td></tr>
    <tr><td>Ventas en efectivo (${x.count} ventas en total)</td><td class="r num">+ ${money(x.cash)}</td></tr>
+   ${x.domPend?`<tr><td>Efectivo de domicilios que el domiciliario aún no entrega <button class="linkish" data-a="go" data-v="domicilios">Ver</button></td><td class="r num">− ${money(x.domPend)}</td></tr>`:''}
    <tr><td>Ingresos en efectivo</td><td class="r num">+ ${money(x.inC)}</td></tr>
    ${has('fiados')||x.abonos?`<tr><td>Abonos de fiados en efectivo</td><td class="r num">+ ${money(x.abonos)}</td></tr>`:''}
    <tr><td>Egresos pagados con efectivo de la caja</td><td class="r num">− ${money(x.outC)}</td></tr>
@@ -2093,7 +2255,7 @@ function viewVentas(){
  const allV=canDo('ver_todas');let list=T('sales').filter(s=>s.at>=from&&(allV||s.seller===u.id));
  if(vf.method==='pendiente')list=list.filter(s=>s.method==='transferencia'&&!s.confirmed);else if(vf.method)list=list.filter(s=>s.method===vf.method);
  if(vf.seller&&allV)list=list.filter(s=>s.seller===vf.seller);
- if(vf.origin)list=list.filter(s=>vf.origin==='mesas'?!!s.mesa:!s.mesa);
+ if(vf.origin)list=list.filter(s=>vf.origin==='mesas'?!!s.mesa:vf.origin==='domicilios'?!!s.dom:!s.mesa&&!s.dom);
  if(vf.q)list=list.filter(s=>saleNo(s).includes(vf.q)||norm(s.mesa).includes(norm(vf.q))||s.items.some(i=>norm(i.name).includes(norm(vf.q))));
  list=list.slice().sort((a,b)=>b.at-a.at);
  const ok=list.filter(s=>s.status!=='anulada');
@@ -2102,7 +2264,7 @@ function viewVentas(){
   <div class="card"><div class="toolbar" style="margin-bottom:12px">
    <div class="search">${ic('search',16)}<input class="input" placeholder="${has('mesas')?'Buscar por número, producto o mesa':'Buscar por número o producto'}" value="${esc(vf.q)}" data-i="vf-q" id="vf-q"></div>
    ${sel('vf-range',[['hoy','Hoy'],['7','Últimos 7 días'],['30','Últimos 30 días']],vf.range,'data-c="vf-range"')}
-   ${has('mesas')?sel('vf-origin',[['','Mesas y caja'],['mesas','Solo mesas'],['caja','Solo caja (sin mesa)']],vf.origin,'data-c="vf-origin"'):''}
+   ${has('mesas')||has('domicilios')?sel('vf-origin',[['','Todas las ventas'],...(has('mesas')?[['mesas','Solo mesas']]:[]),...(has('domicilios')?[['domicilios','Solo domicilios']]:[]),['caja','Solo en la caja']],vf.origin,'data-c="vf-origin"'):''}
    ${sel('vf-method',[['','Todos los pagos'],['efectivo','Efectivo'],['transferencia','Transferencia'],...(datafonoOn()||T('sales').some(x=>x.method==='datafono')?[['datafono','Datáfono']]:[]),['pendiente','Por confirmar'],['fiado','Fiado']],vf.method,'data-c="vf-method"')}
    ${allV?'':'<!--'}${sel('vf-seller',[['','Todos los vendedores'],...emps.map(e=>[e.id,e.name])],vf.seller,'data-c="vf-seller"')}${allV?'':'-->'}
   </div>
@@ -2335,6 +2497,17 @@ function guideSections(){
   'A la izquierda está el menú (en el celular, toca <b>☰</b> arriba). Solo ves lo que '+(own?'tu negocio tiene contratado':'el dueño te permite usar')+'.',
   '<b>Inicio</b> te muestra cómo va el día: '+(allV?'ventas, efectivo y transferencias':'tus ventas del día')+(m('inventario')&&(own||canDo('ver_inventario')||canDo('inv_edit'))?' y los productos que se están acabando':'')+'.',
   'Para salir, toca <b>Cerrar sesión</b> al final del menú y confirma.']});
+ if(m('domicilios')&&isDomi(u)){S_.push({id:'domicilios',icon:'moto',title:'Llevar domicilios',go:'domicilios',steps:[
+  'En <b>Mis domicilios</b> ves los pedidos que te asignaron, con la dirección, el teléfono y cuánto cobrar.',
+  'Toca <b>Mapa</b> para abrir la dirección en Google Maps, <b>Llamar</b> o <b>WhatsApp</b> para hablar con el cliente.',
+  'Cuando salgas, toca <b>Salió</b>. Cuando el cliente lo reciba, toca <b>Entregado</b>.',
+  'El envío es tuyo. El valor del pedido que te pagaron en efectivo lo entregas en la caja.']});return S_}
+ if(m('domicilios')&&!isDomi(u))S_.push({id:'domicilios',icon:'moto',title:'Domicilios',go:'domicilios',steps:[
+  'En la <b>Caja</b>, arriba del pago, toca <b>Domicilio</b>. Escribe el teléfono: si el cliente ya pidió antes, el nombre y la dirección se llenan solos.',
+  'Escribe el <b>envío</b>: es del domiciliario, sale en la comanda pero no entra a tu caja. Elige el domiciliario (propio o externo) o asígnalo después.',
+  'Elige cómo paga el cliente y toca <b>Registrar domicilio</b>. Los productos se descuentan del inventario en ese momento; si cancelas el pedido, vuelven.',
+  'En <b>Domicilios</b> sigues cada pedido: <b>Empezar a preparar</b> → <b>Salió</b> → <b>Entregado</b>. Con <b>WhatsApp</b> le avisas al cliente y con <b>Mapa</b> el domiciliario ve la dirección.',
+  'Si pagaron en efectivo, esa plata no está en el cajón hasta que el domiciliario la entrega. Cuando te la dé, toca <b>Recibí</b> y ya cuenta en el cierre de caja.']});
  if(m('caja')){
   S_.push({id:'cierre',icon:'register',title:'Abrir y cerrar la caja',go:'cierre',steps:[
    'Al empezar el turno entra a <b>Apertura y cierre</b>, escribe la <b>base</b> (el dinero que dejas para dar cambio) y toca <b>Abrir caja</b>.',
@@ -2595,6 +2768,7 @@ function viewStats(){
    <div class="card"><h2>Productos estrella <span class="sub">por valor vendido</span></h2><div class="hbars">${top.map(p=>`<div class="hb"><span>${esc(p.name)} <span class="muted small">· ${num(p.q)} und</span></span><b class="num">${money(p.v)}</b><div class="track"><div class="fill" style="width:${p.v/maxP*100}%"></div></div></div>`).join('')||'<p class="muted small">Sin ventas</p>'}</div></div>
    <div class="card"><h2>Ventas por vendedor</h2><div class="hbars">${sellers.map(([id,s])=>`<div class="hb"><span>${esc(userName(id))} <span class="muted small">· ${s.n} ventas</span></span><b class="num">${money(s.v)}</b><div class="track"><div class="fill alt" style="width:${s.v/maxS*100}%"></div></div></div>`).join('')||'<p class="muted small">Sin ventas</p>'}</div></div>
    <div class="card"><h2>Horas con más ventas</h2>${barChart(hours,{h:200,alt:true})}</div>
+   ${has('domicilios')?domStatsCard(sales,tot):''}
    <div class="card"><h2>Métodos de pago</h2><div class="hbars">${[['Efectivo',meth.efectivo,''],['Transferencia',meth.transferencia,'alt'],['Datáfono',meth.datafono,''],['Fiado',meth.fiado,'']].filter(m=>m[0]==='Datáfono'?datafonoOn()||m[1]:m[0]!=='Fiado'||m[1]).map(([l,v,c])=>`<div class="hb"><span>${l} <span class="muted small">· ${tot?Math.round(v/tot*100):0}%</span></span><b class="num">${money(v)}</b><div class="track"><div class="fill ${c}" style="width:${tot?v/tot*100:0}%"></div></div></div>`).join('')}</div></div>
   </div>`;
 }
@@ -2662,15 +2836,16 @@ function viewEmpleados(){
  const t=tenant();const E=S.users.filter(u=>u.tid===t.id&&!u.archived);const today=sod(Date.now());
  const avail=PERMS.filter(p=>t.mods.includes(p.mod));
  return `<div class="page-head"><div><h1>Empleados</h1><p>Cada persona entra con su correo y contraseña. Tú decides qué puede hacer además de vender.</p></div><div class="actions"><button class="btn primary" data-a="emp-new">${ic('plus',16)} Nuevo empleado</button></div></div>
-  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Puede además</th><th class="r">Ventas hoy</th><th>Activo</th><th></th></tr></thead><tbody>${E.map(u=>{const s=okSales().filter(x=>x.seller===u.id&&x.at>=today);const own=u.role==='dueno';const ps=(u.perms||[]).filter(p=>avail.some(a=>a.id===p));return`<tr><td><div class="row" style="flex-wrap:nowrap"><div class="avatar">${initials(u.name)}</div><div style="min-width:0"><b>${esc(u.name)}</b><div class="muted small">${esc(u.email)}</div></div></div></td><td>${own?'<span class="pill ac">Dueño(a)</span>':isMesero(u)?'<span class="pill warn">Mesero(a)</span>':'<span class="pill">Cajero(a)</span>'}</td><td>${own?'<span class="muted small">Todo</span>':isMesero(u)?`<span class="muted small">${meseroCobra(u)?'Atiende mesas y <b>cobra</b>':'Atiende mesas · no cobra'}</span>`:ps.length?`<div class="chips">${ps.map(p=>`<span class="pill">${PERMS.find(x=>x.id===p).label}</span>`).join('')}</div>`:'<span class="muted small">Solo vender y ver sus ventas</span>'}</td><td class="r num">${money(sum(s,x=>x.total))} <span class="muted small">(${s.length})</span></td><td>${own?'':`<button class="switch ${u.active?'on':''}" data-a="emp-toggle" data-id="${u.id}" aria-label="Activar o desactivar ${esc(u.name)}"></button>`}</td><td class="r" style="white-space:nowrap">${own?'':`<button class="btn sm" data-a="emp-perms" data-id="${u.id}">Permisos</button> <button class="btn sm" data-a="emp-reset" data-id="${u.id}">Contraseña</button> <button class="icon-btn" data-a="emp-del-ask" data-id="${u.id}" aria-label="Eliminar a ${esc(u.name)}" title="Eliminar" style="color:var(--bad)">${ic('trash',17)}</button>`}</td></tr>`}).join('')}</tbody></table></div></div>
+  <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Nombre</th><th>Rol</th><th>Puede además</th><th class="r">Ventas hoy</th><th>Activo</th><th></th></tr></thead><tbody>${E.map(u=>{const s=okSales().filter(x=>x.seller===u.id&&x.at>=today);const own=u.role==='dueno';const ps=(u.perms||[]).filter(p=>avail.some(a=>a.id===p));return`<tr><td><div class="row" style="flex-wrap:nowrap"><div class="avatar">${initials(u.name)}</div><div style="min-width:0"><b>${esc(u.name)}</b><div class="muted small">${esc(u.email)}</div></div></div></td><td>${own?'<span class="pill ac">Dueño(a)</span>':isMesero(u)?'<span class="pill warn">Mesero(a)</span>':isDomi(u)?'<span class="pill good">Domiciliario(a)</span>':'<span class="pill">Cajero(a)</span>'}</td><td>${own?'<span class="muted small">Todo</span>':isDomi(u)?'<span class="muted small">Sus domicilios</span>':isMesero(u)?`<span class="muted small">${meseroCobra(u)?'Atiende mesas y <b>cobra</b>':'Atiende mesas · no cobra'}</span>`:ps.length?`<div class="chips">${ps.map(p=>`<span class="pill">${PERMS.find(x=>x.id===p).label}</span>`).join('')}</div>`:'<span class="muted small">Solo vender y ver sus ventas</span>'}</td><td class="r num">${money(sum(s,x=>x.total))} <span class="muted small">(${s.length})</span></td><td>${own?'':`<button class="switch ${u.active?'on':''}" data-a="emp-toggle" data-id="${u.id}" aria-label="Activar o desactivar ${esc(u.name)}"></button>`}</td><td class="r" style="white-space:nowrap">${own?'':`<button class="btn sm" data-a="emp-perms" data-id="${u.id}">Permisos</button> <button class="btn sm" data-a="emp-reset" data-id="${u.id}">Contraseña</button> <button class="icon-btn" data-a="emp-del-ask" data-id="${u.id}" aria-label="Eliminar a ${esc(u.name)}" title="Eliminar" style="color:var(--bad)">${ic('trash',17)}</button>`}</td></tr>`}).join('')}</tbody></table></div></div>
   <div class="hint">${ic('info',15)} <b>Cómo entra un empleado:</b> lo creas con su correo y una contraseña inicial; le llegan sus datos por correo (o se los compartes tú). Entra en ${esc(APP_URL)} y la primera vez crea su propia contraseña. Si se le olvida, toca <b>Contraseña</b>. Si deja de trabajar contigo, <b>apágalo</b> (vuelve a entrar cuando lo prendas) o <b>elimínalo</b>.</div>
   <div class="hint">${ic('info',15)} <b>Lo que siempre puede hacer un cajero:</b> vender en la caja (efectivo o transferencia), abrir y cerrar caja y ver solo sus propias ventas. Inventario, fiados y lo demás solo los ve si se lo activas. Lo demás lo activas con el botón <b>Permisos</b>.</div>
+  ${has('domicilios')?`<div class="hint">${ic('moto',15)} <b>Domiciliarios propios:</b> crea el empleado con el puesto <b>Domiciliario(a)</b>. Desde su celular ve solo los pedidos que le asignan, marca cuando sale y cuando entrega. Los domiciliarios externos (Rappi, mensajeros) no necesitan cuenta: se escribe su nombre al asignar el pedido.</div>`:''}
   ${has('mesas')?`<div class="hint">${ic('table',15)} <b>Meseros:</b> al crear el empleado (o en <b>Permisos</b>) elige el puesto <b>Mesero(a)</b>. Solo ve las mesas: las abre, agrega lo que piden y avisa cuando piden la cuenta. Por defecto <b>no cobra</b>; si quieres que un mesero cobre, actívale <b>Cobrar las mesas</b> en Permisos.</div>`:''}`;
 }
 function permsModal(u){
  const t=tenant();const avail=PERMS.filter(p=>t.mods.includes(p.mod));
  openModal(`Permisos de ${u.name}`,`<p class="muted small" style="margin:0">Marca lo que ${esc(u.name.split(' ')[0])} puede hacer${isMesero(u)?'':' además de vender'}. Los cambios se aplican al instante, aunque tenga la sesión abierta.</p>
-  <form class="stack" data-f="emp-perms" id="perm-form"><input type="hidden" name="id" value="${u.id}">${has('mesas')?field('Puesto',sel('puesto',[['cajero','Cajero(a): cobra en la caja'],['mesero','Mesero(a): atiende mesas']],isMesero(u)?'mesero':'cajero','data-c="emp-puesto"')):''}<div class="check-list">${avail.map(p=>`<label class="check" data-for="${p.mesero?'mesero':'cajero'}" ${!!p.mesero!==isMesero(u)?'hidden':''}><input type="checkbox" name="perm" value="${p.id}" ${(u.perms||[]).includes(p.id)?'checked':''}><span>${p.label}<small>${p.desc}</small></span></label>`).join('')}</div></form>`,
+  <form class="stack" data-f="emp-perms" id="perm-form"><input type="hidden" name="id" value="${u.id}">${has('mesas')||has('domicilios')?field('Puesto',sel('puesto',[['cajero','Cajero(a): cobra en la caja'],...(has('mesas')?[['mesero','Mesero(a): atiende mesas']]:[]),...(has('domicilios')?[['domiciliario','Domiciliario(a): lleva los pedidos']]:[])],isMesero(u)?'mesero':isDomi(u)?'domiciliario':'cajero','data-c="emp-puesto"')):''}<div class="check-list">${avail.map(p=>`<label class="check" data-for="${p.mesero?'mesero':'cajero'}" ${isDomi(u)||!!p.mesero!==isMesero(u)?'hidden':''}><input type="checkbox" name="perm" value="${p.id}" ${(u.perms||[]).includes(p.id)?'checked':''}><span>${p.label}<small>${p.desc}</small></span></label>`).join('')}</div></form>`,
   `<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="perm-form">Guardar permisos</button>`,true);
 }
 
@@ -2973,6 +3148,22 @@ document.addEventListener('click',e=>{
   'mz-del':()=>{const m=S.tables.find(x=>x.id===id);if(!m)return;if(tabOf(m.id))return toast('Esa mesa está ocupada','bad');S.tables=S.tables.filter(x=>x.id!==id);mesasOf().forEach((x,i)=>x.order=i);save();render();mzCfgModal();toast(`${m.name} eliminada`)},
   sale:()=>showReceipt(S.sales.find(s=>s.id===id)),
   'confirm-tr':()=>{const s=S.sales.find(x=>x.id===id);s.confirmed=true;save();closeModal();render();toast('Transferencia confirmada')},
+  'dom-mode':()=>{const d=posDom();d.on=v==='1';if(d.on&&pos.method==='fiado')pos.method='efectivo';refreshPOS()},
+  'dom-new':()=>{posDom().on=true;if(pos.method==='fiado')pos.method='efectivo';sess.view='caja';saveSess();render()},
+  'dom-tab':()=>{domf.tab=v;render()},
+  'dom-assign':()=>domAssignModal(S.sales.find(x=>x.id===id)),
+  'dom-assign-do':()=>{const s=S.sales.find(x=>x.id===id);if(!s?.dom)return;const w=document.querySelector('input[name=dom-who]:checked')?.value||'';const ext=($('#dom-ext')?.value||'').trim();
+   if(!w)return toast('Elige quién lleva el pedido','bad');if(w==='ext'&&!ext)return toast('Escribe el nombre del domiciliario externo','bad');
+   s.dom.cour=w==='ext'?'':w;s.dom.ext=w==='ext'?ext:'';save();closeModal();render();toast(`Pedido #${saleNo(s)} asignado a ${domWho(s.dom)}`)},
+  'dom-st':()=>{const s=S.sales.find(x=>x.id===id);if(!s?.dom||s.status==='anulada')return;
+   if(v==='camino'&&!domKey(s.dom))return domAssignModal(s);
+   s.dom.st=v;s.dom.t={...(s.dom.t||{}),[v]:Date.now()};save();render();
+   toast(v==='preparando'?'Pedido en preparación':v==='camino'?`Pedido #${saleNo(s)} en camino`:`Pedido #${saleNo(s)} entregado${s.method==='efectivo'?`: ${domWho(s.dom)} debe entregar ${money(s.total)} en la caja`:''}`)},
+  'dom-paid':()=>{const L=domOf().filter(s=>s.status!=='anulada'&&s.method==='efectivo'&&!s.dom.paid&&s.dom.st==='entregado'&&(domKey(s.dom)||'sin')===v);const tot=sum(L,s=>s.total);L.forEach(s=>{s.dom.paid=true;s.dom.paidAt=Date.now();s.dom.paidTo=me().id});save();render();toast(`Recibiste ${money(tot)}. Ya cuenta en el efectivo de la caja`)},
+  'dom-cancel':()=>{const s=S.sales.find(x=>x.id===id);openModal(`Cancelar domicilio #${saleNo(s)}`,`<p>Los productos vuelven al inventario y el pedido deja de contar en las ventas.</p>${field('¿Por qué se cancela?',inp('voidwhy','','text','maxlength="120" placeholder="Ej: el cliente no contestó" autocomplete="off"'),'full')}<div id="void-err"></div>`,`<button class="btn" data-a="close-modal">Volver</button><button class="btn danger" data-a="dom-cancel-do" data-id="${id}">Cancelar domicilio</button>`)},
+  'dom-cancel-do':()=>{const s=S.sales.find(x=>x.id===id);if(!s||!s.dom||s.status==='anulada')return;if(s.dom.st==='entregado'&&!canDo('anular'))return toast('Ese pedido ya se entregó. Para anularlo necesitas el permiso Anular ventas','bad');
+   const why=($('#f-voidwhy')?.value||'').trim();if(!why){const e=$('#void-err');if(e)e.innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">Escribe por qué se cancela.</div></div>`;$('#f-voidwhy')?.focus();return}
+   s.status='anulada';s.voidBy=me().id;s.voidAt=Date.now();s.voidWhy=why.slice(0,120);s.items.forEach(i=>{const p=S.products.find(x=>x.id===i.pid);if(p)moveStock(p,i.qty,1,`Domicilio cancelado #${saleNo(s)}`,Date.now(),s.tid)});fidVoid(s);save();_sc=null;closeModal();render();toast('Domicilio cancelado. Los productos volvieron al inventario')},
   'void-ask':()=>{const s=S.sales.find(x=>x.id===id);openModal(`Anular venta #${saleNo(s)}`,`<p>El stock de los productos vuelve al inventario y la venta deja de contar en los reportes.</p>${field('¿Por qué la anulas?',inp('voidwhy','','text','maxlength="120" placeholder="Ej: el cliente devolvió el producto" autocomplete="off"'),'full')}<div id="void-err"></div>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="void-do" data-id="${id}">Anular venta</button>`)},
   'void-do':()=>{const s=S.sales.find(x=>x.id===id);if(!s||s.status==='anulada')return;if(!canDo('anular'))return toast('No tienes permiso para anular ventas','bad');
    const why=($('#f-voidwhy')?.value||'').trim();if(!why){const e=$('#void-err');if(e)e.innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">Escribe por qué anulas la venta. Queda guardado en la venta.</div></div>`;$('#f-voidwhy')?.focus();return}
@@ -3012,7 +3203,7 @@ document.addEventListener('click',e=>{
   'sup-new':()=>openModal('Nuevo proveedor',`<form class="stack" data-f="sup-new" id="sup-form"><div class="form-grid">${field('Nombre',inp('name','','text','required'),'full')}${field('Qué te vende',inp('what','','text','placeholder="Ej: Harina y azúcar"'),'full')}${field('Teléfono',inp('phone','','tel'))}${field('Días de visita',inp('days','','text','placeholder="Ej: Martes"'))}</div></form>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="sup-form">Guardar</button>`),
   purchase:()=>purchaseModal(S.suppliers.find(s=>s.id===id)),
   // empleados
-  'emp-new':()=>openModal('Nuevo empleado',`<form class="stack" data-f="emp-new" id="emp-form" novalidate><div class="form-grid">${field('Nombre completo',inp('name','','text','required'),'full')}${field('Correo',inp('email','','email','required autocomplete="off"'))}${field('Contraseña inicial',inp('pass','','text','required autocomplete="off"'))}${has('mesas')?field('Puesto',sel('puesto',[['cajero','Cajero(a): cobra en la caja'],['mesero','Mesero(a): atiende mesas']],'cajero','data-c="emp-puesto"')):''}${has('mesas')?`<label class="check" data-for="mesero" hidden style="grid-column:1/-1"><input type="checkbox" name="cobra" value="1"><span>Puede cobrar las mesas<small>Si no lo marcas, solo la caja cobra. Lo puedes cambiar después en Permisos.</small></span></label>`:''}</div><p class="muted small" style="margin:0">La contraseña necesita al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo. El empleado entra como cajero; después le das permisos.</p><div id="emp-err"></div></form>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="emp-form">Crear empleado</button>`),
+  'emp-new':()=>openModal('Nuevo empleado',`<form class="stack" data-f="emp-new" id="emp-form" novalidate><div class="form-grid">${field('Nombre completo',inp('name','','text','required'),'full')}${field('Correo',inp('email','','email','required autocomplete="off"'))}${field('Contraseña inicial',inp('pass','','text','required autocomplete="off"'))}${has('mesas')||has('domicilios')?field('Puesto',sel('puesto',[['cajero','Cajero(a): cobra en la caja'],...(has('mesas')?[['mesero','Mesero(a): atiende mesas']]:[]),...(has('domicilios')?[['domiciliario','Domiciliario(a): lleva los pedidos']]:[])],'cajero','data-c="emp-puesto"')):''}${has('mesas')?`<label class="check" data-for="mesero" hidden style="grid-column:1/-1"><input type="checkbox" name="cobra" value="1"><span>Puede cobrar las mesas<small>Si no lo marcas, solo la caja cobra. Lo puedes cambiar después en Permisos.</small></span></label>`:''}</div><p class="muted small" style="margin:0">La contraseña necesita al menos 8 caracteres, una mayúscula, una minúscula, un número y un símbolo. El empleado entra como cajero; después le das permisos.</p><div id="emp-err"></div></form>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="emp-form">Crear empleado</button>`),
   'emp-perms':()=>permsModal(S.users.find(x=>x.id===id)),
   'emp-del-ask':()=>{const u=S.users.find(x=>x.id===id);openModal(`Eliminar a ${u.name}`,`<p style="margin:0">${esc(u.name.split(' ')[0])} ya no podrá entrar a Natara y desaparece de tu lista de empleados.</p><p class="muted small" style="margin:0">Sus ventas y cierres de caja se conservan en el historial con su nombre, para que tus cuentas no cambien. Si más adelante vuelves a crearlo con el mismo correo, se reactiva.</p>`,`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn danger" data-a="emp-del" data-id="${id}">${ic('trash',16)} Eliminar empleado</button>`)},
   'emp-del':()=>{const u=S.users.find(x=>x.id===id);u.archived=true;u.active=false;u.perms=[];save();closeModal();render();toast(`${u.name} fue eliminado`)},
@@ -3089,7 +3280,10 @@ document.addEventListener('input',e=>{
  const el=e.target,k=el.dataset.i;if(!k)return;
  if(k==='pos-q'){pos.q=el.value;$('#pos-results').innerHTML=posResults()}
  else if(k==='cat-pq'){const q=norm(el.value);document.querySelectorAll('#cat-picks .check').forEach(l=>l.hidden=!!q&&!l.dataset.n.includes(q))}
- else if(k==='pos-rec'){pos.received=el.value;const c=$('#pos-change');if(c)c.textContent=money(Math.max(0,parseMoney(el.value)-payTotal()))}
+ else if(k==='pos-rec'){pos.received=el.value;const c=$('#pos-change');if(c)c.textContent=money(Math.max(0,parseMoney(el.value)-payTotal()-domFee()))}
+ else if(k==='dom-f'){const d=posDom(),kk=el.dataset.k;d[kk]=el.value;
+  if(kk==='fee'){const tt=payTotal(),f=domFee();const a=$('#dom-fee-v'),b=$('#dom-pay-v'),c=$('#pos-change');if(a)a.textContent=money(f);if(b)b.textContent=money(tt+f);if(c)c.textContent=money(Math.max(0,parseMoney(pos.received)-tt-f))}
+  if(kk==='tel'){const prev=domLast(el.value);if(prev){let n=0;['name','dir','barrio'].forEach(x=>{if(!d[x]&&prev[x]){d[x]=prev[x];n++}});if(n){refreshPOS();const t_=$('#dom-tel');if(t_){t_.focus();t_.setSelectionRange(t_.value.length,t_.value.length)}toast('Cliente conocido: llené nombre y dirección del último pedido')}}}}
  else if(k==='fid-doc'){pos.fdoc=el.value;if(pos.fmiss){pos.fmiss=false;const b=$('#fid-miss');if(b)b.remove()}}
  else if(k==='pos-ref')pos.ref=el.value;
  else if(k==='biz-nit'){const o=$('#biz-dv');if(o)o.textContent=el.value.replace(/\D/g,'')?nitDV(el.value):'—'}
@@ -3110,6 +3304,7 @@ document.addEventListener('change',e=>{
 'pos-bank':()=>pos.bank=el.value,'pos-card':()=>pos.card=el.value,'pos-ver':()=>pos.verified=el.checked,'pos-cust':()=>pos.customer=el.value,'fid-use':()=>{pos.useP=el.checked;refreshPOS()},
   'scan-qn':()=>{setCartQty(el.dataset.v,el.value);scanQtyRefresh(el.dataset.v)},
   'qty-set':()=>{const i=cart[+el.dataset.ix];if(i)setCartQty(i.pid,el.value)},
+  'dom-cour':()=>{posDom().cour=el.value;refreshPOS()},
   'vf-range':()=>{vf.range=el.value;render()},'vf-method':()=>{vf.method=el.value;render()},'vf-origin':()=>{vf.origin=el.value;render()},'vf-seller':()=>{vf.seller=el.value;render()},
   'inv-cat':()=>{inv.cat=el.value;render()},'inv-low':()=>{inv.low=el.checked;render()},
   'fin-type':()=>{fin.type=el.value;render()},
@@ -3127,7 +3322,7 @@ document.addEventListener('change',e=>{
   'cat-ren':()=>{const c=S.cats.find(x=>x.id===el.dataset.id);if(!c)return;const name=el.value.trim();if(!name){el.value=c.name;return}if(name===c.name)return;
    if(catsOf().some(x=>x.id!==c.id&&catKey(x.name)===catKey(name))){toast(`Ya tienes la categoría “${name}”`,'bad');el.value=c.name;return}
    const k=catKey(c.name);T('products').forEach(p=>{if(catKey(p.cat)===k)p.cat=name});c.name=name;save();catsRefresh();toast('Categoría renombrada')},
-  'emp-puesto':()=>{const m=el.value==='mesero';el.form?.querySelectorAll('[data-for]').forEach(x=>x.hidden=(x.dataset.for==='mesero')!==m)},
+  'emp-puesto':()=>{const m=el.value;el.form?.querySelectorAll('[data-for]').forEach(x=>x.hidden=x.dataset.for!==m)},
   'mz-ren':()=>{const m=S.tables.find(x=>x.id===el.dataset.id);if(!m)return;const name=el.value.trim();if(!name){el.value=m.name;return}if(name===m.name)return;if(mesasOf().some(x=>x.id!==m.id&&norm(x.name)===norm(name))){toast(`Ya tienes una mesa llamada “${name}”`,'bad');el.value=m.name;return}m.name=name;save();render();toast('Nombre actualizado')},
   'tm-plan':()=>{const p=planById(el.value);document.querySelectorAll('#tm-mods input').forEach(c=>{if(p.mods.includes(c.value))c.checked=true})},
  };
@@ -3210,8 +3405,8 @@ document.addEventListener('submit',e=>{
   abono:()=>{const amt=parseMoney(d.amount);if(!amt){toast('Escribe el valor del abono','bad');return}const debe=balanceOf(d.cid);if(debe<=0){toast('Este cliente no debe nada','bad');return}if(amt>debe){toast(`El abono no puede ser mayor que lo que debe: ${money(debe)}`,'bad');return}S.ledger.push({id:uid(),tid:t.id,cid:d.cid,type:'abono',amount:amt,at:Date.now(),note:`Abono (${d.method})`,cash:d.method==='efectivo'});save();closeModal();render();toast(`Abono de ${money(amt)} registrado`)},
   move:()=>{if(!parseMoney(d.amount)){toast('Escribe el valor','bad');return}const at=new Date(d.date+'T12:00:00').getTime();const isToday=dkey(at)===dkey(Date.now());S.moves.push({id:uid(),tid:t.id,type:d.type,cat:d.cat,concept:d.concept,amount:parseMoney(d.amount),at:isToday?Date.now():at,method:d.method});save();closeModal();render();toast(d.type==='egreso'?'Egreso registrado':'Ingreso registrado')},
   'sup-new':()=>{S.suppliers.push({id:uid(),tid:t.id,name:d.name,what:d.what,phone:d.phone,days:d.days});save();closeModal();render();toast('Proveedor guardado')},
-  'emp-new':()=>{const err=m=>{$('#emp-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};const email=(d.email||'').trim().toLowerCase();if(!(d.name||'').trim())return err('Escribe el nombre del empleado.');if(!EMAIL_RE.test(email))return err('Revisa el correo: debe tener la forma nombre@dominio.com.');const arch=S.users.find(x=>x.archived&&x.tid===t.id&&x.email.toLowerCase()===email);if(!arch&&S.users.some(x=>x.email.toLowerCase()===email))return err('Ya existe un usuario con ese correo.');const pe=passErrors(d.pass);if(pe.length)return err('A la contraseña le falta: '+pe.join(', ')+'.');if(arch){arch.archived=false;arch.active=true;arch.perms=[];arch.puesto=d.puesto==='mesero'?'mesero':'';if(arch.puesto&&d.cobra)arch.perms=['mesa_cobrar'];arch.name=d.name.trim();arch.mustChange=true;if(REAL){save();closeModal();render();return rEmpReset(arch,true)}arch.pass=d.pass;save();render();return sendWelcome(t,arch,d.pass,true)}if(REAL)return rEmpNew(d,t,email,err);const nu={id:uid(),tid:t.id,name:d.name.trim(),email,pass:d.pass,role:'cajero',puesto:d.puesto==='mesero'?'mesero':'',active:true,perms:d.puesto==='mesero'&&d.cobra?['mesa_cobrar']:[],mustChange:true};S.users.push(nu);save();render();sendWelcome(t,nu,d.pass,true)},
-  'emp-perms':()=>{const u2=S.users.find(x=>x.id===d.id);u2.perms=[...f.querySelectorAll('input[name=perm]:checked')].map(c=>c.value);if(has('mesas'))u2.puesto=d.puesto==='mesero'?'mesero':'';{const mo=isMesero(u2);u2.perms=u2.perms.filter(id=>!!PERMS.find(x=>x.id===id)?.mesero===mo)}save();closeModal();render();toast(`Permisos de ${u2.name} actualizados`)},
+  'emp-new':()=>{const err=m=>{$('#emp-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`};const email=(d.email||'').trim().toLowerCase();if(!(d.name||'').trim())return err('Escribe el nombre del empleado.');if(!EMAIL_RE.test(email))return err('Revisa el correo: debe tener la forma nombre@dominio.com.');const arch=S.users.find(x=>x.archived&&x.tid===t.id&&x.email.toLowerCase()===email);if(!arch&&S.users.some(x=>x.email.toLowerCase()===email))return err('Ya existe un usuario con ese correo.');const pe=passErrors(d.pass);if(pe.length)return err('A la contraseña le falta: '+pe.join(', ')+'.');if(arch){arch.archived=false;arch.active=true;arch.perms=[];arch.puesto=['mesero','domiciliario'].includes(d.puesto)?d.puesto:'';if(arch.puesto!=='mesero')d.cobra=false;if(arch.puesto&&d.cobra)arch.perms=['mesa_cobrar'];arch.name=d.name.trim();arch.mustChange=true;if(REAL){save();closeModal();render();return rEmpReset(arch,true)}arch.pass=d.pass;save();render();return sendWelcome(t,arch,d.pass,true)}if(REAL)return rEmpNew(d,t,email,err);const nu={id:uid(),tid:t.id,name:d.name.trim(),email,pass:d.pass,role:'cajero',puesto:['mesero','domiciliario'].includes(d.puesto)?d.puesto:'',active:true,perms:d.puesto==='mesero'&&d.cobra?['mesa_cobrar']:[],mustChange:true};S.users.push(nu);save();render();sendWelcome(t,nu,d.pass,true)},
+  'emp-perms':()=>{const u2=S.users.find(x=>x.id===d.id);u2.perms=[...f.querySelectorAll('input[name=perm]:checked')].map(c=>c.value);if(has('mesas')||has('domicilios'))u2.puesto=['mesero','domiciliario'].includes(d.puesto)?d.puesto:'';{const mo=isMesero(u2);u2.perms=isDomi(u2)?[]:u2.perms.filter(id=>!!PERMS.find(x=>x.id===id)?.mesero===mo)}save();closeModal();render();toast(`Permisos de ${u2.name} actualizados`)},
   'tenant-save':()=>{const tt=S.tenants.find(x=>x.id===d.id);const o=S.users.find(x=>x.id===d.oid);const er=m=>{$('#tm-err').innerHTML=`<div class="banner bad">${ic('alert')}<div class="grow">${m}</div></div>`;$('#tm-err').scrollIntoView?.({block:'nearest'})};
    const email=(d.oemail||'').trim().toLowerCase();
    if(!d.tname.trim()||!d.oname.trim())return er('El nombre del negocio y el del dueño no pueden quedar vacíos.');
@@ -3485,7 +3680,7 @@ const busy=(form,txt)=>{const b=document.querySelector(`[data-form="${form}"]`);
 async function rEmpReset(u,react){try{await FB.sendPasswordResetEmail(FB.auth,u.email,{url:REAL_URL});closeModal();toast(`${react?u.name+' fue reactivado. ':''}Le enviamos a ${u.email} un enlace para crear su contraseña`)}catch(e){toast(authErr(e),'bad')}}
 async function rEmpNew(d,t,email,err){
  busy('emp-form','Creando…');let id;try{id=await createAuthUser(email,d.pass)}catch(e){busy('emp-form');return err(authErr(e))}
- const nu={id,tid:t.id,name:d.name.trim(),email,role:'cajero',puesto:d.puesto==='mesero'?'mesero':'',active:true,perms:d.puesto==='mesero'&&d.cobra?['mesa_cobrar']:[],mustChange:true};S.users.push(nu);save();render();sendWelcome(t,nu,d.pass,true);
+ const nu={id,tid:t.id,name:d.name.trim(),email,role:'cajero',puesto:['mesero','domiciliario'].includes(d.puesto)?d.puesto:'',active:true,perms:d.puesto==='mesero'&&d.cobra?['mesa_cobrar']:[],mustChange:true};S.users.push(nu);save();render();sendWelcome(t,nu,d.pass,true);
 }
 async function rTenantNew(d,email,er){
  busy('tn-form','Creando…');let pass=genTemp();let uidA,reused;try{({id:uidA,reused}=await authFor(email,pass))}catch(e){busy('tn-form');return er(e.dup?DUP_AUTH:authErr(e))}

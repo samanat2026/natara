@@ -53,8 +53,17 @@ service cloud.firestore {
     // y cerrar una caja que sigue abierta.
     function canCreateLog(coll) { return coll in ['sales', 'sessions', 'kardex']; }
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
-    function empUpdateLog(coll) {
+    function empUpdateLog(tid, coll) {
       return (coll == 'sales' && changed().hasOnly(['confirmed']) && request.resource.data.confirmed == true)
+        // Domicilios: cajeros y domiciliarios mueven el pedido (estado, domiciliario, efectivo entregado)
+        || (coll == 'sales' && hasMod(tid, 'domicilios') && resource.data.get('dom', null) != null
+            && changed().hasOnly(['dom', 'confirmed']))
+        // y pueden cancelar un domicilio que todavía no se entrega (el stock vuelve al inventario)
+        || (coll == 'sales' && hasMod(tid, 'domicilios') && resource.data.get('dom', null) != null
+            && resource.data.dom.st != 'entregado' && resource.data.status == 'ok'
+            && request.resource.data.status == 'anulada'
+            && changed().hasOnly(['status', 'voidBy', 'voidAt', 'voidWhy'])
+            && request.resource.data.voidBy == request.auth.uid)
         || (coll == 'sales' && hasPerm('anular') && resource.data.status == 'ok'
             && request.resource.data.status == 'anulada'
             && changed().hasOnly(['status', 'voidBy', 'voidAt', 'voidWhy'])
@@ -116,7 +125,7 @@ service cloud.firestore {
               // nadie puede cambiar quién hizo una venta
               && (coll != 'sales' || request.resource.data.seller == resource.data.seller)
               && (canWrite(tid, coll)
-                  || (canCreateLog(coll) && empUpdateLog(coll))
+                  || (canCreateLog(coll) && empUpdateLog(tid, coll))
                   || (isRecipe(coll, request.resource.data) && isRecipe(coll, resource.data))
                   || (coll == 'products' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']))));
         allow delete: if isAdmin() || (inTenant(tid) && tenantActive(tid) && (canWrite(tid, coll) || isRecipe(coll, resource.data)));
