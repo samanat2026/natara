@@ -6,7 +6,7 @@ Software de gestión para pequeños negocios (panaderías, farmacias, minimercad
 
 - **App real (clientes):** https://natara.com.co/
 - **Demo para mostrar:** https://natara.com.co/demo/
-- **Hosting:** Cloudflare Pages, conectado a este repositorio: cada push a `main` publica la carpeta `docs/` en https://natara.com.co/. Antes de subir: `python3 tools/build.py` y `python3 tools/check.py`.
+- **Hosting:** Cloudflare Workers (proyecto `natara-app`, configurado en [`wrangler.jsonc`](wrangler.jsonc)), conectado a este repositorio: cada push a `main` publica la carpeta `docs/` en https://natara.com.co/. Antes de subir: `python3 tools/build.py` y `python3 tools/check.py`.
 - Los enlaces que ven los clientes (correos, WhatsApp, "ir a la app") siempre usan https://natara.com.co/ (`SITE_URL` en `index.html`); solo en pruebas locales (localhost) usan la dirección local.
 
 `index.html` es la app real y `demo/index.html` la demo, generadas desde el mismo código (`window.NATARA_MODE`). Solo se edita `index.html`; después `python3 tools/build.py` genera `demo/`, `consola-demo/` y la copia en `docs/`. La demo trae datos de ejemplo y cuentas de prueba; la app real arranca vacía, solo con la cuenta de Samanat.

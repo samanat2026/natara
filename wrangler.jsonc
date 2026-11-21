@@ -1,0 +1,9 @@
+// Publicación en Cloudflare (Workers con archivos estáticos).
+// Cada push a main publica la carpeta docs/ (la genera tools/build.py) en https://natara.com.co/
+{
+  "name": "natara-app",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./docs"
+  }
+}
