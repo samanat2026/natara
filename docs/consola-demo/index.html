@@ -1738,7 +1738,7 @@ function domCard(s,rider){
  const since=d.t?.[d.st]||s.at;const took=d.st==='entregado'&&d.t?.entregado?Math.max(1,Math.round((d.t.entregado-s.at)/6e4)):0;
  const pay=s.method==='efectivo'?`Cobrar en efectivo ${money(s.total+(d.fee||0))}${s.received>s.total+(d.fee||0)?` · paga con ${money(s.received)}, lleva ${money(s.received-s.total-(d.fee||0))} de cambio`:''}`:s.method==='datafono'?`Llevar datáfono: ${money(s.total)}${d.fee?` + envío ${money(d.fee)} en efectivo`:''}`:s.method==='transferencia'?(s.confirmed?`Ya pagó por transferencia${d.fee?` · envío ${money(d.fee)} en efectivo`:''}`:`<span style="color:var(--warn)">Transferencia por confirmar</span>${d.fee?` · envío ${money(d.fee)}`:''}`):'';
  const next=d.st==='recibido'?['preparando','Empezar a preparar']:null;
- const msg=d.st==='camino'?`Hola ${d.name.split(' ')[0]||''}, tu pedido de ${tn} ya va en camino 🛵. Total a pagar: ${money(s.total+(d.fee||0))}.`:`Hola ${d.name.split(' ')[0]||''}, recibimos tu pedido en ${tn}. Te avisamos cuando salga.`;
+ const msg=d.st==='camino'?`Hola ${d.name.split(' ')[0]||''}, tu pedido de ${tn} ya va en camino. Total a pagar: ${money(s.total+(d.fee||0))}.`:`Hola ${d.name.split(' ')[0]||''}, recibimos tu pedido en ${tn}. Te avisamos cuando salga.`;
  const acts=[];
  if(st!=='anulado'&&st!=='entregado'){
   if(!mine){if(next)acts.push(`<button class="btn sm" data-a="dom-st" data-id="${s.id}" data-v="${next[0]}">${next[1]}</button>`);acts.push(`<button class="btn sm" data-a="dom-assign" data-id="${s.id}">${ic('users',14)} ${domKey(d)?'Cambiar domiciliario':'Asignar'}</button>`)}
@@ -1876,7 +1876,8 @@ const domWho=d=>d.cour?userName(d.cour):d.ext?d.ext+' (externo)':'';
 const domKey=d=>d.cour||(d.ext?'ext:'+norm(d.ext):'');
 const domContra=s=>s.method==='efectivo'||s.method==='datafono';
 const domMap=d=>`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([d.dir,d.barrio,tenant()?.city].filter(Boolean).join(', '))}`;
-const domWa=(s,txt)=>`https://wa.me/57${phoneDigits(s.dom.tel)}?text=${encodeURIComponent(txt)}`;
+// api.whatsapp.com y no wa.me: el redireccionamiento de wa.me daña los emojis y algunas tildes en Android
+const domWa=(s,txt)=>`https://api.whatsapp.com/send?phone=57${phoneDigits(s.dom.tel)}&text=${encodeURIComponent(txt)}`;
 function domLast(tel){const d=phoneDigits(tel);if(d.length<7)return null;const x=T('sales').filter(s=>s.dom&&phoneDigits(s.dom.tel)===d).sort((a,b)=>b.at-a.at)[0];return x?x.dom:null}
 function domBox(){
  if(pos.tab||!has('domicilios'))return '';const d=posDom();const R=domRiders();
