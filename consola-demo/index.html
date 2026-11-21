@@ -541,7 +541,7 @@ const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';co
 const SITE_URL='https://natara.com.co/';
 const SITE_BASE=(()=>{try{if(!/^https?:$/.test(location.protocol)||!/^(localhost|127\.|192\.168\.)/.test(location.hostname))return SITE_URL;let p=location.pathname.replace(/[^/]*$/,'');p=p.replace(/(consola-demo|demo|diagnostico)\/$/,'');return location.origin+p}catch(e){return SITE_URL}})();
 const REAL_URL=SITE_BASE,DEMO_URL=SITE_BASE+'demo/';
-const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v19';
+const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v20';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 const WA_NUM='573146619135',WA_TXT='314 661 9135';
@@ -799,7 +799,7 @@ function seed(){
  S.settings.push({id:'fid_t3',tid:'t3',on:true});
  // datos del recibo de ejemplo (Mi negocio)
  S.settings.push({id:'biz_t1',tid:'t1',razon:'Panadería La Espiga S.A.S.',nit:'900123456',dir:'Calle 50 # 43-21, barrio Prado',city:'Medellín',tel:'300 512 4471',email:'contacto@laespiga.co',regimen:'Responsable de IVA',pie:'Pan fresco todos los días desde las 6 a. m.'});
- S.settings.push({id:'biz_t3',tid:'t3',razon:'Francisco Úsuga · Minimercado Don Pacho',nit:'71654987',dir:'Carrera 50 # 52-10, barrio Niquía',city:'Bello',tel:'320 744 1180',email:'donpacho@minimercado.co',regimen:'Responsable de IVA',pie:'Domicilios gratis en el barrio: pide por WhatsApp'});
+ S.settings.push({id:'biz_t3',tid:'t3',razon:'Francisco Úsuga · Minimercado Don Pacho',nit:'71654987',dir:'Carrera 50 # 52-10, barrio Niquía',city:'Bello',tel:'320 744 1180',email:'donpacho@minimercado.co',regimen:'Responsable de IVA',pie:'Pide tu domicilio por WhatsApp: 320 744 1180'});
  S.settings.push({id:'biz_t5',tid:'t5',razon:'El Fogón Paisa S.A.S.',nit:'900654321',dir:'Carrera 70 # 44-15, Laureles',city:'Medellín',tel:'304 381 2207',email:'',regimen:INC_REG,pie:'¡Gracias por visitarnos! Síguenos en redes'});
  // caja abierta hoy
  S.sessions.push({id:uid(),tid:'t3',openedAt:today+6*3600e3,openedBy:'u2',base:150000,closedAt:null});
