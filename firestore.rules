@@ -86,6 +86,13 @@ service cloud.firestore {
         || (coll == 'moves' && (hasPerm('finanzas') || hasPerm('proveedores')));
     }
 
+    // Versión de estas reglas. El diagnóstico pide el documento rulesver/<fecha> (no existe; cuesta una sola lectura):
+    // si estas reglas están publicadas lo deja pedir; con reglas viejas sale "sin permiso".
+    // Cada vez que cambien las reglas, cambia la fecha aquí y en diagnostico/index.html (RULES_VER).
+    match /rulesver/{v} {
+      allow get: if v == '2026-11-21';
+    }
+
     // Configuración general: precios, contacto, EmailJS
     match /config/{docId} {
       allow read: if signedIn();

@@ -66,6 +66,7 @@ try{
  else r3('wait','Respuesta inesperada: <code>'+c+'</code>');
 }
 
+const RULES_VER='2026-11-21';// la misma fecha que match /rulesver en firestore.rules
 const r4=row('4. Base de datos Firestore');
 const r5=row('5. Reglas de seguridad');
 try{
@@ -80,6 +81,9 @@ try{
  else{r4('wait','Respuesta inesperada: <code>'+c+'</code> '+m);r5('wait','Pendiente del punto 4.')}
 }
 
+const r7=row('7. Reglas al día (versión '+RULES_VER+')');
+try{await FS.getDoc(FS.doc(db,'rulesver',RULES_VER));r7('ok','Las reglas publicadas en Firebase son las más recientes de Natara.')}
+catch(e){const c=e.code||'';if(c==='permission-denied')r7('bad','<b>Las reglas de Firebase están desactualizadas.</b> Copia las nuevas de <a href="https://github.com/samanat2026/natara/blob/main/firestore.rules" target="_blank" rel="noopener">firestore.rules</a> y pégalas en Firebase → Firestore → Reglas → Publicar. Después recarga esta página.');else r7('wait','No se pudo revisar: <code>'+c+'</code>')}
 const r6=row('6. Dirección oficial');
 if(HOST==='natara.com.co'||HOST==='www.natara.com.co')r6('ok','Estás en <code>natara.com.co</code>, la dirección que usan tus clientes.');
 else if(/^(localhost|127\.|192\.168\.)/.test(HOST))r6('wait','Estás en una prueba local (<code>'+HOST+'</code>). Tus clientes entran por <code>natara.com.co</code>.');

@@ -17,6 +17,12 @@ for page in ['index.html', 'demo/index.html', 'consola-demo/index.html', 'diagno
         if r.returncode:
             bad += 1
             print(f'Error de sintaxis en {page}, script {i + 1}:\n{r.stderr}')
+# la versión de las reglas debe ser la misma en firestore.rules y en el diagnóstico
+rv=re.search(r"allow get: if v == '([^']+)'",(R/'firestore.rules').read_text(encoding='utf-8'))
+dv=re.search(r"const RULES_VER='([^']+)'",(R/'diagnostico/index.html').read_text(encoding='utf-8'))
+if not rv or not dv or rv.group(1)!=dv.group(1):
+    bad += 1
+    print('La versión de las reglas no coincide entre firestore.rules y diagnostico/index.html (RULES_VER).')
 # las copias generadas deben coincidir con lo que produce build.py
 subprocess.run([sys.executable, str(R / 'tools/build.py')], check=True, capture_output=True)
 diff = subprocess.run(['git', 'diff', '--name-only', '--', 'demo', 'consola-demo', 'docs'], cwd=R, capture_output=True, text=True).stdout.strip()

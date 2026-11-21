@@ -23,6 +23,8 @@ El kardex necesita un índice compuesto, definido en [`firestore.indexes.json`](
 
 **Hay que volver a pegar [`firestore.rules`](firestore.rules) en Firebase → Firestore → Reglas → Publicar.**
 
+**Versión de las reglas:** el diagnóstico (`/diagnostico/`, punto 7) dice si las reglas publicadas en Firebase son las más recientes. Cada vez que se cambien las reglas, hay que cambiar la fecha en `match /rulesver` de `firestore.rules` y en `RULES_VER` de `diagnostico/index.html` (`tools/check.py` revisa que coincidan).
+
 - **Ventas, cajas y kardex:** cualquier usuario del negocio los crea, pero solo el dueño los cambia o los borra. Un empleado solo puede confirmar una transferencia, anular una venta si tiene el permiso *Anular ventas* (queda guardado quién, cuándo y por qué) y cerrar una caja abierta.
 - **Pago reportado ("Ya pagué"):** la fecha del reporte tiene que ser la de ese momento, y la cuenta sigue activa como máximo 10 días después del vencimiento (3 de gracia + 7 de revisión), aunque el dueño reporte varias veces.
 
