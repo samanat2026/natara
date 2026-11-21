@@ -1737,7 +1737,7 @@ function domCard(s,rider){
  const since=d.t?.[d.st]||s.at;const took=d.st==='entregado'&&d.t?.entregado?Math.max(1,Math.round((d.t.entregado-s.at)/6e4)):0;
  const pay=s.method==='efectivo'?`Cobrar en efectivo ${money(s.total+(d.fee||0))}${s.received>s.total+(d.fee||0)?` · paga con ${money(s.received)}, lleva ${money(s.received-s.total-(d.fee||0))} de cambio`:''}`:s.method==='datafono'?`Llevar datáfono: ${money(s.total)}${d.fee?` + envío ${money(d.fee)} en efectivo`:''}`:s.method==='transferencia'?(s.confirmed?`Ya pagó por transferencia${d.fee?` · envío ${money(d.fee)} en efectivo`:''}`:`<span style="color:var(--warn)">Transferencia por confirmar</span>${d.fee?` · envío ${money(d.fee)}`:''}`):'';
  const next=d.st==='recibido'?['preparando','Empezar a preparar']:null;
- const msg=d.st==='camino'?`Hola ${d.name.split(' ')[0]||''}, tu pedido de ${tn} ya va en camino. Total a pagar: ${money(s.total+(d.fee||0))}.`:`Hola ${d.name.split(' ')[0]||''}, recibimos tu pedido en ${tn}. Te avisamos cuando salga.`;
+ const msg=d.st==='camino'?`Hola ${d.name.split(' ')[0]||''}, tu pedido de ${tn} ya va en camino 🛵. Total a pagar: ${money(s.total+(d.fee||0))}.`:`Hola ${d.name.split(' ')[0]||''}, recibimos tu pedido en ${tn}. Te avisamos cuando salga.`;
  const acts=[];
  if(st!=='anulado'&&st!=='entregado'){
   if(!mine){if(next)acts.push(`<button class="btn sm" data-a="dom-st" data-id="${s.id}" data-v="${next[0]}">${next[1]}</button>`);acts.push(`<button class="btn sm" data-a="dom-assign" data-id="${s.id}">${ic('users',14)} ${domKey(d)?'Cambiar domiciliario':'Asignar'}</button>`)}
