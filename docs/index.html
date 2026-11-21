@@ -530,7 +530,7 @@ const MODE=window.NATARA_MODE==='real'?'real':'demo';const REAL=MODE==='real';co
 const SITE_URL='https://natara.com.co/';
 const SITE_BASE=(()=>{try{if(!/^https?:$/.test(location.protocol)||!/^(localhost|127\.|192\.168\.)/.test(location.hostname))return SITE_URL;let p=location.pathname.replace(/[^/]*$/,'');p=p.replace(/(consola-demo|demo|diagnostico)\/$/,'');return location.origin+p}catch(e){return SITE_URL}})();
 const REAL_URL=SITE_BASE,DEMO_URL=SITE_BASE+'demo/';
-const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v17';
+const KEY=MODE==='real'?'natara-prod-v1':'natara-demo-v18';
 const SESS=MODE==='real'?'natara-sess-prod':'natara-sess';
 const DAY=864e5;
 const WA_NUM='573146619135',WA_TXT='314 661 9135';
@@ -570,6 +570,7 @@ const IC={
  cart:'M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 8H6.2M9 20.5h.01M18 20.5h.01',
  box:'M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8',
  receipt:'M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6M9 16h4',
+ ccard:'M3 6h18a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zM2 10h20M6 15h4',
  wallet:'M3 7h15a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zM3 7l12-4v4M16 14h.01',
  chart:'M4 20V10M10 20V4M16 20v-7M22 20H2',
  users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8',
@@ -799,13 +800,21 @@ function seed(){
  S.requests.push({id:uid(),tid:'t2',mod:'fiados',at:today-1*DAY+15*3600e3,status:'pendiente'});
  // pagos a Samanat
  S.tenants.forEach(t=>{for(let m=0;m<5;m++){const at=t.due-(m+1)*30*DAY;if(at>t.since&&at<now)S.payments.push({id:uid(),tid:t.id,amount:fee(t),at,method:pick(['Nequi','Bancolombia','Efectivo'])})}});
+ S.settings.push({id:'opts_t5',tid:'t5',datafono:true});// el restaurante recibe tarjeta: datáfono encendido
  if(MODE==='demo')S.users=S.users.filter(u=>u.role!=='superadmin');// la consola de demo la agrega al cargar
+ S.seedDay=today;
  return S;
 }
 
 /* ---------- estado ---------- */
 let S;
-function load(){if(REAL){S=emptyState();return}try{const r=localStorage.getItem(KEY);if(r){S=JSON.parse(r);return}}catch(e){}S=seed();save()}
+// DEMO: los datos se crean con fecha del día en que se abrió por primera vez. Si alguien vuelve otro día, se corren
+// todas las fechas (ventas, cajas, vencimientos, pagos…) los días que hayan pasado, para que la demo siempre se vea al día
+// y no aparezcan negocios vencidos. Cualquier número entre 2017 y 2065 en milisegundos es una fecha.
+function demoShift(o){if(!o||typeof o!=='object')return false;const t=sod(Date.now());if(!o.seedDay){o.seedDay=t;return true}const d=t-o.seedDay;if(d<=0)return false;
+ const walk=x=>{if(Array.isArray(x)){for(let i=0;i<x.length;i++){const v=x[i];if(typeof v==='number'&&v>1.5e12&&v<3e12)x[i]=v+d;else if(v&&typeof v==='object')walk(v)}}else{for(const k in x){if(k==='seedDay')continue;const v=x[k];if(typeof v==='number'&&v>1.5e12&&v<3e12)x[k]=v+d;else if(v&&typeof v==='object')walk(v)}}};
+ walk(o);o.seedDay=t;return true}
+function load(){if(REAL){S=emptyState();return}try{const r=localStorage.getItem(KEY);if(r){S=JSON.parse(r);if(demoShift(S))save();return}}catch(e){}S=seed();save()}
 function save(){(S.tenants||[]).forEach(normTenant);if(REAL)return syncDiff();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 let sess={uid:null,view:null};
 try{const r=sessionStorage.getItem(SESS);if(r)sess=JSON.parse(r)}catch(e){}
@@ -843,6 +852,9 @@ function setOpt(k,v){const t=tenant();const id='opts_'+t.id;let r=S.settings.fin
 const catMode=()=>{const o=optsOf().cat;return typeof o==='boolean'?o:!!tenant()?.catPos};
 // Lector de código de barras: complemento que activa Samanat; el dueño lo puede apagar si no lo está usando
 const lectorOn=()=>has('lector')&&optsOf().lector!==false;
+// Datáfono: arranca APAGADO; el dueño lo enciende en Mi negocio. Apagado no sale como forma de pago
+// (las ventas viejas con datáfono se siguen viendo en ventas, cierres y estadísticas).
+const datafonoOn=()=>optsOf().datafono===true;
 // Imprimir recibos: arranca APAGADO en todos los planes. Samanat lo enciende o apaga en la consola (tenant.print)
 // y el dueño lo enciende o apaga en Mi negocio (opts.print). Si el dueño ya lo tocó, manda lo que él eligió.
 const printOn=()=>{const o=optsOf().print;return typeof o==='boolean'?o:!!tenant()?.print};
@@ -918,7 +930,7 @@ function autoCode(used,pre='P'){const P=T('products');let n=P.length+1,c;do{c=pr
 const balanceOf=cid=>sum(S.ledger.filter(l=>l.cid===cid),l=>l.type==='cargo'?l.amount:-l.amount);
 
 /* ---------- actividad en vivo (clave aparte para no re-renderizar a los negocios) ---------- */
-const LIVE=MODE==='real'?'natara-live-prod':'natara-live-v2';const ONLINE_MS=MODE==='real'?720000:45000;let L0;
+const LIVE=MODE==='real'?'natara-live-prod':'natara-live-v3';const ONLINE_MS=MODE==='real'?720000:45000;let L0;
 function seedLive(){
  if(MODE==='real')return {presence:{},views:{},feed:[]};
  const r=mulberry32(77),ri=(a,b)=>a+Math.floor(r()*(b-a+1));const today=sod(Date.now()),now=Date.now();
@@ -927,9 +939,9 @@ function seedLive(){
  for(const tid in plan)for(let d=13;d>=0;d--){if(stop[tid]&&d<stop[tid])continue;plan[tid].forEach(u=>{if(r()<.15)return;const at=today-d*DAY+ri(6,9)*3600e3+ri(0,59)*6e4;if(at<now)L.feed.push({tid,uid:u,type:'login',text:'Inició sesión',at})})}
  S.sales.filter(s=>s.at>=today&&s.status!=='anulada').forEach(s=>L.feed.push({tid:s.tid,uid:s.seller,type:'venta',text:`Venta #${saleNo(s)} por ${money(s.total)}`,amount:s.total,at:s.at}));
  S.purchases.filter(x=>x.at>now-3*DAY).forEach(x=>L.feed.push({tid:x.tid,uid:S.users.find(u=>u.tid===x.tid&&u.role==='dueno')?.id,type:'compra',text:`Compra a ${S.suppliers.find(s=>s.id===x.sid)?.name} por ${money(x.total)}`,at:x.at}));
- L.feed.sort((a,b)=>a.at-b.at);return L;
+ L.feed.sort((a,b)=>a.at-b.at);L.seedDay=today;return L;
 }
-function liveRefresh(){if(REAL){L0=L0||{presence:{},views:{},feed:[]};return}try{const r=localStorage.getItem(LIVE);if(r){L0=JSON.parse(r);return}}catch(e){}if(!L0){L0=seedLive();liveSave()}}
+function liveRefresh(){if(REAL){L0=L0||{presence:{},views:{},feed:[]};return}try{const r=localStorage.getItem(LIVE);if(r){L0=JSON.parse(r);if(demoShift(L0))liveSave();return}}catch(e){}if(!L0){L0=seedLive();liveSave()}}
 function liveSave(){if(REAL)return;try{localStorage.setItem(LIVE,JSON.stringify(L0))}catch(e){}}
 function liveEvent(type,text,v,amount){const u=me();if(!u||!u.tid)return;if(REAL)return rLive(u,type,text,v,amount);liveRefresh();if(type!=='view'){L0.feed.push({tid:u.tid,uid:u.id,type,text:text||'',amount:amount||0,at:Date.now()});if(L0.feed.length>400)L0.feed=L0.feed.slice(-400)}if(v){L0.views[u.tid]=L0.views[u.tid]||{};L0.views[u.tid][v]=(L0.views[u.tid][v]||0)+1}L0.presence[u.id]=Date.now();liveSave()}
 function beat(){const u=me();if(!u||!u.tid||isLocked())return;if(REAL)return rBeat(u);liveRefresh();L0.presence[u.id]=Date.now();liveSave()}
@@ -1429,8 +1441,8 @@ function viewInicio(){
   <div class="grid g4">
    <div class="card kpi"><span class="lbl">${allV?'Ventas de hoy':'Mis ventas de hoy'}</span><span class="val">${money(tot)}</span><span class="foot">${tdy.length} ventas ${ytot&&tdy.length?`· <span style="color:var(${delta>=0?'--good':'--bad'})">${delta>=0?'+':''}${delta}% vs ayer a esta hora</span>`:''}</span></div>
    <div class="card kpi"><span class="lbl">Efectivo</span><span class="val">${money(cash)}</span><span class="foot">${tot?Math.round(cash/tot*100):0}% del día</span></div>
-   <div class="card kpi"><span class="lbl">${df?'Transferencias y datáfono':'Transferencias'}</span><span class="val">${money(tr+df)}</span><span class="foot">${df?`Datáfono ${money(df)} · `:''}${pend.length?`<span style="color:var(--warn)">${pend.length} por confirmar</span>`:'Todas confirmadas'}</span></div>
-   ${u.role==='cajero'&&allV?`<div class="card kpi"><span class="lbl">Mis ventas hoy</span><span class="val">${money(sum(myToday,s=>s.total))}</span><span class="foot">${myToday.length} ventas</span></div>`:`<div class="card kpi"><span class="lbl">Ticket promedio</span><span class="val">${money(tdy.length?tot/tdy.length:0)}</span><span class="foot">por venta hoy</span></div>`}
+   <div class="card kpi"><span class="lbl">${df||datafonoOn()?'Transferencias y datáfono':'Transferencias'}</span><span class="val">${money(tr+df)}</span><span class="foot">${df||datafonoOn()?`Datáfono ${money(df)} · `:''}${pend.length?`<span style="color:var(--warn)">${pend.length} por confirmar</span>`:'Todas confirmadas'}</span></div>
+   ${u.role==='cajero'&&allV?`<div class="card kpi"><span class="lbl">Mis ventas hoy</span><span class="val">${money(sum(myToday,s=>s.total))}</span><span class="foot">${myToday.length} ventas</span></div>`:`<div class="card kpi"><span class="lbl">Gasto promedio por cliente</span><span class="val">${money(tdy.length?tot/tdy.length:0)}</span><span class="foot">Lo que paga en promedio cada cliente hoy (${tdy.length} venta${tdy.length===1?'':'s'})</span></div>`}
   </div>
   <div class="grid g-main">
    <div class="card"><h2>Últimas ventas <span class="sub">hoy</span></h2>${recent.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Hora</th><th class="hs">Vendedor</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${recent.map(s=>`<tr class="click" data-a="sale" data-id="${s.id}"><td class="mono">${saleNo(s)}</td><td>${ftime(s.at)}</td><td class="hs">${esc(userName(s.seller))}</td><td>${payPill(s)}</td><td class="r num"><b>${money(s.total)}</b></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">${ic('receipt',26)}Aún no hay ventas hoy.</div>`}</div>
@@ -1605,7 +1617,7 @@ function mzEqual(t){
   ${left>1?`<button class="btn sm ghost" data-a="mz-k-all" style="align-self:flex-start">Pagan las ${left} partes que faltan</button>`:''}
  </div>`;
 }
-function mzSteps(n){return mz.mode==='iguales'?`<span class="${n?'':'on'}"><i>1</i>Elige entre cuántos</span><span>›</span><span class="${n?'on':''}"><i>2</i>Elige cómo paga</span><span>›</span><span><i>3</i>Cobrar</span>`:`<span class="${n?'':'on'}"><i>1</i>Marca lo que paga</span><span>›</span><span class="${n?'on':''}"><i>2</i>Elige efectivo, transferencia o datáfono</span><span>›</span><span><i>3</i>Cobrar</span>`}
+function mzSteps(n){return mz.mode==='iguales'?`<span class="${n?'':'on'}"><i>1</i>Elige entre cuántos</span><span>›</span><span class="${n?'on':''}"><i>2</i>Elige cómo paga</span><span>›</span><span><i>3</i>Cobrar</span>`:`<span class="${n?'':'on'}"><i>1</i>Marca lo que paga</span><span>›</span><span class="${n?'on':''}"><i>2</i>Elige ${datafonoOn()?'efectivo, transferencia o datáfono':'efectivo o transferencia'}</span><span>›</span><span><i>3</i>Cobrar</span>`}
 // Al marcar no se vuelve a pintar toda la pantalla: así en el celular no salta al inicio
 function mzPayRefresh(){
  const t=tabOf(mz.id);if(!t||!$('#mzp-list')){render();return}
@@ -1735,7 +1747,8 @@ const payTotal=()=>{const s=cartTotal();return s-fidDisc(s)};
 function cartPanel(){
  const u=me(),sub=cartTotal(),disc=fidDisc(sub),total=sub-disc;
  const emps=S.users.filter(x=>x.tid===u.tid&&x.active);
- const methods=[['efectivo','Efectivo'],['transferencia','Transferencia'],['datafono','Datáfono']];if(has('fiados')&&canDo('fiados'))methods.push(['fiado','Fiado']);
+ const methods=[['efectivo','Efectivo'],['transferencia','Transferencia']];if(datafonoOn())methods.push(['datafono','Datáfono']);if(has('fiados')&&canDo('fiados'))methods.push(['fiado','Fiado']);
+ if(!methods.some(m=>m[0]===pos.method))pos.method='efectivo';
  const rec=parseMoney(pos.received);
  let payBox='';
  if(pos.method==='efectivo')payBox=`${field('Recibido',`<div class="money-in"><span>$</span><input class="input num" id="pos-rec" type="text" inputmode="numeric" autocomplete="off" data-money placeholder="${grp(total)}" value="${pos.received===''?'':grp(parseMoney(pos.received))}" data-i="pos-rec"></div>`)}
@@ -2064,7 +2077,7 @@ function viewCierre(){
    <tr><td>Egresos pagados con efectivo de la caja</td><td class="r num">− ${money(x.outC)}</td></tr>
    <tr><td><b>Debe haber en el cajón</b></td><td class="r num"><b style="font-size:18px">${money(x.expected)}</b></td></tr>
    </tbody></table></div>
-   <div class="row muted small" style="margin-top:10px"><span>Transferencias: <b>${money(x.tr)}</b></span>·<span>Datáfono: <b>${money(x.df)}</b></span>${has('fiados')||x.fi?`·<span>Fiado: <b>${money(x.fi)}</b></span>`:''}</div></div>
+   <div class="row muted small" style="margin-top:10px"><span>Transferencias: <b>${money(x.tr)}</b></span>${datafonoOn()||x.df?`·<span>Datáfono: <b>${money(x.df)}</b></span>`:''}${has('fiados')||x.fi?`·<span>Fiado: <b>${money(x.fi)}</b></span>`:''}</div></div>
    <div class="card"><h2>Cerrar caja</h2><form class="stack" data-f="close-cash">${field('¿Cuánto efectivo contaste?',minp('counted','','required data-i="count-cash"'))}<div class="change"><span>Diferencia</span><span class="num" id="cash-diff">—</span></div><button class="btn primary" type="submit">Cerrar caja del día</button></form></div></div>`}
  return `<div class="page-head"><div><h1>Apertura y cierre</h1><p>Cuadra el efectivo del cajón al final de cada turno.</p></div></div>${main}
   <div class="card"><h2>Cierres anteriores</h2>${hist.length?`<div class="tbl-wrap"><table><thead><tr><th>Fecha</th><th>Abrió</th><th>Cerró</th><th class="r">Base</th><th class="r">Diferencia</th></tr></thead><tbody>${hist.map(h=>`<tr><td>${fdate(h.openedAt)}</td><td>${esc(userName(h.openedBy))}</td><td>${esc(userName(h.closedBy))} · ${ftime(h.closedAt)}</td><td class="r num">${money(h.base)}</td><td class="r">${h.diff===0?'<span class="pill good">Cuadró</span>':`<span class="pill ${h.diff<0?'bad':'warn'}">${h.diff>0?'+':''}${money(h.diff)}</span>`}</td></tr>`).join('')}</tbody></table></div>`:`<p class="muted small">Todavía no hay cierres.</p>`}</div>`;
@@ -2091,7 +2104,7 @@ function viewVentas(){
    <div class="search">${ic('search',16)}<input class="input" placeholder="${has('mesas')?'Buscar por número, producto o mesa':'Buscar por número o producto'}" value="${esc(vf.q)}" data-i="vf-q" id="vf-q"></div>
    ${sel('vf-range',[['hoy','Hoy'],['7','Últimos 7 días'],['30','Últimos 30 días']],vf.range,'data-c="vf-range"')}
    ${has('mesas')?sel('vf-origin',[['','Mesas y caja'],['mesas','Solo mesas'],['caja','Solo caja (sin mesa)']],vf.origin,'data-c="vf-origin"'):''}
-   ${sel('vf-method',[['','Todos los pagos'],['efectivo','Efectivo'],['transferencia','Transferencia'],['datafono','Datáfono'],['pendiente','Por confirmar'],['fiado','Fiado']],vf.method,'data-c="vf-method"')}
+   ${sel('vf-method',[['','Todos los pagos'],['efectivo','Efectivo'],['transferencia','Transferencia'],...(datafonoOn()||T('sales').some(x=>x.method==='datafono')?[['datafono','Datáfono']]:[]),['pendiente','Por confirmar'],['fiado','Fiado']],vf.method,'data-c="vf-method"')}
    ${allV?'':'<!--'}${sel('vf-seller',[['','Todos los vendedores'],...emps.map(e=>[e.id,e.name])],vf.seller,'data-c="vf-seller"')}${allV?'':'-->'}
   </div>
   ${list.length?`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Fecha</th><th>Productos</th><th class="hs">Vendedor</th><th>Pago</th><th class="r">Total</th></tr></thead><tbody>${list.slice(0,150).map(s=>`<tr class="click" data-a="sale" data-id="${s.id}"><td class="mono">${saleNo(s)}</td><td style="white-space:nowrap">${fdt(s.at)}</td><td class="small">${esc(itemsTxt(s,'× '))}${mesaPill(s)}</td><td class="hs">${esc(userName(s.seller))}</td><td>${payPill(s)}</td><td class="r num"><b>${money(s.total)}</b></td></tr>`).join('')}</tbody></table></div>${list.length>150?`<p class="muted small">Mostrando 150 de ${list.length}. Exporta a Excel para ver todo.</p>`:''}`:`<div class="empty">${ic('receipt',26)}No hay ventas con estos filtros.</div>`}</div>`;
@@ -2331,7 +2344,7 @@ function guideSections(){
   S_.push({id:'caja',icon:'cart',title:'Vender en la caja',go:'caja',steps:[
    'Entra a <b>Caja</b>. Arriba escribe el nombre del producto (o toca uno de los más vendidos).',
    'Cada toque agrega una unidad. Cambia la cantidad con <b>−</b> y <b>+</b>, o escríbela.',
-   'Elige cómo te pagan: <b>Efectivo</b> (escribe lo que recibiste y te dice el cambio)'+',<b> Transferencia</b> (elige Nequi, Daviplata, Bancolombia o Bre-B y marca <i>Verifiqué que el dinero llegó</i>), <b>Datáfono</b> (elige débito o crédito y, si quieres, anota el número de aprobación)'+(m('fiados')&&canDo('fiados')?' o <b>Fiado</b> (elige el cliente)':'')+'.',
+   'Elige cómo te pagan: <b>Efectivo</b> (escribe lo que recibiste y te dice el cambio)'+',<b> Transferencia</b> (elige Nequi, Daviplata, Bancolombia o Bre-B y marca <i>Verifiqué que el dinero llegó</i>)'+(datafonoOn()?', <b>Datáfono</b> (elige débito o crédito y, si quieres, anota el número de aprobación)':'')+(m('fiados')&&canDo('fiados')?' o <b>Fiado</b> (elige el cliente)':'')+'.',
    'Toca <b>Cobrar</b>. La venta queda a tu nombre, el inventario se descuenta solo y ves el recibo.',
    ...(m('recetas')?['Las <b>recetas y combos</b> también se venden aquí: muestran “alcanza N” y al venderlos se descuenta cada ingrediente.']:[]),
    ...(fidOn()?['<b>Puntos:</b> antes de cobrar, escribe la cédula del cliente y toca <b>Buscar</b>. Con la compra suma puntos, y si tiene suficientes puedes marcar <b>Usar puntos</b> para descontarlos. Si quiere unirse, toca <b>Afiliarlo ahora</b>: es gratis para el cliente.']:[])]});
@@ -2583,7 +2596,7 @@ function viewStats(){
    <div class="card"><h2>Productos estrella <span class="sub">por valor vendido</span></h2><div class="hbars">${top.map(p=>`<div class="hb"><span>${esc(p.name)} <span class="muted small">· ${num(p.q)} und</span></span><b class="num">${money(p.v)}</b><div class="track"><div class="fill" style="width:${p.v/maxP*100}%"></div></div></div>`).join('')||'<p class="muted small">Sin ventas</p>'}</div></div>
    <div class="card"><h2>Ventas por vendedor</h2><div class="hbars">${sellers.map(([id,s])=>`<div class="hb"><span>${esc(userName(id))} <span class="muted small">· ${s.n} ventas</span></span><b class="num">${money(s.v)}</b><div class="track"><div class="fill alt" style="width:${s.v/maxS*100}%"></div></div></div>`).join('')||'<p class="muted small">Sin ventas</p>'}</div></div>
    <div class="card"><h2>Horas con más ventas</h2>${barChart(hours,{h:200,alt:true})}</div>
-   <div class="card"><h2>Métodos de pago</h2><div class="hbars">${[['Efectivo',meth.efectivo,''],['Transferencia',meth.transferencia,'alt'],['Datáfono',meth.datafono,''],['Fiado',meth.fiado,'']].filter(m=>!['Fiado','Datáfono'].includes(m[0])||m[1]).map(([l,v,c])=>`<div class="hb"><span>${l} <span class="muted small">· ${tot?Math.round(v/tot*100):0}%</span></span><b class="num">${money(v)}</b><div class="track"><div class="fill ${c}" style="width:${tot?v/tot*100:0}%"></div></div></div>`).join('')}</div></div>
+   <div class="card"><h2>Métodos de pago</h2><div class="hbars">${[['Efectivo',meth.efectivo,''],['Transferencia',meth.transferencia,'alt'],['Datáfono',meth.datafono,''],['Fiado',meth.fiado,'']].filter(m=>m[0]==='Datáfono'?datafonoOn()||m[1]:m[0]!=='Fiado'||m[1]).map(([l,v,c])=>`<div class="hb"><span>${l} <span class="muted small">· ${tot?Math.round(v/tot*100):0}%</span></span><b class="num">${money(v)}</b><div class="track"><div class="fill ${c}" style="width:${tot?v/tot*100:0}%"></div></div></div>`).join('')}</div></div>
   </div>`;
 }
 
@@ -2689,6 +2702,7 @@ function viewNegocio(){
  if(t.mods.includes('fidelizacion'))F.push(card(fidOn(),'Puntos y fidelización','gift',fidOn()?'Encendido: la caja pide la cédula del cliente, suma puntos y deja usarlos como descuento.':'Apagado: no aparece en la caja ni en el menú. Tus clientes afiliados y sus puntos quedan guardados.',sw(fidOn(),fidOn()?'fid-off':'fid-on','Puntos y fidelización')));
  else F.push(card(false,'Puntos y fidelización','gift','Tus clientes acumulan puntos con cada compra y los usan como descuento. No está en tu plan.',`<button class="btn sm" data-a="go" data-v="plan">Ver en Mi plan</button>`));
  F.push(card(printOn(),'Imprimir recibos','printer',printOn()?'Encendido: cada recibo trae el botón <b>Imprimir</b>. Funciona con térmicas de 58 u 80 mm por USB, Wi-Fi o Bluetooth, o con cualquier impresora del equipo.':'Apagado: los recibos se ven en pantalla, sin botón de imprimir. Enciéndelo si tienes impresora de recibos.',sw(printOn(),'neg-print','la impresión de recibos'),printOn()?`<button class="btn sm" data-a="prn-setup">${ic('printer',14)} Configurar impresora</button><span class="small muted">${esc(prnLabel())}</span>`:''));
+ F.push(card(datafonoOn(),'Datáfono','ccard',datafonoOn()?'Encendido: en la caja sale <b>Datáfono</b> como forma de pago (débito o crédito y número de aprobación), y lo ves aparte en el cierre de caja, las ventas y las estadísticas.':'Apagado: la caja cobra solo en efectivo o transferencia. Enciéndelo si recibes pagos con tarjeta.',sw(datafonoOn(),'neg-datafono','el datáfono')));
  if(has('lector'))F.push(card(lectorOn(),'Lector de código de barras','barcode',lectorOn()?'Encendido: en la caja puedes escanear el código del producto.':'Apagado: la caja busca solo por nombre, como si no tuvieras lector.',sw(lectorOn(),'neg-lector','el lector de código de barras')));
  const v=(k,d='')=>esc(b[k]??d);
  return `<div class="page-head"><div><h1>Mi negocio</h1><p>Los datos que salen en tus recibos y las funciones que tú enciendes o apagas.</p></div></div>
@@ -2921,6 +2935,7 @@ document.addEventListener('click',e=>{
   'fid-new':()=>fidNewModal(sess.view==='caja'?docDigits(pos.fdoc):''),
   'fid-cfg':()=>fidCfgModal(),
   'neg-lector':()=>{const on=!lectorOn();setOpt('lector',on);toast(on?'Lector encendido: ya puedes escanear en la caja':'Lector apagado: la caja busca solo por nombre')},
+  'neg-datafono':()=>{const on=!datafonoOn();setOpt('datafono',on);toast(on?'Datáfono encendido: ya sale como forma de pago en la caja':'Datáfono apagado: la caja cobra en efectivo o transferencia')},
   'neg-print':()=>{const on=!printOn();setOpt('print',on);toast(on?'Impresión encendida: configura la impresora de este equipo':'Impresión de recibos apagada');if(on)setTimeout(prnSetup,120)},
   'prn-setup':()=>prnSetup(),
   'prn-sale':()=>printSale(S.sales.find(x=>x.id===id)),

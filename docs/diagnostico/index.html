@@ -79,6 +79,11 @@ try{
  else if(c==='unavailable'){r4('bad','No responde. Puede que no exista todavía o que no haya internet. Si ya la creaste, espera 1 minuto y recarga.<br><small>'+m+'</small>');r5('wait','Pendiente del punto 4.')}
  else{r4('wait','Respuesta inesperada: <code>'+c+'</code> '+m);r5('wait','Pendiente del punto 4.')}
 }
+
+const r6=row('6. Dirección oficial');
+if(HOST==='natara.com.co'||HOST==='www.natara.com.co')r6('ok','Estás en <code>natara.com.co</code>, la dirección que usan tus clientes.');
+else if(/^(localhost|127\.|192\.168\.)/.test(HOST))r6('wait','Estás en una prueba local (<code>'+HOST+'</code>). Tus clientes entran por <code>natara.com.co</code>.');
+else r6('wait','Estás en <code>'+HOST+'</code>. Tus clientes deben entrar por <a href="https://natara.com.co/">natara.com.co</a>; esta dirección es solo para pruebas.');
 </script>
 </body>
 </html>
