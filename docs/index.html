@@ -1745,7 +1745,7 @@ function domCard(s,rider){
   else acts.push(`<button class="btn sm primary" data-a="dom-st" data-id="${s.id}" data-v="entregado">${ic('check',14)} Entregado</button>`);
   if(!mine)acts.push(`<button class="btn sm ghost" data-a="dom-cancel" data-id="${s.id}">Cancelar</button>`);
  }
- if(!mine)acts.push(`<button class="btn sm ghost" data-a="sale" data-id="${s.id}">${ic('receipt',14)} Comanda</button>`);
+ if(!mine)acts.push(`<button class="btn sm ghost" data-a="sale" data-id="${s.id}">${ic('receipt',14)} Recibo</button>`);
  return `<div class="card dom-card">
   <div class="dc-h"><b class="mono">#${saleNo(s)}</b><span class="pill ${st==='anulado'?'bad':DOM_PILL[st]}">${st==='anulado'?'Cancelado':DOM_ST[st]}</span><span class="muted small" style="margin-left:auto">${st==='entregado'?`entregado en ${took} min`:st==='anulado'?esc(s.voidWhy||''):`hace ${mzLong(since)}`}</span></div>
   <div class="dc-addr"><b>${esc(d.name||'Cliente')}</b> · <span class="muted">${esc(d.tel)}</span><br>${esc(d.dir)}${d.barrio?` · ${esc(d.barrio)}`:''}${d.nota?`<br><span class="small muted">${ic('info',12)} ${esc(d.nota)}</span>`:''}</div>
@@ -2505,7 +2505,7 @@ function guideSections(){
   'El envío es tuyo. El valor del pedido que te pagaron en efectivo lo entregas en la caja.']});return S_}
  if(m('domicilios')&&!isDomi(u))S_.push({id:'domicilios',icon:'moto',title:'Domicilios',go:'domicilios',steps:[
   'En la <b>Caja</b>, arriba del pago, toca <b>Domicilio</b>. Escribe el teléfono: si el cliente ya pidió antes, el nombre y la dirección se llenan solos.',
-  'Escribe el <b>envío</b>: es del domiciliario, sale en la comanda pero no entra a tu caja. Elige el domiciliario (propio o externo) o asígnalo después.',
+  'Escribe el <b>envío</b>: es del domiciliario, sale en el recibo pero no entra a tu caja. Elige el domiciliario (propio o externo) o asígnalo después.',
   'Elige cómo paga el cliente y toca <b>Registrar domicilio</b>. Los productos se descuentan del inventario en ese momento; si cancelas el pedido, vuelven.',
   'En <b>Domicilios</b> sigues cada pedido: <b>Empezar a preparar</b> → <b>Salió</b> → <b>Entregado</b>. Con <b>WhatsApp</b> le avisas al cliente y con <b>Mapa</b> el domiciliario ve la dirección.',
   'Si pagaron en efectivo, esa plata no está en el cajón hasta que el domiciliario la entrega. Cuando te la dé, toca <b>Recibí</b> y ya cuenta en el cierre de caja.']});

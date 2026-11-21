@@ -57,7 +57,7 @@ Contraseña de todas las cuentas: `Natara2026*`. La consola de Samanat (superadm
 ### Domicilios (módulo de $10.000/mes, incluido en Premium y Restaurante)
 
 - El pedido es una venta con `dom` (cliente, dirección, envío, domiciliario, estado y horas). El inventario se descuenta al registrarlo y vuelve si se cancela.
-- El envío es del domiciliario: sale en la comanda, pero no suma a la venta ni a la caja.
+- El envío es del domiciliario: sale en el recibo, pero no suma a la venta ni a la caja.
 - Domiciliario propio: empleado con puesto *Domiciliario(a)*. Externo (Rappi, mensajero): solo se escribe el nombre.
 - El efectivo de un domicilio no está en el cajón hasta que el domiciliario lo entrega (*Recibí* en Domicilios); el cierre de caja lo descuenta mientras tanto.
 - **Reglas:** este módulo cambió [`firestore.rules`](firestore.rules) (los empleados pueden mover el estado del domicilio y cancelar uno no entregado). Hay que volver a pegarlas en Firebase al pasarlo a producción.
