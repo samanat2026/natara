@@ -1749,7 +1749,7 @@ function domCard(s,rider){
  return `<div class="card dom-card">
   <div class="dc-h"><b class="mono">#${saleNo(s)}</b><span class="pill ${st==='anulado'?'bad':DOM_PILL[st]}">${st==='anulado'?'Cancelado':DOM_ST[st]}</span><span class="muted small" style="margin-left:auto">${st==='entregado'?`entregado en ${took} min`:st==='anulado'?esc(s.voidWhy||''):`hace ${mzLong(since)}`}</span></div>
   <div class="dc-addr"><b>${esc(d.name||'Cliente')}</b> · <span class="muted">${esc(d.tel)}</span><br>${esc(d.dir)}${d.barrio?` · ${esc(d.barrio)}`:''}${d.nota?`<br><span class="small muted">${ic('info',12)} ${esc(d.nota)}</span>`:''}</div>
-  <div class="small muted">${esc(itemsTxt(s,' × '))}</div>
+  <div class="small muted">${esc(s.items.map(i=>`${i.name} (${num(i.qty)} ${i.qty===1?'unidad':'unidades'})`).join(', '))}</div>
   <div class="dc-money"><span>Pedido <b class="num">${money(s.total)}</b></span>${d.fee?`<span>Envío <b class="num">${money(d.fee)}</b></span>`:''}<span style="flex-basis:100%">${pay}</span></div>
   <div class="small">${ic('moto',13)} ${domWho(d)?`<b>${esc(domWho(d))}</b>`:'<span style="color:var(--warn)">Sin domiciliario</span>'}${d.paid?' · <span class="pill good">efectivo entregado</span>':''}</div>
   ${st==='anulado'?'':`<div class="dc-links"><a class="btn sm" href="tel:${phoneDigits(d.tel)}">${ic('phone',14)} Llamar</a><a class="btn sm" href="${domWa(s,msg)}" target="_blank" rel="noopener">WhatsApp</a><a class="btn sm" href="${domMap(d)}" target="_blank" rel="noopener">${ic('pin',14)} Mapa</a></div>`}
