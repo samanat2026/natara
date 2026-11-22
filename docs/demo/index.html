@@ -2804,7 +2804,13 @@ function purResults(){
  const M=purMatches();const inList=id=>pur.items.some(i=>i.pid===id);let h='';
  if(M.length)h=`<div class="muted small" style="margin-bottom:6px">${pur.q?'Resultados':'Lo que le compras normalmente'}</div><div class="pur-res">${M.map(p=>`<button type="button" class="pur-opt ${inList(p.id)?'on':''}" data-a="pur-add" data-id="${p.id}"><span style="min-width:0"><b>${esc(p.name)}</b> ${p.kind==='insumo'?'<span class="pill">Insumo</span>':''}<span class="muted small" style="display:block">Hay ${num(p.stock)} ${esc(p.unit||'und')} · último costo ${money(p.cost)}</span></span>${ic(inList(p.id)?'check':'plus',16)}</button>`).join('')}</div>`;
  else if(!pur.q)h=`<p class="muted small" style="margin:0">Busca el primer producto o insumo de la compra.</p>`;
- if(pur.q.trim())h+=`<div class="pur-new"><span class="small">¿No está? Créalo como insumo:</span><b class="small">${esc(pur.q.trim())}</b>${sel('pur-new-unit',UNITS,'kg','style="width:auto" aria-label="Unidad"')}<button type="button" class="btn sm" data-a="pur-create">${ic('plus',14)} Crear y agregar</button></div>`;
+ if(pur.q.trim()){const nk=pur.nk||'venta',ins=nk==='insumo';const cats=[...new Set(T('products').filter(x=>(x.kind||'venta')==='venta').map(x=>x.cat).filter(Boolean))];
+  h+=`<div class="pur-new" style="flex-direction:column;align-items:stretch;gap:10px">
+   <span class="small">¿No está? Crea <b>${esc(pur.q.trim())}</b> como:</span>
+   <div class="seg" role="tablist" aria-label="Tipo"><button type="button" class="${ins?'':'on'}" data-a="pur-nk" data-v="venta">Producto para vender</button><button type="button" class="${ins?'on':''}" data-a="pur-nk" data-v="insumo">Insumo o materia prima</button></div>
+   <span class="muted small">${ins?'Lo usas para preparar otros productos (harina, carne, empaques). No sale en la caja.':'Lo vendes tal cual en la caja (gaseosas, granos, aseo).'}</span>
+   <div class="form-grid">${ins?field('Unidad de medida',sel('pur-new-unit',UNITS,pur.nu||'kg','data-c="pur-nf" data-k="nu"')):`${field('Precio de venta',`<div class="money-in"><span>$</span><input class="input num" id="f-pur-new-price" type="text" inputmode="numeric" autocomplete="off" data-money value="${pur.np?grp(parseMoney(pur.np)):''}" placeholder="0" data-i="pur-nf" data-k="np"></div>`)}${field('Categoría',`<input class="input" id="f-pur-new-cat" list="pur-cat-list" value="${esc(pur.nc||'')}" placeholder="Ej: Granos" autocomplete="off" data-i="pur-nf" data-k="nc"><datalist id="pur-cat-list">${cats.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>`)}`}</div>
+   <button type="button" class="btn sm primary" style="align-self:flex-start" data-a="pur-create">${ic('plus',14)} Crear y agregar a la compra</button></div>`}
  return h;
 }
 const purTotal=()=>sum(pur.items,i=>(i.qty||0)*(i.cost||0));
@@ -3180,7 +3186,13 @@ document.addEventListener('click',e=>{
   'inv-kind':()=>{inv.kind=v;inv.cat='';inv.q='';render()},
   'pur-add':()=>purAdd(S.products.find(p=>p.id===id)),
   'pur-rm':()=>{pur.items.splice(+el.dataset.ix,1);purRefresh()},
-  'pur-create':()=>{const name=pur.q.trim();if(!name)return;const t=tenant();const np={id:uid(),tid:t.id,code:autoCode(null,'INS'),name:name.charAt(0).toUpperCase()+name.slice(1),cat:'Insumos',cost:0,price:0,stock:0,min:0,unit:$('#f-pur-new-unit')?.value||'kg',kind:'insumo',supplier:pur.sid};S.products.push(np);save();purAdd(np);toast(`${np.name} creado como insumo`)},
+  'pur-nk':()=>{pur.nk=v;purRefresh('results')},
+  'pur-create':()=>{const name=pur.q.trim();if(!name)return;const t=tenant();const ins=(pur.nk||'venta')==='insumo';const nm=name.charAt(0).toUpperCase()+name.slice(1);
+   if(T('products').some(x=>norm(x.name)===norm(nm)))return toast('Ya existe un producto con ese nombre. Búscalo en la lista','bad');
+   const price=parseMoney(pur.np);if(!ins&&!(price>0)){toast('Escribe el precio de venta del producto','bad');$('#f-pur-new-price')?.focus();return}
+   const np=ins?{id:uid(),tid:t.id,code:autoCode(null,'INS'),name:nm,cat:'Insumos',cost:0,price:0,stock:0,min:0,unit:pur.nu||'kg',kind:'insumo',supplier:pur.sid}
+    :{id:uid(),tid:t.id,code:autoCode(null,'P'),name:nm,cat:(pur.nc||'').trim()||'General',cost:0,price,stock:0,min:0,unit:'und',kind:'venta',supplier:pur.sid};
+   S.products.push(np);save();pur.np='';pur.nc='';purAdd(np);toast(`${np.name} creado como ${ins?'insumo':'producto para vender'}`)},
   'pur-save':purSave,
   'prod-new':()=>openModal(inv.kind==='insumo'?'Nuevo insumo':'Nuevo producto',productForm(null,inv.kind),`<button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="prod-form">Guardar producto</button>`),
   'prod-edit':()=>{const p=S.products.find(x=>x.id===id);if(recipeOf(p))return recipeModal(p);openModal('Editar producto',productForm(p),`<button class="btn danger" data-a="prod-del" data-id="${id}">Eliminar</button><button class="btn" data-a="close-modal">Cancelar</button><button class="btn primary" data-a="submit" data-form="prod-form">Guardar</button>`)},
@@ -3293,6 +3305,7 @@ document.addEventListener('input',e=>{
  else if(k==='tm-email'){}
  else if(k==='lg-new'){const r=$('#lg-rules');if(r)[...r.children].forEach((li,i)=>li.classList.toggle('ok',PASS_RULES[i][1](el.value)))}
  else if(k==='pur-q'){pur.q=el.value;purRefresh('results')}
+  else if(k==='pur-nf'){pur[el.dataset.k]=el.value}
  else if(k==='pur-qty'||k==='pur-cost'){const ix=+el.dataset.ix;const it=pur.items[ix];if(k==='pur-qty')it.qty=Number(el.value)||0;else it.cost=parseMoney(el.value);const sb=$('#pur-sub-'+ix);if(sb)sb.textContent=money(it.qty*it.cost);const tt=$('#pur-total');if(tt)tt.textContent=money(purTotal())}
  else if(k==='vf-q'){vf.q=el.value;render();const q=$('#vf-q');q.focus();q.setSelectionRange(q.value.length,q.value.length)}
  else if(k==='inv-q'){inv.q=el.value;render();const q=$('#inv-q');q.focus();q.setSelectionRange(q.value.length,q.value.length)}
@@ -3306,6 +3319,7 @@ document.addEventListener('change',e=>{
   'scan-qn':()=>{setCartQty(el.dataset.v,el.value);scanQtyRefresh(el.dataset.v)},
   'qty-set':()=>{const i=cart[+el.dataset.ix];if(i)setCartQty(i.pid,el.value)},
   'dom-cour':()=>{posDom().cour=el.value;refreshPOS()},
+  'pur-nf':()=>{pur[el.dataset.k]=el.value},
   'vf-range':()=>{vf.range=el.value;render()},'vf-method':()=>{vf.method=el.value;render()},'vf-origin':()=>{vf.origin=el.value;render()},'vf-seller':()=>{vf.seller=el.value;render()},
   'inv-cat':()=>{inv.cat=el.value;render()},'inv-low':()=>{inv.low=el.checked;render()},
   'fin-type':()=>{fin.type=el.value;render()},
