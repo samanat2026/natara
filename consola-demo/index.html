@@ -466,6 +466,13 @@ details.guide[open] summary{margin-bottom:10px}
 .pur-opt{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;text-align:left;width:100%}
 .pur-opt:hover{border-color:var(--accent)}
 .pur-opt.on{border-color:var(--accent);background:var(--accent-soft)}
+.pur-ai{margin:2px 0 4px}
+.pur-ai .ai-cta{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:12px;border:1px dashed var(--accent);background:var(--accent-soft)}
+.pur-ai .ai-line{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;background:var(--surface-2);margin-bottom:8px}
+.pur-ai .ai-line.off{opacity:.55}
+.pur-ai .ai-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pur-ai .ai-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.pur-ai .ai-thumb{width:52px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0}
 .pur-new{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--surface-2)}
 .ferr{display:flex;gap:6px;align-items:center;color:var(--bad);font-size:13px;font-weight:600}
 .fwarn{display:flex;gap:6px;align-items:center;color:var(--warn);font-size:13px;font-weight:600}
@@ -2791,6 +2798,7 @@ let pur=null;
 function purchaseModal(sp){
  pur={sid:sp.id,items:[],q:'',method:'transferencia'};
  openModal(`Compra a ${sp.name}`,`<p class="muted small" style="margin:0">Busca lo que llegó, escribe la cantidad y el costo. El inventario sube solo y el total queda como egreso.</p>
+  <div id="pur-ai" class="pur-ai">${purAiBox()}</div>
   <div class="search ${scanBtn('pur')?'has-scan':''}">${ic('search',16)}<input class="input" id="pur-q" placeholder="Buscar insumo o producto (ej: harina)" autocomplete="off" data-i="pur-q">${scanBtn('pur')}</div>
   <div id="pur-results">${purResults()}</div>
   <div id="pur-items">${purItems()}</div>
@@ -2816,6 +2824,71 @@ function purResults(){
  return h;
 }
 const purTotal=()=>sum(pur.items,i=>(i.qty||0)*(i.cost||0));
+/* =========================================================
+   LEER FACTURA CON FOTO (IA)
+   La foto va al servidor de Samanat (Cloudflare Worker), que le pide a la IA las líneas de la factura:
+   [{name, qty, cost}] (cost = costo por unidad). Natara busca cada línea en el inventario y la persona
+   revisa todo antes de agregarlo a la compra: nada entra al inventario sin confirmar.
+   En la demo la lectura es simulada. En la app real solo aparece cuando config.invoiceAi tiene la dirección del servidor.
+   ========================================================= */
+const aiUrl=()=>REAL?(S.config?.invoiceAi||''):'demo';
+const aiOn=()=>!!aiUrl();
+const AI_STOP=new Set(['de','del','la','el','los','las','x','con','por','y','en','para','und','un','uds','und.','ref','cod']);
+function aiTokens(t){
+ return norm(t).replace(/(\d+(?:[.,]\d+)?)\s*(kg|kilo|kilos|g|gr|grs|gramos|l|lt|lts|litro|litros|ml|cc|lb|libra|libras)\b/g,(m,n,u)=>n.replace(',','.')+({kilo:'kg',kilos:'kg',gr:'g',grs:'g',gramos:'g',lt:'l',lts:'l',litro:'l',litros:'l',cc:'ml',libra:'lb',libras:'lb'}[u]||u))
+  .split(/[^a-z0-9.]+/).filter(w=>w&&!AI_STOP.has(w));
+}
+function aiScore(a,p){const A=aiTokens(a),B=aiTokens(p.name+' '+(p.code||''));if(!A.length||!B.length)return 0;let hit=0;
+ B.forEach(b=>{if(A.includes(b))hit+=1;else if(b.length>3&&A.some(x=>x.length>3&&(x.startsWith(b.slice(0,4))||b.startsWith(x.slice(0,4)))))hit+=.7});
+ return Math.min(1,2*hit/(A.length+B.length)*1.25)}
+function aiNice(t){const w=String(t).toLowerCase().replace(/\s+/g,' ').trim();return w.charAt(0).toUpperCase()+w.slice(1)}
+function aiMatch(l){
+ const C=T('products').map(p=>({p,sc:aiScore(l.name,p)})).sort((a,b)=>b.sc-a.sc);const top=C[0];
+ const pid=top&&top.sc>=.45?top.p.id:'';
+ return {txt:l.name,qty:+l.qty||0,cost:Math.round(+l.cost||0),pick:pid||'new:venta',sc:top?top.sc:0,cands:C.filter(c=>c.sc>=.25).slice(0,3).map(c=>c.p.id),name:aiNice(l.name),price:'',ok:true};
+}
+function aiDemoRead(){
+ // Simula lo que devolvería la IA: productos del proveedor escritos como en una factura, y uno nuevo
+ const sp=S.suppliers.find(x=>x.id===pur.sid);const P=T('products');let base=P.filter(p=>p.supplier===pur.sid);if(base.length<3)base=P.filter(p=>(p.kind||'venta')==='venta');
+ const pickN=base.slice().sort((a,b)=>a.name.localeCompare(b.name)).slice(0,4);const brands=['BOLSA','PREMIUM','TRADICIONAL','PAQ'];
+ const lines=pickN.map((p,i)=>({name:(p.name.toUpperCase().replace(/ (\d)/,' '+brands[i%brands.length]+' X $1')),qty:[12,6,24,10][i%4],cost:Math.round((p.cost||1000)*(1+((i%3)-1)*.03)/10)*10}));
+ const isFood=/panader|pan /i.test(tenant()?.biz||tenant()?.name||'');
+ lines.push(isFood?{name:'MANTEQUILLA SIN SAL 500 G',qty:6,cost:9800}:{name:'GALLETAS SALTINAS X 3 TACOS',qty:12,cost:3900});
+ return new Promise(r=>setTimeout(()=>r({lines,total:sum(lines,l=>l.qty*l.cost),demo:true,from:sp?.name}),1600));
+}
+function aiShrink(file){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1600/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.82).split(',')[1])};im.onerror=()=>rej(new Error('No se pudo abrir la foto'));im.src=URL.createObjectURL(file)})}
+async function aiRead(file){
+ if(!REAL)return aiDemoRead();
+ const b64=await aiShrink(file);const tok=await FB.auth.currentUser?.getIdToken();
+ const r=await fetch(aiUrl(),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},body:JSON.stringify({image:b64,mime:'image/jpeg',tid:tenant().id})});
+ const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'No se pudo leer la factura');return j;
+}
+function purAiBox(){
+ if(!aiOn()||!pur)return '';const A=pur.ai;
+ if(!A)return `<div class="ai-cta">${ic('camera',22)}<div class="grow" style="min-width:180px"><b>Leer la factura con una foto</b><div class="muted small">La IA lee los productos, cantidades y costos. Tú revisas antes de agregarlos.</div></div><label class="btn sm primary" for="pur-photo" style="cursor:pointer">${ic('camera',15)} Tomar o subir foto</label><input type="file" id="pur-photo" accept="image/*" capture="environment" hidden data-c="pur-photo"></div>`;
+ if(A.loading)return `<div class="ai-cta">${A.img?`<img class="ai-thumb" src="${A.img}" alt="Foto de la factura">`:''}<div class="grow"><b>Leyendo la factura…</b><div class="muted small">Esto toma unos segundos.</div></div></div>`;
+ const P=T('products').slice().sort((a,b)=>a.name.localeCompare(b.name));const n=A.lines.filter(l=>l.ok&&l.pick!=='skip').length;const read=sum(A.lines.filter(l=>l.ok&&l.pick!=='skip'),l=>l.qty*l.cost);
+ return `${A.demo?`<div class="banner info" style="margin-bottom:8px">${ic('info')}<div class="grow small"><b>Vista previa:</b> en la demo la lectura es de ejemplo. En la app real la IA lee la foto que tomes.</div></div>`:''}
+  <div class="spread" style="margin-bottom:8px"><b>Revisa lo que leyó la IA</b>${A.img?`<img class="ai-thumb" src="${A.img}" alt="Foto de la factura">`:''}</div>
+  ${A.lines.map((l,i)=>{const p=S.products.find(x=>x.id===l.pick);const isNew=l.pick.startsWith('new:'),skip=l.pick==='skip';
+   const badge=skip?'<span class="pill">No se agrega</span>':isNew?'<span class="pill warn">Nuevo</span>':l.sc>=.7&&p?'<span class="pill good">Coincide</span>':'<span class="pill warn">Revisa</span>';
+   const opts=[...l.cands.map(id=>{const q=S.products.find(x=>x.id===id);return [id,q.name+(q.kind==='insumo'?' · insumo':'')]}),['new:venta','+ Crear como producto para vender'],['new:insumo','+ Crear como insumo'],['skip','No agregar esta línea'],...P.filter(x=>!l.cands.includes(x.id)).map(x=>[x.id,x.name+(x.kind==='insumo'?' · insumo':'')])];
+   const sug=Math.round(l.cost*1.3/100)*100;
+   return `<div class="ai-line ${skip?'off':''}">
+    <div class="ai-h"><span class="small muted">Factura:</span><b class="small" style="font-family:var(--mono,monospace)">${esc(l.txt)}</b>${badge}</div>
+    ${field('En tu inventario',sel('ai-pick-'+i,opts,l.pick,`data-c="ai-pick" data-ix="${i}"`))}
+    ${skip?'':`<div class="ai-g">
+     ${isNew?field('Nombre',`<input class="input" value="${esc(l.name)}" data-i="ai-f" data-ix="${i}" data-k="name" autocomplete="off">`):''}
+     ${field(`Cantidad${p?' ('+esc(p.unit||'und')+')':''}`,`<input class="input num" value="${l.qty||''}" inputmode="decimal" data-i="ai-f" data-ix="${i}" data-k="qty" autocomplete="off">`)}
+     ${field('Costo por unidad',`<div class="money-in"><span>$</span><input class="input num" value="${l.cost?grp(l.cost):''}" inputmode="numeric" data-money data-i="ai-f" data-ix="${i}" data-k="cost" autocomplete="off"></div>`)}
+     ${l.pick==='new:venta'?field('Precio de venta',`<div class="money-in"><span>$</span><input class="input num" value="${l.price===''?grp(sug):grp(parseMoney(l.price))}" inputmode="numeric" data-money data-i="ai-f" data-ix="${i}" data-k="price" autocomplete="off"></div><span class="muted small">Sugerido: costo + 30%</span>`):''}
+    </div>`}
+   </div>`}).join('')}
+  <div class="spread small" style="margin:6px 0 10px"><span class="muted">Suma de lo leído</span><b class="num" id="ai-read">${money(read)}</b></div>
+  ${A.total&&Math.abs(A.total-read)>1?`<div class="banner" style="margin-bottom:10px">${ic('alert')}<div class="grow small">La factura dice <b>${money(A.total)}</b> y lo que vas a agregar suma <b>${money(read)}</b>. Revisa cantidades y costos.</div></div>`:''}
+  <div class="row"><button type="button" class="btn primary" data-a="ai-apply" ${n?'':'disabled'}>${ic('check',15)} Agregar ${n} producto${n===1?'':'s'} a la compra</button><button type="button" class="btn ghost" data-a="ai-cancel">Descartar</button></div>`;
+}
+function purAiRefresh(){const b=$('#pur-ai');if(b)b.innerHTML=purAiBox()}
 function purItems(){
  if(!pur.items.length)return '';
  return `<div class="tbl-wrap"><table><thead><tr><th>Llegó</th><th class="r">Cantidad</th><th class="r">Costo por unidad</th><th class="r">Subtotal</th><th></th></tr></thead><tbody>${pur.items.map((i,ix)=>{const p=S.products.find(x=>x.id===i.pid);return`<tr><td><b>${esc(p.name)}</b></td><td class="r"><div class="row" style="justify-content:flex-end;gap:6px;flex-wrap:nowrap"><input class="input num" style="width:84px" type="number" min="0" step="any" inputmode="decimal" value="${i.qty||''}" placeholder="0" data-i="pur-qty" data-ix="${ix}" aria-label="Cantidad de ${esc(p.name)}"><span class="muted small">${esc(p.unit||'und')}</span></div></td><td class="r"><div class="money-in" style="width:130px;margin-left:auto"><span>$</span><input class="input num" type="text" inputmode="numeric" autocomplete="off" data-money value="${i.cost?grp(i.cost):''}" data-i="pur-cost" data-ix="${ix}" aria-label="Costo de ${esc(p.name)}"></div></td><td class="r num" id="pur-sub-${ix}">${money((i.qty||0)*(i.cost||0))}</td><td class="r"><button type="button" class="icon-btn" data-a="pur-rm" data-ix="${ix}" aria-label="Quitar" style="color:var(--ink-3)">${ic('trash',15)}</button></td></tr>`}).join('')}</tbody></table></div>
@@ -3189,6 +3262,16 @@ document.addEventListener('click',e=>{
   'pur-add':()=>purAdd(S.products.find(p=>p.id===id)),
   'pur-rm':()=>{pur.items.splice(+el.dataset.ix,1);purRefresh()},
   'pur-nk':()=>{pur.nk=v;purRefresh('results')},
+  'ai-cancel':()=>{pur.ai=null;purAiRefresh()},
+  'ai-apply':()=>{const t=tenant();const L=pur.ai.lines.filter(l=>l.ok&&l.pick!=='skip');
+   for(const l of L){if(!(l.qty>0))return toast(`Escribe la cantidad de ${l.name||l.txt}`,'bad');if(l.pick==='new:venta'&&!(parseMoney(l.price===''?String(Math.round(l.cost*1.3/100)*100):l.price)>0))return toast(`Escribe el precio de venta de ${l.name}`,'bad');if(l.pick.startsWith('new:')&&!l.name.trim())return toast('Escribe el nombre del producto nuevo','bad')}
+   let made=0;
+   L.forEach(l=>{let p=S.products.find(x=>x.id===l.pick);
+    if(!p){const ins=l.pick==='new:insumo';const nm=aiNice(l.name);p=T('products').find(x=>norm(x.name)===norm(nm));
+     if(!p){p=ins?{id:uid(),tid:t.id,code:autoCode(null,'INS'),name:nm,cat:'Insumos',cost:l.cost,price:0,stock:0,min:0,unit:'und',kind:'insumo',supplier:pur.sid}
+      :{id:uid(),tid:t.id,code:autoCode(null,'P'),name:nm,cat:'General',cost:l.cost,price:parseMoney(l.price===''?String(Math.round(l.cost*1.3/100)*100):l.price),stock:0,min:0,unit:'und',kind:'venta',supplier:pur.sid};S.products.push(p);made++}}
+    const ix=pur.items.findIndex(i=>i.pid===p.id);if(ix<0)pur.items.push({pid:p.id,qty:l.qty,cost:l.cost});else{pur.items[ix].qty=(pur.items[ix].qty||0)+l.qty;pur.items[ix].cost=l.cost}});
+   if(made)save();pur.ai=null;purAiRefresh();purRefresh();toast(`${L.length} producto${L.length===1?'':'s'} agregado${L.length===1?'':'s'} a la compra${made?` · ${made} nuevo${made===1?'':'s'} en el inventario`:''}. Revisa y toca Registrar compra`)},
   'pur-create':()=>{const name=pur.q.trim();if(!name)return;const t=tenant();const ins=(pur.nk||'venta')==='insumo';const nm=name.charAt(0).toUpperCase()+name.slice(1);
    if(T('products').some(x=>norm(x.name)===norm(nm)))return toast('Ya existe un producto con ese nombre. Búscalo en la lista','bad');
    const price=parseMoney(pur.np);if(!ins&&!(price>0)){toast('Escribe el precio de venta del producto','bad');$('#f-pur-new-price')?.focus();return}
@@ -3308,6 +3391,8 @@ document.addEventListener('input',e=>{
  else if(k==='lg-new'){const r=$('#lg-rules');if(r)[...r.children].forEach((li,i)=>li.classList.toggle('ok',PASS_RULES[i][1](el.value)))}
  else if(k==='pur-q'){pur.q=el.value;purRefresh('results')}
   else if(k==='pur-nf'){pur[el.dataset.k]=el.value}
+  else if(k==='ai-f'){const l=pur.ai.lines[+el.dataset.ix],kk=el.dataset.k;l[kk]=kk==='qty'?Number(String(el.value).replace(',','.'))||0:kk==='cost'?parseMoney(el.value):el.value;
+   if(kk==='qty'||kk==='cost'){const r=$('#ai-read');if(r)r.textContent=money(sum(pur.ai.lines.filter(x=>x.ok&&x.pick!=='skip'),x=>x.qty*x.cost))}}
  else if(k==='pur-qty'||k==='pur-cost'){const ix=+el.dataset.ix;const it=pur.items[ix];if(k==='pur-qty')it.qty=Number(el.value)||0;else it.cost=parseMoney(el.value);const sb=$('#pur-sub-'+ix);if(sb)sb.textContent=money(it.qty*it.cost);const tt=$('#pur-total');if(tt)tt.textContent=money(purTotal())}
  else if(k==='vf-q'){vf.q=el.value;render();const q=$('#vf-q');q.focus();q.setSelectionRange(q.value.length,q.value.length)}
  else if(k==='inv-q'){inv.q=el.value;render();const q=$('#inv-q');q.focus();q.setSelectionRange(q.value.length,q.value.length)}
@@ -3322,6 +3407,11 @@ document.addEventListener('change',e=>{
   'qty-set':()=>{const i=cart[+el.dataset.ix];if(i)setCartQty(i.pid,el.value)},
   'dom-cour':()=>{posDom().cour=el.value;refreshPOS()},
   'pur-nf':()=>{pur[el.dataset.k]=el.value},
+  'pur-photo':()=>{const f=el.files&&el.files[0];if(!f)return;pur.ai={loading:true,img:URL.createObjectURL(f)};purAiRefresh();
+   aiRead(f).then(j=>{if(!pur||!pur.ai)return;const L=(j.lines||j.items||[]).filter(l=>l&&l.name);if(!L.length){pur.ai=null;purAiRefresh();return toast('No encontré productos en la foto. Prueba con más luz y la factura completa','bad')}
+    pur.ai={img:pur.ai.img,demo:!!j.demo,total:Math.round(+j.total||0),lines:L.map(aiMatch)};purAiRefresh()})
+   .catch(e=>{if(pur)pur.ai=null;purAiRefresh();toast(e.message||'No se pudo leer la factura','bad')})},
+  'ai-pick':()=>{const l=pur.ai.lines[+el.dataset.ix];l.pick=el.value;purAiRefresh()},
   'vf-range':()=>{vf.range=el.value;render()},'vf-method':()=>{vf.method=el.value;render()},'vf-origin':()=>{vf.origin=el.value;render()},'vf-seller':()=>{vf.seller=el.value;render()},
   'inv-cat':()=>{inv.cat=el.value;render()},'inv-low':()=>{inv.low=el.checked;render()},
   'fin-type':()=>{fin.type=el.value;render()},
