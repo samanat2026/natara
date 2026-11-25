@@ -651,7 +651,7 @@ const PLANS=[
  {id:'basico',name:'Básico',price:59900,mods:['inventario','caja'],pitch:'Para empezar a controlar el inventario y la caja.'},
  {id:'pro',name:'Pro',price:109900,mods:['inventario','caja','finanzas','estadisticas','empleados'],pitch:'Para el negocio con empleados que quiere ver sus números.'},
  // Premium (id 'total' por compatibilidad): todo para tiendas, sin mesas. Incluye también los módulos que se agreguen después, salvo los de restaurante.
- {id:'total',name:'Premium',price:159900,mods:MODS.filter(m=>!m.food).map(m=>m.id),pitch:'Todo para tu tienda: fiados, proveedores, recetas y combos, y puntos y fidelización.'},
+ {id:'total',name:'Premium',price:159900,mods:MODS.filter(m=>!m.food).map(m=>m.id),pitch:'Todo para tu tienda: fiados, proveedores, recetas y combos, domicilios, y puntos y fidelización.'},
  // Restaurante: todo lo de Premium más mesas y meseros
  {id:'restaurante',name:'Restaurante',price:179900,food:true,mods:MODS.map(m=>m.id),pitch:'Todo lo de Premium más mesas y meseros: cada mesero toma el pedido desde su celular y en la caja cada persona paga lo suyo.'},
 ];
@@ -1320,7 +1320,7 @@ function loginBrand(){return `<section class="login-brand"><div class="lb-in">
    <div class="logo">${mark(44)}<b>natara</b></div>
    <h1>Tu caja, tu inventario y tus cuentas, <em>en balance.</em></h1>
    ${MODE==='real'?'':`<button class="btn primary lb-try" data-a="lg-try">${ic('arrow',16)} Probar la demo ahora</button>`}
-   <div class="feat">${['Inventario siempre al día','Caja rápida y sencilla','Efectivo, transferencias y datáfono','Apertura y cierre de caja','Ingresos y egresos','Estadísticas de ventas','Fiados y abonos','Empleados con permisos','Domicilios con seguimiento','Mesas y meseros para restaurantes','Puntos y fidelización'].map(f=>`<div>${ic('check',16)} ${f}</div>`).join('')}</div>
+   <div class="feat">${['Inventario siempre al día','Caja rápida y sencilla','Efectivo, transferencias y datáfono','Apertura y cierre de caja','Ingresos y egresos','Estadísticas de ventas','Empleados con permisos','Fiados y abonos','Proveedores y compras','Recetas y combos','Domicilios con seguimiento','Mesas y meseros para restaurantes','Lector de código de barras','Caja por categorías','Puntos y fidelización','Recibos para imprimir'].map(f=>`<div>${ic('check',16)} ${f}</div>`).join('')}</div>
    ${visBadge()}
    <span class="by">Un producto de Samanat · <a href="${waLink('Hola, quiero saber más de Natara')}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">WhatsApp ${WA_TXT}</a></span>
   </div></section>`}
@@ -1328,7 +1328,7 @@ function viewLogin(){
  if(MODE==='real'||lg.mode!=='pick')return viewLoginReal();
  const acc=u=>{const t=S.tenants.find(x=>x.id===u.tid);return`<button class="acc" data-a="login" data-id="${u.id}"><div class="avatar">${initials(u.name)}</div><div class="who"><strong>${esc(u.name)}</strong><span>${u.role==='superadmin'?'Superadmin · Samanat':u.role==='dueno'?'Dueño(a) · ve todo el negocio':isMesero(u)?(meseroCobra(u)?'Mesero(a) · atiende mesas y también cobra':'Mesero(a) · atiende mesas, no cobra'):isDomi(u)?'Domiciliario(a) · lleva los pedidos':(()=>{const ps=(u.perms||[]).map(id=>PERMS.find(p=>p.id===id)).filter(p=>p&&t&&t.mods.includes(p.mod));return ps.length?'Cajero(a) · vende y además puede: '+ps.map(p=>p.short).join(', '):'Cajero(a) sin permisos extra · solo vende y ve sus ventas'})()}</span></div>${t?pillDue(t):`<span class="pill ac">Admin</span>`}</button>`};
  const rank={basico:0,pro:1,total:2,restaurante:3};
- const ideal={basico:'Para empezar: controla tu inventario y tu caja.',pro:'Para el negocio con empleados que quiere ver sus números.',total:'Todo para tu tienda: fiados, proveedores, recetas y puntos.',restaurante:'Para restaurantes: todo lo de Premium más mesas, meseros y cuentas divididas.'};
+ const ideal={basico:'Para empezar: controla tu inventario y tu caja.',pro:'Para el negocio con empleados que quiere ver sus números.',total:'Todo para tu tienda: fiados, proveedores, recetas, domicilios y puntos.',restaurante:'Para restaurantes: todo lo de Premium más mesas, meseros y cuentas divididas.'};
  // La cuenta suspendida solo se muestra en la consola de demo de Samanat, no a los clientes
  const byT=S.tenants.filter(t=>DEMO_ADMIN||t.status==='activo').sort((a,b)=>(a.status!=='activo')-(b.status!=='activo')||rank[a.plan]-rank[b.plan]).map(t=>{const p=planById(t.plan);const extras=t.mods.filter(m=>!p.mods.includes(m));const susp=t.status!=='activo';
   return `<div class="plan-demo ${susp?'susp':''}"><div class="pd-head">${susp?`<div><span class="pd-kicker">Así se ve una cuenta suspendida</span><strong>${esc(t.name)}</strong><span class="muted small">${esc(t.type)} · plan ${p.name} sin pagar</span></div><span class="pill bad">${ic('lock',12)} Suspendida</span>`:`<div><span class="pd-kicker">Ejemplo: ${esc(t.name)} · ${esc(t.type)}</span><strong>Plan ${p.name}</strong><span class="muted small">${ideal[t.plan]}</span></div><div class="pd-price"><b>${money(fee(t))}</b><span class="muted small">al mes${extras.length?` · plan ${money(p.price)} + ${extras.map(m=>modById(m).name.toLowerCase()).join(', ')}`:''}</span></div>`}</div>
@@ -1402,7 +1402,7 @@ function viewLoginReal(){
    <button type="button" class="linkish small" data-a="lg-restart" style="align-self:center">Usar otro correo</button>
   </form>`;
  }
- return `<div class="login">${loginBrand()}<section class="login-pick">${MODE==='real'?'':`<button class="linkish small" data-a="lg-mode" data-v="pick" style="align-self:flex-start">← Volver a la demo rápida</button>`}${body}${MODE==='real'?`<p class="small muted" style="margin:0">¿Aún no tienes Natara? <a class="linkish" href="${DEMO_URL}">Prueba la demo</a> y escríbenos a samanat2026@gmail.com.</p>`:testCases()}</section></div>`;
+ return `<div class="login">${loginBrand()}<section class="login-pick">${MODE==='real'?'':`<button class="linkish small" data-a="lg-mode" data-v="pick" style="align-self:flex-start">← Volver a la demo rápida</button>`}${body}${MODE==='real'?`<div class="stack" style="gap:8px;border-top:1px solid var(--line);padding-top:16px"><p class="small muted" style="margin:0;text-align:center">¿Aún no tienes Natara?</p><a class="btn big" href="${DEMO_URL}" style="text-decoration:none">${ic('arrow',16)} Prueba la demo</a><p class="small muted" style="margin:0;text-align:center">o escríbenos a samanat2026@gmail.com</p></div>`:testCases()}</section></div>`;
 }
 function doLogin(id){lg.banner=null;lg.err={};sess={uid:id,view:null};saveSess();cart=[];mz={id:null,pay:false,sel:{},q:'',cat:'',bak:null};pos.tab=null;pos.seller=null;liveEvent('login','Inició sesión');render()}
 setInterval(()=>{if(me()||lg.mode!=='form'||!lg.lockUntil)return;const b=$('#lg-submit');if(!b)return;const s=Math.ceil((lg.lockUntil-Date.now())/1000);if(s>0){b.disabled=true;b.textContent=`Espera ${s} s`}else{lg.lockUntil=0;lg.banner=['info','Ya puedes intentar de nuevo.'];render()}},1000);
